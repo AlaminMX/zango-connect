@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 export function TopBar() {
   const { lang, setLang } = useLang();
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border/50 bg-background/85 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full bg-background/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2">
           <span className="font-serif text-2xl font-semibold tracking-tight text-primary">Sutura</span>
@@ -33,6 +33,7 @@ export function TopBar() {
           </Link>
         </div>
       </div>
+      <div className="border-shift h-px w-full opacity-40" />
     </header>
   );
 }

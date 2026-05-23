@@ -16,11 +16,19 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const routeAfterLogin = async (userId: string) => {
+    const { data: role } = await supabase.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
+    if (role) { nav({ to: "/admin" }); return; }
+    const { data: s } = await supabase.from("sellers").select("id").eq("user_id", userId).maybeSingle();
+    nav({ to: s ? "/dashboard" : "/register" });
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) nav({ to: "/register" });
+      if (data.session) routeAfterLogin(data.session.user.id);
     });
-  }, [nav]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,9 +42,9 @@ function AuthPage() {
       if (error) toast.error(error.message);
       else { toast.success("Check your email to confirm — then sign in."); setMode("signin"); }
     } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) toast.error(error.message);
-      else { toast.success("Welcome back"); nav({ to: "/register" }); }
+      else if (data.user) { toast.success("Welcome back"); await routeAfterLogin(data.user.id); }
     }
     setLoading(false);
   };

@@ -24,7 +24,7 @@ function AdminPage() {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) { nav({ to: "/auth" }); return; }
       const { data: role } = await supabase.from("user_roles").select("role").eq("user_id", u.user.id).eq("role", "admin").maybeSingle();
-      if (!role) { setAllowed(false); return; }
+      if (!role) { nav({ to: "/dashboard" }); return; }
       setAllowed(true);
       const [{ data: sl }, { count: pc }, { count: cc }] = await Promise.all([
         supabase.from("sellers").select("id, business_name, slug, category, city, is_verified").order("created_at", { ascending: false }),
@@ -44,15 +44,6 @@ function AdminPage() {
   };
 
   if (allowed === null) return <div className="p-10 text-center text-muted-foreground">Loading…</div>;
-  if (!allowed) return (
-    <div className="min-h-screen bg-background">
-      <TopBar />
-      <div className="p-10 text-center">
-        <h1 className="font-serif text-2xl">Admins only</h1>
-        <p className="mt-2 text-sm text-muted-foreground">You don't have access to this page.</p>
-      </div>
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-background">

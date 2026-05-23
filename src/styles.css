@@ -124,4 +124,42 @@
   .gradient-warm {
     background: linear-gradient(135deg, oklch(0.88 0.04 25), oklch(0.93 0.03 50));
   }
+
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0); }
+    33% { transform: translate(10px, -20px); }
+    66% { transform: translate(-8px, 10px); }
+  }
+  .animate-float { animation: float 12s ease-in-out infinite; will-change: transform; }
+
+  @keyframes card-enter {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .card-enter { animation: card-enter 0.5s ease-out; animation-fill-mode: both; }
+
+  /* Shimmer sweep on hover */
+  .shimmer { position: relative; overflow: hidden; isolation: isolate; }
+  .shimmer::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(115deg, transparent 30%, oklch(1 0 0 / 0.18) 50%, transparent 70%);
+    transform: translateX(-100%);
+    transition: transform 0.8s ease;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .shimmer:hover::before { transform: translateX(100%); }
+
+  /* Animated gradient border under topbar */
+  @keyframes border-shift {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+  }
+  .border-shift {
+    background: linear-gradient(90deg, transparent, var(--color-primary), transparent, var(--color-primary), transparent);
+    background-size: 200% 100%;
+    animation: border-shift 4s linear infinite;
+  }
 }

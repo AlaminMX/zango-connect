@@ -14,16 +14,224 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      categories: {
+        Row: {
+          icon_emoji: string
+          id: string
+          name: string
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          icon_emoji?: string
+          id?: string
+          name: string
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          icon_emoji?: string
+          id?: string
+          name?: string
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          price: number
+          seller_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          price: number
+          seller_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          price?: number
+          seller_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "sellers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sellers: {
+        Row: {
+          bio: string | null
+          business_name: string
+          category: string
+          city: string
+          cover_photo_url: string | null
+          created_at: string
+          id: string
+          is_verified: boolean
+          name: string
+          profile_photo_url: string | null
+          rating: number
+          slug: string
+          user_id: string
+          whatsapp_number: string
+        }
+        Insert: {
+          bio?: string | null
+          business_name: string
+          category: string
+          city: string
+          cover_photo_url?: string | null
+          created_at?: string
+          id?: string
+          is_verified?: boolean
+          name: string
+          profile_photo_url?: string | null
+          rating?: number
+          slug: string
+          user_id: string
+          whatsapp_number: string
+        }
+        Update: {
+          bio?: string | null
+          business_name?: string
+          category?: string
+          city?: string
+          cover_photo_url?: string | null
+          created_at?: string
+          id?: string
+          is_verified?: boolean
+          name?: string
+          profile_photo_url?: string | null
+          rating?: number
+          slug?: string
+          user_id?: string
+          whatsapp_number?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vouches: {
+        Row: {
+          created_at: string
+          id: string
+          vouched_seller_id: string
+          voucher_seller_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          vouched_seller_id: string
+          voucher_seller_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          vouched_seller_id?: string
+          voucher_seller_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vouches_vouched_seller_id_fkey"
+            columns: ["vouched_seller_id"]
+            isOneToOne: false
+            referencedRelation: "sellers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouches_voucher_seller_id_fkey"
+            columns: ["voucher_seller_id"]
+            isOneToOne: false
+            referencedRelation: "sellers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_clicks: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string | null
+          seller_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id?: string | null
+          seller_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string | null
+          seller_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_clicks_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_clicks_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "sellers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +358,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const

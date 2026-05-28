@@ -5,9 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
 import { Footer } from "@/components/Footer";
 import { SellerCard } from "@/components/SellerCard";
+import { ProductCard } from "@/components/ProductCard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-const CITIES = ["All cities", "Kano", "Kaduna", "Abuja", "Other"];
+import { hausaFor, NIGERIAN_CITIES } from "@/lib/categories";
 
 export const Route = createFileRoute("/category/$slug")({ component: CategoryPage });
 
@@ -39,6 +39,25 @@ function CategoryPage() {
     },
   });
 
+  const { data: products } = useQuery({
+    queryKey: ["cat-products", category?.name, city],
+    enabled: !!category,
+    queryFn: async () => {
+      let qb = supabase
+        .from("products")
+        .select("id, name, price, image_url, stock_status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, category)")
+        .eq("sellers.category", category!.name)
+        .order("created_at", { ascending: false })
+        .limit(24);
+      if (city !== "All cities") qb = qb.eq("sellers.city", city);
+      const { data, error } = await qb;
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const hausa = hausaFor(category?.name);
+
   return (
     <div className="min-h-screen bg-background">
       <TopBar />
@@ -46,27 +65,61 @@ function CategoryPage() {
         <Link to="/" className="text-sm text-muted-foreground hover:text-primary">← Back</Link>
         <div className="mt-4 flex items-center gap-3">
           <div className="text-4xl">{category?.icon_emoji ?? "🛍️"}</div>
-          <h1 className="font-serif text-3xl">{category?.name ?? "Category"}</h1>
+          <div>
+            <h1 className="font-serif text-3xl leading-tight">{category?.name ?? "Category"}</h1>
+            {hausa && <p className="text-sm italic text-muted-foreground">{hausa}</p>}
+          </div>
         </div>
 
         <div className="mt-6">
           <Select value={city} onValueChange={setCity}>
             <SelectTrigger className="w-44 rounded-full"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {CITIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              <SelectItem value="All cities">All cities</SelectItem>
+              {NIGERIAN_CITIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
-          {sellers?.map((s) => <SellerCard key={s.id} {...s} />)}
-          {sellers && sellers.length === 0 && (
-            <div className="col-span-full rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-              No sellers in this category yet.
+        {/* Products first — discovery-led */}
+        {products && products.length > 0 && (
+          <section className="mt-8">
+            <h2 className="mb-3 font-serif text-xl">Products</h2>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {products.map((p) => {
+                const s = (p as any).sellers;
+                return (
+                  <ProductCard
+                    key={p.id}
+                    id={p.id}
+                    name={p.name}
+                    price={Number(p.price)}
+                    image_url={p.image_url}
+                    stock_status={p.stock_status}
+                    seller_id={p.seller_id}
+                    seller_name={s?.business_name}
+                    seller_city={s?.city}
+                    seller_slug={s?.slug}
+                    whatsapp_number={s?.whatsapp_number ?? ""}
+                  />
+                );
+              })}
             </div>
-          )}
-        </div>
+          </section>
+        )}
+
+        <section className="mt-10">
+          <h2 className="mb-3 font-serif text-xl">Sellers</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
+            {sellers?.map((s) => <SellerCard key={s.id} {...s} />)}
+            {sellers && sellers.length === 0 && (
+              <div className="col-span-full rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+                No sellers in this category yet.
+              </div>
+            )}
+          </div>
+        </section>
       </div>
       <Footer />
     </div>

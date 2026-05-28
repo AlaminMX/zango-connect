@@ -118,8 +118,8 @@ function Register() {
     <div className="min-h-screen bg-background">
       <TopBar />
       <div className="mx-auto max-w-xl px-5 py-8">
-        <h1 className="font-serif text-3xl">List your business</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Step {Math.min(step, 3)} of 3</p>
+        <h1 className="font-serif text-3xl">Fara Kasuwanci — Start Your Store</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Welcome to the community · Step {Math.min(step, 3)} of 3</p>
 
         <div className="mt-4 flex gap-1.5">
           {[1, 2, 3].map((n) => (
@@ -147,8 +147,8 @@ function Register() {
                 </Select>
               </div>
               <div><Label>Short bio (max 150 chars)</Label><Textarea maxLength={150} value={bio} onChange={(e) => setBio(e.target.value)} /></div>
-              <Button type="submit" disabled={busy || !city || !category} className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
-                {busy ? "Saving…" : "Continue"}
+              <Button type="submit" disabled={busy || !city || !category} className="w-full rounded-full bg-primary py-6 text-base text-primary-foreground hover:bg-primary/90">
+                {busy ? "Saving…" : "Open My Store →"}
               </Button>
             </form>
           )}

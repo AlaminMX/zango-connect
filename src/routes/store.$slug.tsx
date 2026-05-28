@@ -166,6 +166,7 @@ function StorePage() {
                 name={p.name}
                 price={Number(p.price)}
                 image_url={p.image_url}
+                stock_status={(p as any).stock_status}
                 seller_id={seller.id}
                 whatsapp_number={seller.whatsapp_number}
               />

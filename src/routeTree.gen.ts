@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SearchRouteImport } from './routes/search'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -17,6 +18,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as StoreSlugRouteImport } from './routes/store.$slug'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/register': typeof RegisterRoute
+  '/search': typeof SearchRoute
   '/category/$slug': typeof CategorySlugRoute
   '/store/$slug': typeof StoreSlugRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/register': typeof RegisterRoute
+  '/search': typeof SearchRoute
   '/category/$slug': typeof CategorySlugRoute
   '/store/$slug': typeof StoreSlugRoute
 }
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/register': typeof RegisterRoute
+  '/search': typeof SearchRoute
   '/category/$slug': typeof CategorySlugRoute
   '/store/$slug': typeof StoreSlugRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/register'
+    | '/search'
     | '/category/$slug'
     | '/store/$slug'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/register'
+    | '/search'
     | '/category/$slug'
     | '/store/$slug'
   id:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/register'
+    | '/search'
     | '/category/$slug'
     | '/store/$slug'
   fileRoutesById: FileRoutesById
@@ -117,12 +129,20 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRoute
   RegisterRoute: typeof RegisterRoute
+  SearchRoute: typeof SearchRoute
   CategorySlugRoute: typeof CategorySlugRoute
   StoreSlugRoute: typeof StoreSlugRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/register': {
       id: '/register'
       path: '/register'
@@ -181,6 +201,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRoute,
   RegisterRoute: RegisterRoute,
+  SearchRoute: SearchRoute,
   CategorySlugRoute: CategorySlugRoute,
   StoreSlugRoute: StoreSlugRoute,
 }

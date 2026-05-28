@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Copy, Trash2, ExternalLink, Plus } from "lucide-react";
+import { Copy, Trash2, ExternalLink, Plus, Pencil, Eye, MessageCircle, TrendingUp } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 
@@ -17,7 +19,16 @@ interface Seller {
   whatsapp_number: string; profile_photo_url: string | null; cover_photo_url: string | null;
   city: string; category: string;
 }
-interface Product { id: string; name: string; price: number; description: string | null; image_url: string | null; }
+interface Product {
+  id: string; name: string; price: number; description: string | null;
+  image_url: string | null; stock_status?: string;
+}
+
+const STOCK_OPTIONS = [
+  { value: "available", label: "Available" },
+  { value: "low_stock", label: "Low stock" },
+  { value: "sold_out", label: "Sold out" },
+];
 
 function Dashboard() {
   const nav = useNavigate();
@@ -26,19 +37,27 @@ function Dashboard() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [clicks, setClicks] = useState(0);
 
-  // Edit fields
   const [bio, setBio] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [profileFile, setProfileFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
 
-  // New product
   const [pName, setPName] = useState("");
   const [pPrice, setPPrice] = useState("");
   const [pDesc, setPDesc] = useState("");
   const [pImg, setPImg] = useState<File | null>(null);
   const [adding, setAdding] = useState(false);
+
+  // Edit modal
+  const [editing, setEditing] = useState<Product | null>(null);
+  const [eName, setEName] = useState("");
+  const [ePrice, setEPrice] = useState("");
+  const [eDesc, setEDesc] = useState("");
+  const [eStock, setEStock] = useState("available");
+  const [eImg, setEImg] = useState<File | null>(null);
+  const [eSaving, setESaving] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -51,6 +70,14 @@ function Dashboard() {
       setBio(s.bio ?? ""); setWhatsapp(s.whatsapp_number);
       const { data: p } = await supabase.from("products").select("*").eq("seller_id", s.id).order("created_at", { ascending: false });
       setProducts((p ?? []) as Product[]);
+      // analytics: total whatsapp clicks (last 7 days)
+      const since = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
+      const { count } = await supabase
+        .from("whatsapp_clicks")
+        .select("id", { count: "exact", head: true })
+        .eq("seller_id", s.id)
+        .gte("created_at", since);
+      setClicks(count ?? 0);
       setLoading(false);
     })();
   }, [nav]);
@@ -104,6 +131,25 @@ function Dashboard() {
     toast.success("Deleted");
   };
 
+  const openEdit = (p: Product) => {
+    setEditing(p);
+    setEName(p.name); setEPrice(String(p.price)); setEDesc(p.description ?? "");
+    setEStock(p.stock_status ?? "available"); setEImg(null);
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    setESaving(true);
+    const updates: any = { name: eName, price: Number(ePrice), description: eDesc, stock_status: eStock };
+    if (eImg) { const url = await uploadImage(eImg, "product"); if (url) updates.image_url = url; }
+    const { error } = await supabase.from("products").update(updates).eq("id", editing.id);
+    setESaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Saved");
+    setProducts(products.map((p) => p.id === editing.id ? { ...p, ...updates } : p));
+    setEditing(null);
+  };
+
   if (loading || !seller) return <div className="p-10 text-center text-muted-foreground">Loading…</div>;
 
   const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/store/${seller.slug}` : "";
@@ -122,6 +168,22 @@ function Dashboard() {
               <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> View store
             </Button>
           </Link>
+        </div>
+
+        {/* Analytics */}
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <div className="rounded-2xl border bg-card p-4 shadow-warm">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <MessageCircle className="h-3.5 w-3.5" /> WhatsApp clicks (7d)
+            </div>
+            <p className="mt-1 font-serif text-3xl text-primary">{clicks}</p>
+          </div>
+          <div className="rounded-2xl border bg-card p-4 shadow-warm">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <TrendingUp className="h-3.5 w-3.5" /> Products live
+            </div>
+            <p className="mt-1 font-serif text-3xl text-primary">{products.length}</p>
+          </div>
         </div>
 
         {/* Share link */}
@@ -174,9 +236,16 @@ function Dashboard() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{p.name}</p>
-                  <p className="text-sm text-primary">₦{Number(p.price).toLocaleString()}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-primary">₦{Number(p.price).toLocaleString()}</p>
+                    {p.stock_status === "sold_out" && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">Sold out</span>}
+                    {p.stock_status === "low_stock" && <span className="rounded-full bg-accent/10 px-2 py-0.5 text-[10px] text-accent">Low stock</span>}
+                  </div>
                 </div>
-                <button onClick={() => deleteProduct(p.id)} className="rounded-full p-2 text-destructive hover:bg-destructive/10">
+                <button onClick={() => openEdit(p)} className="rounded-full p-2 text-foreground hover:bg-muted" aria-label="Edit">
+                  <Pencil className="h-4 w-4" />
+                </button>
+                <button onClick={() => deleteProduct(p.id)} className="rounded-full p-2 text-destructive hover:bg-destructive/10" aria-label="Delete">
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
@@ -189,6 +258,30 @@ function Dashboard() {
           Sign out
         </Button>
       </div>
+
+      {/* Edit dialog */}
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit product</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>Name</Label><Input value={eName} onChange={(e) => setEName(e.target.value)} /></div>
+            <div><Label>Price (₦)</Label><Input type="number" min="0" value={ePrice} onChange={(e) => setEPrice(e.target.value)} /></div>
+            <div>
+              <Label>Stock status</Label>
+              <Select value={eStock} onValueChange={setEStock}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{STOCK_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div><Label>Description</Label><Textarea value={eDesc} onChange={(e) => setEDesc(e.target.value)} /></div>
+            <div><Label>Replace photo (optional)</Label><Input type="file" accept="image/*" onChange={(e) => setEImg(e.target.files?.[0] ?? null)} /></div>
+            <Button onClick={saveEdit} disabled={eSaving} className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
+              {eSaving ? "Saving…" : "Save"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Footer />
     </div>
   );

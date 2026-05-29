@@ -123,7 +123,7 @@ function Index() {
             <Sparkles className="h-3 w-3" /> Kasuwa · Community marketplace
           </div>
           <h1 className="font-serif text-4xl font-medium leading-[1.05] text-white drop-shadow sm:text-6xl">
-            Kasuwa —<br />
+            Kasuwa <br />
             <span className="italic text-secondary">Shop from Northern Nigeria's Best.</span>
           </h1>
           <p className="mx-auto mt-4 max-w-md text-base text-white/85">

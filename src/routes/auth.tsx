@@ -5,6 +5,7 @@ import { TopBar } from "@/components/TopBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({ component: AuthPage });
@@ -34,17 +35,38 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     if (mode === "signup") {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: `${window.location.origin}/register` },
+        options: { emailRedirectTo: `${window.location.origin}/verified` },
       });
-      if (error) toast.error(error.message);
-      else { toast.success("Check your email to confirm — then sign in."); setMode("signin"); }
+      if (error) { toast.error(error.message); setLoading(false); return; }
+      // If email confirmation required, redirect to the verify-email reminder page.
+      if (data.user && !data.session) {
+        setLoading(false);
+        nav({ to: "/verify-email", search: { email } });
+        return;
+      }
+      if (data.user) await routeAfterLogin(data.user.id);
     } else {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) toast.error(error.message);
-      else if (data.user) { toast.success("Welcome back"); await routeAfterLogin(data.user.id); }
+      if (error) {
+        // Supabase returns "Email not confirmed" for unverified accounts.
+        if (error.message.toLowerCase().includes("not confirmed")) {
+          setLoading(false);
+          nav({ to: "/verify-email", search: { email } });
+          return;
+        }
+        toast.error(error.message);
+      } else if (data.user) {
+        if (!data.user.email_confirmed_at) {
+          setLoading(false);
+          nav({ to: "/verify-email", search: { email } });
+          return;
+        }
+        toast.success("Welcome back");
+        await routeAfterLogin(data.user.id);
+      }
     }
     setLoading(false);
   };
@@ -64,7 +86,7 @@ function AuthPage() {
           </div>
           <div>
             <Label htmlFor="pw">Password</Label>
-            <Input id="pw" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+            <PasswordInput id="pw" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
           <Button type="submit" disabled={loading} className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
             {loading ? "…" : mode === "signin" ? "Sign in" : "Create account"}

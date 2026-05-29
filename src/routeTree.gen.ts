@@ -9,6 +9,8 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
+import { Route as VerifiedRouteImport } from './routes/verified'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -18,6 +20,16 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as StoreSlugRouteImport } from './routes/store.$slug'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 
+const VerifyEmailRoute = VerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifiedRoute = VerifiedRouteImport.update({
+  id: '/verified',
+  path: '/verified',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
@@ -66,6 +78,8 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/register': typeof RegisterRoute
   '/search': typeof SearchRoute
+  '/verified': typeof VerifiedRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/category/$slug': typeof CategorySlugRoute
   '/store/$slug': typeof StoreSlugRoute
 }
@@ -76,6 +90,8 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/register': typeof RegisterRoute
   '/search': typeof SearchRoute
+  '/verified': typeof VerifiedRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/category/$slug': typeof CategorySlugRoute
   '/store/$slug': typeof StoreSlugRoute
 }
@@ -87,6 +103,8 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/register': typeof RegisterRoute
   '/search': typeof SearchRoute
+  '/verified': typeof VerifiedRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/category/$slug': typeof CategorySlugRoute
   '/store/$slug': typeof StoreSlugRoute
 }
@@ -99,6 +117,8 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/register'
     | '/search'
+    | '/verified'
+    | '/verify-email'
     | '/category/$slug'
     | '/store/$slug'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +129,8 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/register'
     | '/search'
+    | '/verified'
+    | '/verify-email'
     | '/category/$slug'
     | '/store/$slug'
   id:
@@ -119,6 +141,8 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/register'
     | '/search'
+    | '/verified'
+    | '/verify-email'
     | '/category/$slug'
     | '/store/$slug'
   fileRoutesById: FileRoutesById
@@ -130,12 +154,28 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   RegisterRoute: typeof RegisterRoute
   SearchRoute: typeof SearchRoute
+  VerifiedRoute: typeof VerifiedRoute
+  VerifyEmailRoute: typeof VerifyEmailRoute
   CategorySlugRoute: typeof CategorySlugRoute
   StoreSlugRoute: typeof StoreSlugRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/verify-email': {
+      id: '/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verified': {
+      id: '/verified'
+      path: '/verified'
+      fullPath: '/verified'
+      preLoaderRoute: typeof VerifiedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/search': {
       id: '/search'
       path: '/search'
@@ -202,6 +242,8 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   RegisterRoute: RegisterRoute,
   SearchRoute: SearchRoute,
+  VerifiedRoute: VerifiedRoute,
+  VerifyEmailRoute: VerifyEmailRoute,
   CategorySlugRoute: CategorySlugRoute,
   StoreSlugRoute: StoreSlugRoute,
 }

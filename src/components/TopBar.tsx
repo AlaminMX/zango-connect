@@ -35,7 +35,7 @@ export function TopBar() {
           <img
             src="/sutura-logo.png"
             alt="Sutura Market"
-            className="h-10 w-10 object-contain"
+            className="h-20 w-20 object-contain"
           />
           <div className="flex flex-col leading-none">
             <span className="font-serif text-lg font-bold tracking-wide text-primary" style={{ letterSpacing: '0.08em' }}>

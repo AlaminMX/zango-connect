@@ -87,7 +87,7 @@ function StorePage() {
     else toast.success("Vouched! Thank you 💛");
   };
 
-  const waUrl = buildWhatsAppUrl(seller.whatsapp_number);
+  const waUrl = buildWhatsAppUrl(seller.whatsapp_number, undefined, shareUrl);
 
   return (
     <div className="min-h-screen bg-background pb-32">

@@ -8,8 +8,9 @@ import { SellerCard } from "@/components/SellerCard";
 import { ProductCard } from "@/components/ProductCard";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkles, Search, MapPin } from "lucide-react";
-import { hausaFor, NIGERIAN_CITIES } from "@/lib/categories";
+import { Sparkles, Search, MapPin, Store, ArrowRight } from "lucide-react";
+import { hausaFor, iconFor, NIGERIAN_CITIES } from "@/lib/categories";
+import heroImg from "@/assets/hero-market.jpg";
 
 export const Route = createFileRoute("/")({ component: Index });
 
@@ -86,31 +87,39 @@ function Index() {
     <div className="min-h-screen bg-background">
       <TopBar />
 
-      {/* Hero */}
+      {/* Hero with photo background */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 -z-10 gradient-warm opacity-60" />
+        <div className="absolute inset-0 -z-10">
+          <img
+            src={heroImg}
+            alt="Northern Nigerian market scene with women selling fabrics and food"
+            width={1920}
+            height={1080}
+            className="h-full w-full object-cover"
+          />
+          {/* warm dark overlay for legibility */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/65 via-black/45 to-background" />
+        </div>
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden" style={{ zIndex: -5 }}>
-          <div className="absolute -left-10 top-6 h-72 w-72 rounded-full bg-primary blur-3xl animate-float" style={{ opacity: 0.15 }} />
-          <div className="absolute -bottom-20 -right-10 h-96 w-96 rounded-full bg-secondary blur-3xl animate-float"
-            style={{ opacity: 0.2, animationDuration: "16s", animationDirection: "reverse", animationDelay: "2s" }} />
-          <div className="absolute right-8 top-4 h-56 w-56 rounded-full bg-accent blur-3xl animate-float"
-            style={{ opacity: 0.1, animationDuration: "20s", animationDelay: "4s" }} />
+          <div className="absolute -left-10 top-6 h-72 w-72 rounded-full bg-primary blur-3xl animate-float" style={{ opacity: 0.18 }} />
+          <div className="absolute -bottom-20 -right-10 h-96 w-96 rounded-full bg-rose blur-3xl animate-float"
+            style={{ opacity: 0.18, animationDuration: "16s", animationDirection: "reverse", animationDelay: "2s" }} />
         </div>
 
-        <div className="mx-auto max-w-3xl px-5 pt-10 pb-10 text-center sm:pt-16 sm:pb-14">
-          <div className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-card/70 px-3 py-1 text-xs font-medium text-primary backdrop-blur">
+        <div className="mx-auto max-w-3xl px-5 pt-16 pb-14 text-center sm:pt-24 sm:pb-20">
+          <div className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white backdrop-blur">
             <Sparkles className="h-3 w-3" /> Kasuwa · Community marketplace
           </div>
-          <h1 className="font-serif text-4xl font-medium leading-[1.05] text-foreground sm:text-6xl">
+          <h1 className="font-serif text-4xl font-medium leading-[1.05] text-white drop-shadow sm:text-6xl">
             Kasuwa —<br />
-            <span className="italic text-primary">Shop from Northern Nigeria's Best.</span>
+            <span className="italic text-secondary">Shop from Northern Nigeria's Best.</span>
           </h1>
-          <p className="mx-auto mt-4 max-w-md text-base text-muted-foreground">
+          <p className="mx-auto mt-4 max-w-md text-base text-white/85">
             Discover trusted local sellers, handmade products, fashion, food, and everyday essentials.
           </p>
 
           {/* Search + city filter */}
-          <form onSubmit={submitSearch} className="mx-auto mt-7 flex max-w-xl flex-col gap-2 rounded-3xl border border-border bg-card/90 p-2 shadow-warm-lg backdrop-blur sm:flex-row sm:rounded-full">
+          <form onSubmit={submitSearch} className="mx-auto mt-7 flex max-w-xl flex-col gap-2 rounded-3xl border border-white/20 bg-card/95 p-2 shadow-warm-lg backdrop-blur sm:flex-row sm:rounded-full">
             <div className="flex flex-1 items-center gap-2 rounded-full bg-background px-4 py-2.5">
               <Search className="h-4 w-4 text-muted-foreground" />
               <input
@@ -135,16 +144,27 @@ function Index() {
             </Button>
           </form>
 
-          <div className="mt-5 flex flex-col items-center justify-center gap-2 sm:flex-row">
-            <Link to="/register" className="text-sm text-primary underline">
-              Fara Kasuwanci — List Your Business
+          {/* Real CTA button */}
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link to="/register">
+              <Button
+                size="lg"
+                className="group h-12 rounded-full bg-primary px-7 text-base font-medium text-primary-foreground shadow-warm-lg transition hover:bg-primary/90 hover:shadow-warm active:scale-[0.98]"
+              >
+                <Store className="mr-2 h-5 w-5" />
+                Open Your Store · Fara Kasuwanci
+                <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-0.5" />
+              </Button>
             </Link>
+            <a href="#categories" className="text-sm font-medium text-white/90 underline-offset-4 hover:underline">
+              Browse the market
+            </a>
           </div>
         </div>
       </section>
 
       {/* Categories */}
-      <section id="categories" className="mx-auto max-w-5xl px-5 py-10 scroll-mt-20">
+      <section id="categories" className="mx-auto max-w-5xl px-5 py-12 scroll-mt-20">
         <div className="mb-5 flex items-end justify-between">
           <div>
             <h2 className="font-serif text-2xl">Browse by category</h2>
@@ -152,20 +172,27 @@ function Index() {
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {categories?.map((c) => (
-            <Link
-              key={c.id}
-              to="/category/$slug"
-              params={{ slug: c.slug }}
-              className="shimmer group rounded-2xl border border-border/60 bg-card p-4 shadow-warm transition hover:-translate-y-0.5 hover:shadow-warm-lg"
-            >
-              <div className="relative z-[2] text-3xl">{c.icon_emoji}</div>
-              <div className="relative z-[2] mt-3 font-serif text-base leading-tight">{c.name}</div>
-              {hausaFor(c.name) && (
-                <div className="relative z-[2] text-xs italic text-muted-foreground">{hausaFor(c.name)}</div>
-              )}
-            </Link>
-          ))}
+          {categories?.map((c) => {
+            const { icon: Icon, tint } = iconFor(c.name);
+            return (
+              <Link
+                key={c.id}
+                to="/category/$slug"
+                params={{ slug: c.slug }}
+                className="shimmer group flex items-center gap-3 rounded-2xl border border-border/60 bg-card p-4 shadow-warm transition hover:-translate-y-0.5 hover:shadow-warm-lg hover:ring-1 hover:ring-primary/20"
+              >
+                <div className={`relative z-[2] flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${tint}`}>
+                  <Icon className="h-6 w-6" strokeWidth={2.2} />
+                </div>
+                <div className="relative z-[2] min-w-0">
+                  <div className="truncate font-serif text-base leading-tight">{c.name}</div>
+                  {hausaFor(c.name) && (
+                    <div className="truncate text-xs italic text-muted-foreground">{hausaFor(c.name)}</div>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </section>
 

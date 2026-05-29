@@ -7,7 +7,7 @@ import { Footer } from "@/components/Footer";
 import { SellerCard } from "@/components/SellerCard";
 import { ProductCard } from "@/components/ProductCard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { hausaFor, NIGERIAN_CITIES } from "@/lib/categories";
+import { hausaFor, iconFor, NIGERIAN_CITIES } from "@/lib/categories";
 
 export const Route = createFileRoute("/category/$slug")({ component: CategoryPage });
 
@@ -64,7 +64,14 @@ function CategoryPage() {
       <div className="mx-auto max-w-5xl px-5 py-8">
         <Link to="/" className="text-sm text-muted-foreground hover:text-primary">← Back</Link>
         <div className="mt-4 flex items-center gap-3">
-          <div className="text-4xl">{category?.icon_emoji ?? "🛍️"}</div>
+          {(() => {
+            const { icon: Icon, tint } = iconFor(category?.name);
+            return (
+              <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${tint}`}>
+                <Icon className="h-7 w-7" strokeWidth={2.2} />
+              </div>
+            );
+          })()}
           <div>
             <h1 className="font-serif text-3xl leading-tight">{category?.name ?? "Category"}</h1>
             {hausa && <p className="text-sm italic text-muted-foreground">{hausa}</p>}

@@ -1,10 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
 import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
 import { SellerCard } from "@/components/SellerCard";
+import { BackButton } from "@/components/BackButton";
 import { z } from "zod";
 
 const schema = z.object({
@@ -56,8 +57,9 @@ function SearchPage() {
     <div className="min-h-screen bg-background">
       <TopBar />
       <div className="mx-auto max-w-5xl px-5 py-8">
-        <Link to="/" className="text-sm text-muted-foreground hover:text-primary">← Back</Link>
-        <h1 className="mt-3 font-serif text-3xl">
+        <BackButton fallback="/" />
+
+        <h1 className="mt-4 font-serif text-3xl">
           Results for <span className="italic text-primary">"{q}"</span>
           {city && <span className="text-base font-normal text-muted-foreground"> in {city}</span>}
         </h1>

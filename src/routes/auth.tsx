@@ -44,7 +44,7 @@ function AuthPage() {
     // Listen for PASSWORD_RECOVERY event from magic link
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {
-        setMode("reset");
+        nav({ to: "/reset-password" });
       }
     });
     return () => listener.subscription.unsubscribe();
@@ -90,7 +90,7 @@ function AuthPage() {
 
     } else if (mode === "forgot") {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth`,
+        redirectTo: `${window.location.origin}/reset-password`,
       });
       setLoading(false);
       if (error) { toast.error(error.message); return; }

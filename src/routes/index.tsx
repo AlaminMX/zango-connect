@@ -187,8 +187,8 @@ function Index() {
             <p className="text-xs text-muted-foreground">Zaɓi kasuwa</p>
           </div>
         </div>
-        {/* Horizontal scroll row — matches design */}
-        <div className="-mx-0 flex gap-6 overflow-x-auto px-5 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden justify-start sm:justify-center flex-nowrap">
+        {/* 3-column grid — no scrolling required */}
+        <div className="mx-auto max-w-5xl px-5 grid grid-cols-3 gap-4">
           {categories?.map((c) => {
             const { Component: IconComponent } = iconFor(c.name);
             return (
@@ -196,14 +196,12 @@ function Index() {
                 key={c.id}
                 to="/category/$slug"
                 params={{ slug: c.slug }}
-                className="group flex shrink-0 flex-col items-center gap-2.5 transition"
+                className="group flex flex-col items-center gap-2.5 rounded-2xl border border-[#F0DDD0] bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
               >
-                {/* Circular icon bubble */}
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#FDF3EC] border border-[#F0DDD0] shadow-sm transition-transform duration-200 group-hover:scale-105 group-hover:shadow-md">
-                  <IconComponent size={52} />
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#FDF3EC] transition-transform duration-200 group-hover:scale-105">
+                  <IconComponent size={56} />
                 </div>
-                {/* Label */}
-                <span className="max-w-[72px] text-center text-xs font-medium leading-tight text-foreground">
+                <span className="text-center text-xs font-semibold leading-tight text-foreground">
                   {c.name}
                 </span>
               </Link>

@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
+import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,7 +42,6 @@ function AuthPage() {
         options: { emailRedirectTo: `${window.location.origin}/verified` },
       });
       if (error) { toast.error(error.message); setLoading(false); return; }
-      // If email confirmation required, redirect to the verify-email reminder page.
       if (data.user && !data.session) {
         setLoading(false);
         nav({ to: "/verify-email", search: { email } });
@@ -51,7 +51,6 @@ function AuthPage() {
     } else {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        // Supabase returns "Email not confirmed" for unverified accounts.
         if (error.message.toLowerCase().includes("not confirmed")) {
           setLoading(false);
           nav({ to: "/verify-email", search: { email } });
@@ -74,11 +73,17 @@ function AuthPage() {
   return (
     <div className="min-h-screen bg-background">
       <TopBar />
-      <div className="mx-auto max-w-md px-5 py-12">
-        <h1 className="font-serif text-3xl">{mode === "signin" ? "Welcome back" : "Create your account"}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {mode === "signin" ? "Sign in to manage your store." : "Start your store in minutes."}
-        </p>
+      <div className="mx-auto max-w-md px-5 py-10">
+        {/* Back navigation */}
+        <BackButton fallback="/" />
+
+        <div className="mt-6">
+          <h1 className="font-serif text-3xl">{mode === "signin" ? "Welcome back" : "Create your account"}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {mode === "signin" ? "Sign in to manage your store." : "Start your store in minutes."}
+          </p>
+        </div>
+
         <form onSubmit={submit} className="mt-6 space-y-4 rounded-2xl border bg-card p-6 shadow-warm">
           <div>
             <Label htmlFor="email">Email</Label>

@@ -12,6 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Copy, Trash2, ExternalLink, Plus, Pencil, MessageCircle, TrendingUp } from "lucide-react";
+import { NIGERIAN_CITIES } from "@/lib/categories";
+import { validateNigerianPhone } from "@/lib/whatsapp";
+
+const SELLER_CATEGORIES = [
+  "Food & Drinks", "Fashion", "Beauty", "Home & Living", "Crafts & Art", "Accessories",
+];
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 
@@ -40,6 +46,9 @@ function Dashboard() {
   const [saving, setSaving] = useState(false);
   const [clicks, setClicks] = useState(0);
 
+  const [businessName, setBusinessName] = useState("");
+  const [city, setCity] = useState("");
+  const [category, setCategory] = useState("");
   const [bio, setBio] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [profileFile, setProfileFile] = useState<File | null>(null);
@@ -68,6 +77,7 @@ function Dashboard() {
       if (!s) { nav({ to: "/register" }); return; }
       setSeller(s as Seller);
       setBio(s.bio ?? ""); setWhatsapp(s.whatsapp_number);
+      setBusinessName(s.business_name); setCity(s.city); setCategory(s.category);
       const { data: p } = await supabase.from("products").select("*").eq("seller_id", s.id).order("created_at", { ascending: false });
       setProducts((p ?? []) as Product[]);
       const since = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
@@ -92,10 +102,14 @@ function Dashboard() {
 
   const saveProfile = async () => {
     if (!seller) return;
+    const phoneCheck = validateNigerianPhone(whatsapp);
+    if (!phoneCheck.valid) { toast.error(phoneCheck.error); return; }
+    if (!businessName.trim()) { toast.error("Business name cannot be empty."); return; }
     setSaving(true);
-    const updates: { bio: string; whatsapp_number: string; profile_photo_url?: string; cover_photo_url?: string } = {
-      bio, whatsapp_number: whatsapp,
-    };
+    const updates: {
+      business_name: string; city: string; category: string;
+      bio: string; whatsapp_number: string; profile_photo_url?: string; cover_photo_url?: string;
+    } = { business_name: businessName.trim(), city, category, bio, whatsapp_number: whatsapp };
     if (profileFile) { const url = await uploadImage(profileFile, "profile"); if (url) updates.profile_photo_url = url; }
     if (coverFile) { const url = await uploadImage(coverFile, "cover"); if (url) updates.cover_photo_url = url; }
     const { error } = await supabase.from("sellers").update(updates).eq("id", seller.id);
@@ -205,8 +219,27 @@ function Dashboard() {
         <section className="mt-6 rounded-2xl border bg-card p-6 shadow-warm">
           <h2 className="mb-4 font-serif text-xl">Edit profile</h2>
           <div className="space-y-4">
+            <div><Label>Business name</Label><Input value={businessName} required onChange={(e) => setBusinessName(e.target.value)} /></div>
+            <div>
+              <Label>City</Label>
+              <Select value={city} onValueChange={setCity}>
+                <SelectTrigger><SelectValue placeholder="Select city" /></SelectTrigger>
+                <SelectContent>{NIGERIAN_CITIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Category</Label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                <SelectContent>{SELLER_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
             <div><Label>Bio</Label><Textarea value={bio} maxLength={150} onChange={(e) => setBio(e.target.value)} /></div>
-            <div><Label>WhatsApp number</Label><Input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} /></div>
+            <div>
+              <Label>WhatsApp number</Label>
+              <Input value={whatsapp} placeholder="e.g. 08012345678" onChange={(e) => setWhatsapp(e.target.value)} />
+              <p className="mt-1 text-xs text-muted-foreground">Enter a valid Nigerian number (e.g. 08012345678)</p>
+            </div>
             <div><Label>Profile photo {seller.profile_photo_url && "(replace)"}</Label><Input type="file" accept="image/*" onChange={(e) => setProfileFile(e.target.files?.[0] ?? null)} /></div>
             <div><Label>Cover photo {seller.cover_photo_url && "(replace)"}</Label><Input type="file" accept="image/*" onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)} /></div>
             <Button onClick={saveProfile} disabled={saving} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90">

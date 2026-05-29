@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
 import { Footer } from "@/components/Footer";
+import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Copy, Trash2, ExternalLink, Plus, Pencil, Eye, MessageCircle, TrendingUp } from "lucide-react";
+import { Copy, Trash2, ExternalLink, Plus, Pencil, MessageCircle, TrendingUp } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 
@@ -50,7 +51,6 @@ function Dashboard() {
   const [pImg, setPImg] = useState<File | null>(null);
   const [adding, setAdding] = useState(false);
 
-  // Edit modal
   const [editing, setEditing] = useState<Product | null>(null);
   const [eName, setEName] = useState("");
   const [ePrice, setEPrice] = useState("");
@@ -70,7 +70,6 @@ function Dashboard() {
       setBio(s.bio ?? ""); setWhatsapp(s.whatsapp_number);
       const { data: p } = await supabase.from("products").select("*").eq("seller_id", s.id).order("created_at", { ascending: false });
       setProducts((p ?? []) as Product[]);
-      // analytics: total whatsapp clicks (last 7 days)
       const since = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
       const { count } = await supabase
         .from("whatsapp_clicks")
@@ -158,8 +157,13 @@ function Dashboard() {
     <div className="min-h-screen bg-background">
       <TopBar />
       <div className="mx-auto max-w-2xl px-5 py-8">
-        <div className="flex items-center justify-between">
-          <div>
+
+        {/* ---------------------------------------------------------------- */}
+        {/* Header — back button + title + view store                        */}
+        {/* ---------------------------------------------------------------- */}
+        <div className="flex items-center gap-3">
+          <BackButton fallback="/" />
+          <div className="flex-1">
             <h1 className="font-serif text-3xl">My Dashboard</h1>
             <p className="text-sm text-muted-foreground">{seller.business_name}</p>
           </div>

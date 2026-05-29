@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { slugify } from "@/lib/whatsapp";
+import { slugify, validateNigerianPhone } from "@/lib/whatsapp";
 import { Check, Copy, Share2 } from "lucide-react";
 import { NIGERIAN_CITIES } from "@/lib/categories";
 
@@ -63,6 +63,8 @@ function Register() {
   const submitStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userId) return;
+    const phoneCheck = validateNigerianPhone(whatsapp);
+    if (!phoneCheck.valid) { toast.error(phoneCheck.error); return; }
     setBusy(true);
     const baseSlug = slugify(businessName);
     let slug = baseSlug;

@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
+import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +23,6 @@ function Register() {
   const [step, setStep] = useState(1);
   const [busy, setBusy] = useState(false);
 
-  // Step 1 fields
   const [name, setName] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -31,11 +31,9 @@ function Register() {
   const [category, setCategory] = useState("");
   const [bio, setBio] = useState("");
 
-  // Step 2
   const [profileFile, setProfileFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
 
-  // Step 3
   const [pName, setPName] = useState("");
   const [pPrice, setPPrice] = useState("");
   const [pDesc, setPDesc] = useState("");
@@ -119,6 +117,13 @@ function Register() {
     <div className="min-h-screen bg-background">
       <TopBar />
       <div className="mx-auto max-w-xl px-5 py-8">
+        {/* Back button — only show on step 1 (not mid-flow) */}
+        {step === 1 && (
+          <div className="mb-6">
+            <BackButton fallback="/" />
+          </div>
+        )}
+
         <h1 className="font-serif text-3xl">Fara Kasuwanci — Start Your Store</h1>
         <p className="mt-1 text-sm text-muted-foreground">Welcome to the community · Step {Math.min(step, 3)} of 3</p>
 
@@ -156,7 +161,8 @@ function Register() {
               </div>
               <div>
                 <Label>Category</Label>
-                <Select value={category} onValueChange={setCategory}><SelectTrigger><SelectValue placeholder="Choose category" /></SelectTrigger>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger><SelectValue placeholder="Choose category" /></SelectTrigger>
                   <SelectContent>{categories.map(c => <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>

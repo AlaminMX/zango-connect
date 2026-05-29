@@ -12,7 +12,9 @@ export function Footer() {
           <nav className="flex gap-6 text-sm text-muted-foreground">
             <Link to="/" className="hover:text-primary">About</Link>
             <Link to="/register" className="hover:text-primary">Join as Seller</Link>
-            <a href="https://wa.me/2348000000000" className="hover:text-primary">WhatsApp Support</a>
+            <a href="https://wa.me/2347083958881" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
+              WhatsApp Support
+            </a>
           </nav>
         </div>
       </div>

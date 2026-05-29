@@ -5,16 +5,15 @@ import { TopBar } from "@/components/TopBar";
 import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
 import { SellerCard } from "@/components/SellerCard";
-import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 
 const schema = z.object({
-  q: fallback(z.string(), "").default(""),
-  city: fallback(z.string().optional(), undefined),
+  q: z.string().catch("").default(""),
+  city: z.string().optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/search")({
-  validateSearch: zodValidator(schema),
+  validateSearch: (search) => schema.parse(search),
   component: SearchPage,
 });
 

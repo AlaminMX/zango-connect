@@ -1,12 +1,24 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Search, User } from "lucide-react";
-import { useState } from "react";
+import { Search, User, LayoutDashboard } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 export function TopBar() {
   const nav = useNavigate();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setIsLoggedIn(!!data.session);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,9 +38,9 @@ export function TopBar() {
           <button aria-label="Search" onClick={() => setOpen((v) => !v)} className="rounded-full p-2 hover:bg-muted">
             <Search className="h-5 w-5 text-foreground/70" />
           </button>
-          <Link to="/auth">
+          <Link to={isLoggedIn ? "/dashboard" : "/auth"} aria-label={isLoggedIn ? "Dashboard" : "Sign in"}>
             <Button variant="ghost" size="icon" className="rounded-full">
-              <User className="h-5 w-5" />
+              {isLoggedIn ? <LayoutDashboard className="h-5 w-5" /> : <User className="h-5 w-5" />}
             </Button>
           </Link>
         </div>

@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          admin_id: string | null
+          created_at: string
+          id: string
+          metadata: Json
+          target_id: string | null
+          target_type: string
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          target_id?: string | null
+          target_type: string
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          target_id?: string | null
+          target_type?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           icon_emoji: string
@@ -40,6 +70,8 @@ export type Database = {
       }
       products: {
         Row: {
+          blocked_at: string | null
+          blocked_reason: string | null
           created_at: string
           description: string | null
           id: string
@@ -47,9 +79,12 @@ export type Database = {
           name: string
           price: number
           seller_id: string
+          status: string
           stock_status: string
         }
         Insert: {
+          blocked_at?: string | null
+          blocked_reason?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -57,9 +92,12 @@ export type Database = {
           name: string
           price: number
           seller_id: string
+          status?: string
           stock_status?: string
         }
         Update: {
+          blocked_at?: string | null
+          blocked_reason?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -67,6 +105,7 @@ export type Database = {
           name?: string
           price?: number
           seller_id?: string
+          status?: string
           stock_status?: string
         }
         Relationships: [
@@ -79,9 +118,44 @@ export type Database = {
           },
         ]
       }
+      seller_notices: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          message: string
+          read_at: string | null
+          seller_id: string
+          severity: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          message: string
+          read_at?: string | null
+          seller_id: string
+          severity?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          message?: string
+          read_at?: string | null
+          seller_id?: string
+          severity?: string
+          title?: string
+        }
+        Relationships: []
+      }
       sellers: {
         Row: {
           bio: string | null
+          blocked_at: string | null
+          blocked_reason: string | null
           business_name: string
           category: string
           city: string
@@ -93,11 +167,15 @@ export type Database = {
           profile_photo_url: string | null
           rating: number
           slug: string
+          status: string
+          subscription_expires_at: string | null
           user_id: string
           whatsapp_number: string
         }
         Insert: {
           bio?: string | null
+          blocked_at?: string | null
+          blocked_reason?: string | null
           business_name: string
           category: string
           city: string
@@ -109,11 +187,15 @@ export type Database = {
           profile_photo_url?: string | null
           rating?: number
           slug: string
+          status?: string
+          subscription_expires_at?: string | null
           user_id: string
           whatsapp_number: string
         }
         Update: {
           bio?: string | null
+          blocked_at?: string | null
+          blocked_reason?: string | null
           business_name?: string
           category?: string
           city?: string
@@ -125,6 +207,8 @@ export type Database = {
           profile_photo_url?: string | null
           rating?: number
           slug?: string
+          status?: string
+          subscription_expires_at?: string | null
           user_id?: string
           whatsapp_number?: string
         }

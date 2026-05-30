@@ -11,20 +11,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Copy, Trash2, ExternalLink, Plus, Pencil, MessageCircle, TrendingUp } from "lucide-react";
+import { Copy, Trash2, ExternalLink, Plus, Pencil, MessageCircle, TrendingUp, ShieldAlert } from "lucide-react";
 import { NIGERIAN_CITIES } from "@/lib/categories";
 import { validateNigerianPhone } from "@/lib/whatsapp";
+import { StatusBanner } from "@/components/dashboard/StatusBanner";
+import { NoticeCard, type Notice } from "@/components/dashboard/NoticeCard";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 
 interface Seller {
   id: string; slug: string; business_name: string; bio: string | null;
   whatsapp_number: string; profile_photo_url: string | null; cover_photo_url: string | null;
-  city: string; category: string;
+  city: string; category: string; status: string;
 }
 interface Product {
   id: string; name: string; price: number; description: string | null;
-  image_url: string | null; stock_status?: string;
+  image_url: string | null; stock_status?: string; status?: string;
 }
 
 const STOCK_OPTIONS = [
@@ -42,6 +44,8 @@ function Dashboard() {
   const [saving, setSaving] = useState(false);
   const [clicks, setClicks] = useState(0);
   const [categories, setCategories] = useState<{ name: string }[]>([]);
+  const [notices, setNotices] = useState<Notice[]>([]);
+
 
   const [businessName, setBusinessName] = useState("");
   const [city, setCity] = useState("");
@@ -85,6 +89,13 @@ function Dashboard() {
         .eq("seller_id", s.id)
         .gte("created_at", since);
       setClicks(count ?? 0);
+      const { data: nl } = await supabase
+        .from("seller_notices")
+        .select("id, title, message, severity, created_at, read_at")
+        .eq("seller_id", s.id)
+        .is("read_at", null)
+        .order("created_at", { ascending: false });
+      setNotices((nl ?? []) as Notice[]);
       setLoading(false);
     })();
   }, [nav]);
@@ -186,6 +197,13 @@ function Dashboard() {
           </Link>
         </div>
 
+        <StatusBanner status={seller.status ?? "active"} />
+        {notices.map((n) => (
+          <NoticeCard key={n.id} notice={n} onRead={(id) => setNotices((prev) => prev.filter((x) => x.id !== id))} />
+        ))}
+
+
+
         {/* Analytics */}
         <div className="mt-6 grid grid-cols-2 gap-3">
           <div className="rounded-2xl border bg-card p-4 shadow-warm">
@@ -271,8 +289,13 @@ function Dashboard() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{p.name}</p>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm text-primary">₦{Number(p.price).toLocaleString()}</p>
+                    {p.status === "blocked" && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-medium text-destructive">
+                        <ShieldAlert className="h-3 w-3" /> Blocked by Administration
+                      </span>
+                    )}
                     {p.stock_status === "sold_out" && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">Sold out</span>}
                     {p.stock_status === "low_stock" && <span className="rounded-full bg-accent/10 px-2 py-0.5 text-[10px] text-accent">Low stock</span>}
                   </div>

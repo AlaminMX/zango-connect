@@ -11,9 +11,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Copy, Trash2, ExternalLink, Plus, Pencil, MessageCircle, TrendingUp } from "lucide-react";
+import { Copy, Trash2, ExternalLink, Plus, Pencil, MessageCircle, TrendingUp, ShieldAlert } from "lucide-react";
 import { NIGERIAN_CITIES } from "@/lib/categories";
 import { validateNigerianPhone } from "@/lib/whatsapp";
+import { StatusBanner } from "@/components/dashboard/StatusBanner";
+import { NoticeCard, type Notice } from "@/components/dashboard/NoticeCard";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 

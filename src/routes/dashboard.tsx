@@ -289,8 +289,13 @@ function Dashboard() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{p.name}</p>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm text-primary">₦{Number(p.price).toLocaleString()}</p>
+                    {p.status === "blocked" && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-medium text-destructive">
+                        <ShieldAlert className="h-3 w-3" /> Blocked by Administration
+                      </span>
+                    )}
                     {p.stock_status === "sold_out" && <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">Sold out</span>}
                     {p.stock_status === "low_stock" && <span className="rounded-full bg-accent/10 px-2 py-0.5 text-[10px] text-accent">Low stock</span>}
                   </div>

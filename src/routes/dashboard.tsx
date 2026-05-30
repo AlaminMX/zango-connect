@@ -197,6 +197,13 @@ function Dashboard() {
           </Link>
         </div>
 
+        <StatusBanner status={seller.status ?? "active"} />
+        {notices.map((n) => (
+          <NoticeCard key={n.id} notice={n} onRead={(id) => setNotices((prev) => prev.filter((x) => x.id !== id))} />
+        ))}
+
+
+
         {/* Analytics */}
         <div className="mt-6 grid grid-cols-2 gap-3">
           <div className="rounded-2xl border bg-card p-4 shadow-warm">

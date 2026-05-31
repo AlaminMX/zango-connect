@@ -1,3 +1,12 @@
+/**
+ * register.tsx
+ * Multi-step seller registration with:
+ *  • Strict field validation before each step advance.
+ *  • Previous / Next navigation with data preserved between steps.
+ *  • Clear inline validation messages.
+ *  • Loading animation during saves.
+ */
+
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,10 +19,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { slugify, validateNigerianPhone } from "@/lib/whatsapp";
-import { Check, Copy, Share2 } from "lucide-react";
+import { Check, Copy, Share2, ChevronLeft, ChevronRight, Loader2, AlertCircle } from "lucide-react";
 import { NIGERIAN_CITIES } from "@/lib/categories";
 
 export const Route = createFileRoute("/register")({ component: Register });
+
+// Validation error map
+type Errors = Record<string, string>;
+
+function FieldError({ msg }: { msg?: string }) {
+  if (!msg) return null;
+  return (
+    <p className="mt-1 flex items-center gap-1 text-xs text-destructive">
+      <AlertCircle className="h-3 w-3" /> {msg}
+    </p>
+  );
+}
 
 function Register() {
   const nav = useNavigate();
@@ -22,7 +43,9 @@ function Register() {
   const [sellerSlug, setSellerSlug] = useState<string | null>(null);
   const [step, setStep] = useState(1);
   const [busy, setBusy] = useState(false);
+  const [errors, setErrors] = useState<Errors>({});
 
+  // Step 1 fields
   const [name, setName] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -31,9 +54,11 @@ function Register() {
   const [category, setCategory] = useState("");
   const [bio, setBio] = useState("");
 
+  // Step 2 fields
   const [profileFile, setProfileFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
 
+  // Step 3 fields
   const [pName, setPName] = useState("");
   const [pPrice, setPPrice] = useState("");
   const [pDesc, setPDesc] = useState("");
@@ -45,7 +70,8 @@ function Register() {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) { nav({ to: "/auth" }); return; }
       setUserId(data.user.id);
-      const { data: existing } = await supabase.from("sellers").select("id, slug").eq("user_id", data.user.id).maybeSingle();
+      const { data: existing } = await supabase
+        .from("sellers").select("id, slug").eq("user_id", data.user.id).maybeSingle();
       if (existing) { setSellerId(existing.id); setSellerSlug(existing.slug); setStep(3); }
     });
     supabase.from("categories").select("name").order("sort_order").then(({ data }) => setCategories(data ?? []));
@@ -60,12 +86,46 @@ function Register() {
     return supabase.storage.from("sutura").getPublicUrl(path).data.publicUrl;
   };
 
-  const submitStep1 = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // ── Step 1 validation ──
+  const validateStep1 = (): Errors => {
+    const e: Errors = {};
+    if (!businessName.trim()) e.businessName = "Business name is required";
+    if (!name.trim())         e.name         = "Your name is required";
+    if (!whatsapp.trim()) {
+      e.whatsapp = "WhatsApp number is required";
+    } else {
+      const check = validateNigerianPhone(whatsapp);
+      if (!check.valid) e.whatsapp = check.error ?? "Invalid phone number";
+    }
+    if (!city) e.city = "Please choose a city";
+    if (city === "Other" && !otherCity.trim()) e.otherCity = "Please type your city";
+    if (!category) e.category = "Please choose a category";
+    return e;
+  };
+
+  // ── Step 2 validation ──
+  const validateStep2 = (): Errors => {
+    const e: Errors = {};
+    if (!profileFile) e.profileFile = "A profile photo is required";
+    return e;
+  };
+
+  // ── Step 3 validation ──
+  const validateStep3 = (): Errors => {
+    const e: Errors = {};
+    if (!pName.trim())               e.pName  = "Product name is required";
+    if (!pPrice || Number(pPrice) <= 0) e.pPrice = "Enter a valid price greater than 0";
+    return e;
+  };
+
+  const submitStep1 = async () => {
+    const errs = validateStep1();
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    setErrors({});
     if (!userId) return;
-    const phoneCheck = validateNigerianPhone(whatsapp);
-    if (!phoneCheck.valid) { toast.error(phoneCheck.error); return; }
     setBusy(true);
+    const phoneCheck = validateNigerianPhone(whatsapp);
+    if (!phoneCheck.valid) { toast.error(phoneCheck.error); setBusy(false); return; }
     const baseSlug = slugify(businessName);
     let slug = baseSlug;
     let attempt = 0;
@@ -76,7 +136,7 @@ function Register() {
     }
     const finalCity = city === "Other" ? otherCity.trim() : city;
     const { data, error } = await supabase.from("sellers").insert({
-      user_id: userId, name, business_name: businessName, slug,
+      user_id: userId, name, business_name: businessName.trim(), slug,
       whatsapp_number: whatsapp, city: finalCity, category, bio,
     }).select().single();
     setBusy(false);
@@ -85,11 +145,14 @@ function Register() {
   };
 
   const submitStep2 = async () => {
+    const errs = validateStep2();
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    setErrors({});
     if (!sellerId) return;
     setBusy(true);
     const updates: { profile_photo_url?: string; cover_photo_url?: string } = {};
     if (profileFile) { const url = await uploadImage(profileFile, "profile"); if (url) updates.profile_photo_url = url; }
-    if (coverFile) { const url = await uploadImage(coverFile, "cover"); if (url) updates.cover_photo_url = url; }
+    if (coverFile)   { const url = await uploadImage(coverFile,   "cover");   if (url) updates.cover_photo_url   = url; }
     if (Object.keys(updates).length) {
       const { error } = await supabase.from("sellers").update(updates).eq("id", sellerId);
       if (error) { toast.error(error.message); setBusy(false); return; }
@@ -99,12 +162,15 @@ function Register() {
 
   const submitStep3 = async (e: React.FormEvent) => {
     e.preventDefault();
+    const errs = validateStep3();
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    setErrors({});
     if (!sellerId) return;
     setBusy(true);
     let image_url: string | null = null;
     if (pImg) image_url = await uploadImage(pImg, "product");
     const { error } = await supabase.from("products").insert({
-      seller_id: sellerId, name: pName, price: Number(pPrice), description: pDesc, image_url,
+      seller_id: sellerId, name: pName.trim(), price: Number(pPrice), description: pDesc, image_url,
     });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
@@ -113,104 +179,188 @@ function Register() {
     setStep(4);
   };
 
-  const shareUrl = sellerSlug && typeof window !== "undefined" ? `${window.location.origin}/store/${sellerSlug}` : "";
+  const shareUrl = sellerSlug && typeof window !== "undefined"
+    ? `${window.location.origin}/store/${sellerSlug}` : "";
 
   return (
     <div className="min-h-screen bg-background">
       <TopBar />
       <div className="mx-auto max-w-xl px-5 py-8">
-        {/* Back button — only show on step 1 (not mid-flow) */}
         {step === 1 && (
-          <div className="mb-6">
-            <BackButton fallback="/" />
-          </div>
+          <div className="mb-6"><BackButton fallback="/" /></div>
         )}
 
         <h1 className="font-serif text-3xl">Fara Kasuwanci — Start Your Store</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Welcome to the community · Step {Math.min(step, 3)} of 3</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Welcome to the community · Step {Math.min(step, 3)} of 3
+        </p>
 
+        {/* Progress bar */}
         <div className="mt-4 flex gap-1.5">
           {[1, 2, 3].map((n) => (
-            <div key={n} className={`h-1.5 flex-1 rounded-full ${step >= n ? "bg-primary" : "bg-muted"}`} />
+            <div key={n} className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${step >= n ? "bg-primary" : "bg-muted"}`} />
           ))}
         </div>
 
         <div className="mt-8 rounded-2xl border bg-card p-6 shadow-warm">
+
+          {/* ── Step 1: Business info ── */}
           {step === 1 && (
-            <form onSubmit={submitStep1} className="space-y-4">
+            <div className="space-y-4">
               <h2 className="font-serif text-xl">Business info</h2>
-              <div><Label>Business name</Label><Input required value={businessName} onChange={(e) => setBusinessName(e.target.value)} /></div>
-              <div><Label>Your name</Label><Input required value={name} onChange={(e) => setName(e.target.value)} /></div>
-              <div><Label>WhatsApp number</Label><Input required placeholder="+234..." value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} /></div>
+
               <div>
-                <Label>City</Label>
+                <Label>Business name *</Label>
+                <Input value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="e.g. Zainab's Kitchen" />
+                <FieldError msg={errors.businessName} />
+              </div>
+
+              <div>
+                <Label>Your name *</Label>
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Zainab Musa" />
+                <FieldError msg={errors.name} />
+              </div>
+
+              <div>
+                <Label>WhatsApp number *</Label>
+                <Input placeholder="+234… or 0801…" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
+                <FieldError msg={errors.whatsapp} />
+              </div>
+
+              <div>
+                <Label>City *</Label>
                 <Select value={city} onValueChange={(v) => { setCity(v); if (v !== "Other") setOtherCity(""); }}>
-                  <SelectTrigger><SelectValue placeholder="Choose city" /></SelectTrigger>
+                  <SelectTrigger className={errors.city ? "border-destructive" : ""}>
+                    <SelectValue placeholder="Choose city" />
+                  </SelectTrigger>
                   <SelectContent>
                     {NIGERIAN_CITIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                <FieldError msg={errors.city} />
                 {city === "Other" && (
-                  <Input
-                    autoFocus
-                    required
-                    placeholder="Type your city"
-                    value={otherCity}
-                    onChange={(e) => setOtherCity(e.target.value)}
-                    className="mt-2"
-                  />
+                  <Input autoFocus placeholder="Type your city" value={otherCity}
+                    onChange={(e) => setOtherCity(e.target.value)} className="mt-2" />
                 )}
+                <FieldError msg={errors.otherCity} />
               </div>
+
               <div>
-                <Label>Category</Label>
+                <Label>Category *</Label>
                 <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger><SelectValue placeholder="Choose category" /></SelectTrigger>
-                  <SelectContent>{categories.map(c => <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>)}</SelectContent>
+                  <SelectTrigger className={errors.category ? "border-destructive" : ""}>
+                    <SelectValue placeholder="Choose category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((c) => <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>)}
+                  </SelectContent>
                 </Select>
+                <FieldError msg={errors.category} />
               </div>
-              <div><Label>Short bio (max 150 chars)</Label><Textarea maxLength={150} value={bio} onChange={(e) => setBio(e.target.value)} /></div>
-              <Button
-                type="submit"
-                disabled={busy || !city || !category || (city === "Other" && !otherCity.trim())}
-                className="w-full rounded-full bg-primary py-6 text-base text-primary-foreground hover:bg-primary/90"
-              >
-                {busy ? "Saving…" : "Open My Store →"}
+
+              <div>
+                <Label>Short bio (max 150 chars)</Label>
+                <Textarea maxLength={150} value={bio} onChange={(e) => setBio(e.target.value)}
+                  placeholder="Tell customers what you sell…" />
+                <p className="mt-1 text-right text-xs text-muted-foreground">{bio.length}/150</p>
+              </div>
+
+              <Button onClick={submitStep1} disabled={busy}
+                className="w-full rounded-full bg-primary py-6 text-base text-primary-foreground hover:bg-primary/90">
+                {busy
+                  ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…</>
+                  : <>Next — Upload photos <ChevronRight className="ml-1.5 h-4 w-4" /></>}
               </Button>
-            </form>
+            </div>
           )}
 
+          {/* ── Step 2: Photos ── */}
           {step === 2 && (
             <div className="space-y-4">
               <h2 className="font-serif text-xl">Upload photos</h2>
-              <div><Label>Profile photo</Label><Input type="file" accept="image/*" onChange={(e) => setProfileFile(e.target.files?.[0] ?? null)} /></div>
-              <div><Label>Cover photo (optional)</Label><Input type="file" accept="image/*" onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)} /></div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep(3)} className="flex-1 rounded-full">Skip</Button>
+
+              <div>
+                <Label>Profile photo *</Label>
+                <Input type="file" accept="image/*"
+                  onChange={(e) => { setProfileFile(e.target.files?.[0] ?? null); setErrors((prev) => ({ ...prev, profileFile: "" })); }}
+                  className={errors.profileFile ? "border-destructive" : ""}
+                />
+                <FieldError msg={errors.profileFile} />
+                {profileFile && <p className="mt-1 text-xs text-muted-foreground">✓ {profileFile.name}</p>}
+              </div>
+
+              <div>
+                <Label>Cover photo <span className="text-muted-foreground">(optional)</span></Label>
+                <Input type="file" accept="image/*"
+                  onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)}
+                />
+                {coverFile && <p className="mt-1 text-xs text-muted-foreground">✓ {coverFile.name}</p>}
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <Button variant="outline" onClick={() => setStep(1)} className="flex-1 rounded-full">
+                  <ChevronLeft className="mr-1 h-4 w-4" /> Previous
+                </Button>
                 <Button onClick={submitStep2} disabled={busy} className="flex-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
-                  {busy ? "Uploading…" : "Continue"}
+                  {busy
+                    ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading…</>
+                    : <>Next <ChevronRight className="ml-1 h-4 w-4" /></>}
                 </Button>
               </div>
             </div>
           )}
 
+          {/* ── Step 3: First product ── */}
           {step === 3 && (
             <form onSubmit={submitStep3} className="space-y-4">
               <h2 className="font-serif text-xl">Add your first product</h2>
-              <div><Label>Product name</Label><Input required value={pName} onChange={(e) => setPName(e.target.value)} /></div>
-              <div><Label>Price (₦)</Label><Input required type="number" min="0" value={pPrice} onChange={(e) => setPPrice(e.target.value)} /></div>
-              <div><Label>Product photo</Label><Input type="file" accept="image/*" onChange={(e) => setPImg(e.target.files?.[0] ?? null)} /></div>
-              <div><Label>Short description</Label><Textarea value={pDesc} onChange={(e) => setPDesc(e.target.value)} /></div>
-              <Button type="submit" disabled={busy} className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
-                {busy ? "Adding…" : "Add Product"}
-              </Button>
+
+              <div>
+                <Label>Product name *</Label>
+                <Input value={pName} onChange={(e) => { setPName(e.target.value); setErrors((p) => ({ ...p, pName: "" })); }}
+                  className={errors.pName ? "border-destructive" : ""} placeholder="e.g. Suya Plate" />
+                <FieldError msg={errors.pName} />
+              </div>
+
+              <div>
+                <Label>Price (₦) *</Label>
+                <Input type="number" min="1" value={pPrice}
+                  onChange={(e) => { setPPrice(e.target.value); setErrors((p) => ({ ...p, pPrice: "" })); }}
+                  className={errors.pPrice ? "border-destructive" : ""} placeholder="e.g. 2500" />
+                <FieldError msg={errors.pPrice} />
+              </div>
+
+              <div>
+                <Label>Product photo</Label>
+                <Input type="file" accept="image/*" onChange={(e) => setPImg(e.target.files?.[0] ?? null)} />
+              </div>
+
+              <div>
+                <Label>Short description</Label>
+                <Textarea value={pDesc} onChange={(e) => setPDesc(e.target.value)} placeholder="What makes this product special?" />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <Button type="button" variant="outline" onClick={() => setStep(2)} className="flex-1 rounded-full">
+                  <ChevronLeft className="mr-1 h-4 w-4" /> Previous
+                </Button>
+                <Button type="submit" disabled={busy} className="flex-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
+                  {busy
+                    ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding…</>
+                    : <>Add Product <ChevronRight className="ml-1 h-4 w-4" /></>}
+                </Button>
+              </div>
+
               {sellerSlug && (
-                <Link to="/store/$slug" params={{ slug: sellerSlug }} className="block text-center text-sm text-muted-foreground underline">
+                <Link to="/store/$slug" params={{ slug: sellerSlug }}
+                  className="block text-center text-sm text-muted-foreground underline">
                   Skip — view my store
                 </Link>
               )}
             </form>
           )}
 
+          {/* ── Step 4: Completion ── */}
           {step === 4 && sellerSlug && (
             <div className="space-y-5 text-center">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -231,7 +381,8 @@ function Register() {
               >
                 <Share2 className="h-4 w-4" /> Share on WhatsApp
               </a>
-              <Link to="/store/$slug" params={{ slug: sellerSlug }} className="block text-sm text-primary underline">
+              <Link to="/store/$slug" params={{ slug: sellerSlug }}
+                className="block text-sm text-primary underline">
                 View my store →
               </Link>
             </div>

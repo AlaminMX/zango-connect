@@ -67,16 +67,17 @@ export const adminListCitiesWithStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.supabase, context.userId);
-    const { data, error } = await supabaseAdmin
-      .from("cities_with_stats" as any)
+    const { data, error } = await (supabaseAdmin as any)
+      .from("cities_with_stats")
       .select("*")
       .order("sort_order");
     if (error) throw new Error(error.message);
-    return (data ?? []) as Array<{
+    return (data ?? []) as unknown as Array<{
       id: string; name: string; state: string; slug: string; is_active: boolean; sort_order: number;
       sellers_count: number; sellers_added_30d: number; products_count: number; products_added_30d: number;
     }>;
   });
+
 
 const upsertSchema = z.object({
   id: z.string().uuid().optional(),

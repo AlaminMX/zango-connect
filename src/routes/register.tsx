@@ -135,9 +135,12 @@ function Register() {
       attempt++; slug = `${baseSlug}-${Math.floor(Math.random() * 999)}`;
     }
     const finalCity = city === "Other" ? otherCity.trim() : city;
+    // Resolve city_id from cities_of_business so the new verification workflow + city pages work.
+    const { data: cityRow } = await supabase
+      .from("cities_of_business").select("id").ilike("name", finalCity).maybeSingle();
     const { data, error } = await supabase.from("sellers").insert({
       user_id: userId, name, business_name: businessName.trim(), slug,
-      whatsapp_number: whatsapp, city: finalCity, category, bio,
+      whatsapp_number: whatsapp, city: finalCity, city_id: cityRow?.id ?? null, category, bio,
     }).select().single();
     setBusy(false);
     if (error) { toast.error(error.message); return; }

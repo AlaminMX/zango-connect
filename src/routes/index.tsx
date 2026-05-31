@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sparkles, Search, MapPin, Store, ArrowRight, Heart } from "lucide-react";
 import { iconFor, NIGERIAN_CITIES } from "@/lib/categories";
+import { ExploreCities } from "@/components/ExploreCities";
 import { getWishlist } from "@/components/ProductCard";
 import heroImg from "@/assets/hero-market.jpg";
 
@@ -277,6 +278,9 @@ function Index() {
               })}
         </div>
       </section>
+
+      {/* Explore by City */}
+      <ExploreCities />
 
       {/* ------------------------------------------------------------------ */}
       {/* New sellers                                                         */}

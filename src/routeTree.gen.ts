@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as VerifiedRouteImport } from './routes/verified'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SellersRouteImport } from './routes/sellers'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -22,6 +23,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StoreSlugRouteImport } from './routes/store.$slug'
+import { Route as CitySlugRouteImport } from './routes/city.$slug'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 
 const WishlistRoute = WishlistRouteImport.update({
@@ -37,6 +39,11 @@ const VerifyEmailRoute = VerifyEmailRouteImport.update({
 const VerifiedRoute = VerifiedRouteImport.update({
   id: '/verified',
   path: '/verified',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SellersRoute = SellersRouteImport.update({
@@ -89,6 +96,11 @@ const StoreSlugRoute = StoreSlugRouteImport.update({
   path: '/store/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CitySlugRoute = CitySlugRouteImport.update({
+  id: '/city/$slug',
+  path: '/city/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CategorySlugRoute = CategorySlugRouteImport.update({
   id: '/category/$slug',
   path: '/category/$slug',
@@ -105,10 +117,12 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
   '/sellers': typeof SellersRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/verified': typeof VerifiedRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wishlist': typeof WishlistRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/city/$slug': typeof CitySlugRoute
   '/store/$slug': typeof StoreSlugRoute
 }
 export interface FileRoutesByTo {
@@ -121,10 +135,12 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
   '/sellers': typeof SellersRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/verified': typeof VerifiedRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wishlist': typeof WishlistRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/city/$slug': typeof CitySlugRoute
   '/store/$slug': typeof StoreSlugRoute
 }
 export interface FileRoutesById {
@@ -138,10 +154,12 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
   '/sellers': typeof SellersRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/verified': typeof VerifiedRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wishlist': typeof WishlistRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/city/$slug': typeof CitySlugRoute
   '/store/$slug': typeof StoreSlugRoute
 }
 export interface FileRouteTypes {
@@ -156,10 +174,12 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/search'
     | '/sellers'
+    | '/sitemap.xml'
     | '/verified'
     | '/verify-email'
     | '/wishlist'
     | '/category/$slug'
+    | '/city/$slug'
     | '/store/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -172,10 +192,12 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/search'
     | '/sellers'
+    | '/sitemap.xml'
     | '/verified'
     | '/verify-email'
     | '/wishlist'
     | '/category/$slug'
+    | '/city/$slug'
     | '/store/$slug'
   id:
     | '__root__'
@@ -188,10 +210,12 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/search'
     | '/sellers'
+    | '/sitemap.xml'
     | '/verified'
     | '/verify-email'
     | '/wishlist'
     | '/category/$slug'
+    | '/city/$slug'
     | '/store/$slug'
   fileRoutesById: FileRoutesById
 }
@@ -205,10 +229,12 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SearchRoute: typeof SearchRoute
   SellersRoute: typeof SellersRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   VerifiedRoute: typeof VerifiedRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   WishlistRoute: typeof WishlistRoute
   CategorySlugRoute: typeof CategorySlugRoute
+  CitySlugRoute: typeof CitySlugRoute
   StoreSlugRoute: typeof StoreSlugRoute
 }
 
@@ -233,6 +259,13 @@ declare module '@tanstack/react-router' {
       path: '/verified'
       fullPath: '/verified'
       preLoaderRoute: typeof VerifiedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sellers': {
@@ -305,6 +338,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/city/$slug': {
+      id: '/city/$slug'
+      path: '/city/$slug'
+      fullPath: '/city/$slug'
+      preLoaderRoute: typeof CitySlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/category/$slug': {
       id: '/category/$slug'
       path: '/category/$slug'
@@ -325,10 +365,12 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SearchRoute: SearchRoute,
   SellersRoute: SellersRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   VerifiedRoute: VerifiedRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   WishlistRoute: WishlistRoute,
   CategorySlugRoute: CategorySlugRoute,
+  CitySlugRoute: CitySlugRoute,
   StoreSlugRoute: StoreSlugRoute,
 }
 export const routeTree = rootRouteImport

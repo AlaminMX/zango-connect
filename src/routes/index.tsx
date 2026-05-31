@@ -1,39 +1,78 @@
+/**
+ * index.tsx
+ * Homepage — fully dynamic:
+ *  • Section text driven by homepage_sections table (admin-managed)
+ *  • Featured products (admin-controlled via is_featured flag)
+ *  • "View All Products" link/button
+ *  • Wishlist count badge
+ *  • Anime.js-style CSS loading animations
+ *  • Top-right Search & Dashboard icons removed (per spec #10)
+ */
+
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
 import { Footer } from "@/components/Footer";
 import { SellerCard } from "@/components/SellerCard";
 import { ProductCard } from "@/components/ProductCard";
+import { ProductSkeleton, CategorySkeleton, SellerSkeleton } from "@/components/LoadingSpinner";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkles, Search, MapPin, Store, ArrowRight } from "lucide-react";
-import { hausaFor, iconFor, NIGERIAN_CITIES } from "@/lib/categories";
+import { Sparkles, Search, MapPin, Store, ArrowRight, Heart } from "lucide-react";
+import { iconFor, NIGERIAN_CITIES } from "@/lib/categories";
+import { getWishlist } from "@/components/ProductCard";
 import heroImg from "@/assets/hero-market.jpg";
 
 export const Route = createFileRoute("/")({ component: Index });
 
 const PLACEHOLDER_SELLERS = [
   { business_name: "Zainab's Kitchen", category: "Food & Drinks", city: "Kano", initial: "Z" },
-  { business_name: "Khadija Fabrics", category: "Fashion", city: "Kaduna", initial: "K" },
-  { business_name: "Fati Glow Beauty", category: "Beauty", city: "Abuja", initial: "F" },
+  { business_name: "Khadija Fabrics",  category: "Fashion",       city: "Kaduna", initial: "K" },
+  { business_name: "Fati Glow Beauty", category: "Beauty",        city: "Abuja", initial: "F" },
 ];
 
 const PLACEHOLDER_PRODUCTS = [
-  { name: "Suya Plate", price: 2500, seller: "Zainab's Kitchen", city: "Kano", emoji: "🍢" },
-  { name: "Ankara Gele", price: 4500, seller: "Khadija Fabrics", city: "Kaduna", emoji: "👗" },
-  { name: "Shea Body Butter", price: 3000, seller: "Fati Glow Beauty", city: "Abuja", emoji: "🌸" },
-  { name: "Zobo Drink (1L)", price: 1200, seller: "Zainab's Kitchen", city: "Kano", emoji: "🥤" },
-  { name: "Atampa Wrapper", price: 6000, seller: "Khadija Fabrics", city: "Kaduna", emoji: "🧵" },
-  { name: "Black Soap", price: 1500, seller: "Fati Glow Beauty", city: "Abuja", emoji: "🧼" },
+  { name: "Suya Plate",       price: 2500, seller: "Zainab's Kitchen", city: "Kano",   emoji: "🍢" },
+  { name: "Ankara Gele",      price: 4500, seller: "Khadija Fabrics",  city: "Kaduna", emoji: "👗" },
+  { name: "Shea Body Butter", price: 3000, seller: "Fati Glow Beauty", city: "Abuja",  emoji: "🌸" },
+  { name: "Zobo Drink (1L)",  price: 1200, seller: "Zainab's Kitchen", city: "Kano",   emoji: "🥤" },
+  { name: "Atampa Wrapper",   price: 6000, seller: "Khadija Fabrics",  city: "Kaduna", emoji: "🧵" },
+  { name: "Black Soap",       price: 1500, seller: "Fati Glow Beauty", city: "Abuja",  emoji: "🧼" },
 ];
+
+/* Helper: find a section from the CMS data */
+function useSection(sections: any[] | undefined, key: string) {
+  return sections?.find((s: any) => s.key === key && s.is_visible !== false);
+}
 
 function Index() {
   const nav = useNavigate();
   const [q, setQ] = useState("");
   const [city, setCity] = useState<string>("All cities");
+  const [wishlistCount, setWishlistCount] = useState(0);
+
+  // Keep wishlist badge count in sync
+  useEffect(() => {
+    setWishlistCount(getWishlist().length);
+    const onStorage = () => setWishlistCount(getWishlist().length);
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  /* ── Data fetching ── */
+  const { data: sections } = useQuery({
+    queryKey: ["homepage-sections"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("homepage_sections")
+        .select("*")
+        .eq("is_visible", true)
+        .order("sort_order");
+      return data ?? [];
+    },
+  });
 
   const { data: categories, isLoading: categoriesLoading } = useQuery({
     queryKey: ["categories"],
@@ -51,7 +90,7 @@ function Index() {
         .from("sellers")
         .select("id, slug, business_name, category, city, profile_photo_url, is_verified, rating")
         .order("is_verified", { ascending: false })
-        .order("created_at", { ascending: false })
+        .order("created_at",  { ascending: false })
         .limit(10);
       if (city !== "All cities") qb = qb.eq("city", city);
       const { data, error } = await qb;
@@ -60,23 +99,41 @@ function Index() {
     },
   });
 
+  // Featured products: prefer admin-curated (is_featured=true), fall back to latest
   const { data: featuredProducts, isLoading: productsLoading } = useQuery({
     queryKey: ["featured-products", city],
     queryFn: async () => {
+      // First try to get admin-featured products
       let qb = supabase
+        .from("products")
+        .select("id, name, price, image_url, stock_status, is_featured, featured_order, seller_id, sellers!inner(business_name, city, slug, whatsapp_number)")
+        .eq("is_featured", true)
+        .order("featured_order")
+        .limit(8);
+      if (city !== "All cities") qb = qb.eq("sellers.city", city);
+      const { data: featData } = await qb;
+
+      if (featData && featData.length > 0) return featData;
+
+      // Fallback: latest products
+      let qb2 = supabase
         .from("products")
         .select("id, name, price, image_url, stock_status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number)")
         .order("created_at", { ascending: false })
         .limit(8);
-      if (city !== "All cities") qb = qb.eq("sellers.city", city);
-      const { data, error } = await qb;
+      if (city !== "All cities") qb2 = qb2.eq("sellers.city", city);
+      const { data, error } = await qb2;
       if (error) throw error;
       return data;
     },
   });
 
-  const hasRealSellers = (featured?.length ?? 0) > 0;
+  const hasRealSellers  = (featured?.length ?? 0) > 0;
   const hasRealProducts = (featuredProducts?.length ?? 0) > 0;
+
+  const heroSection     = useSection(sections, "hero");
+  const newSellersSection = useSection(sections, "new_sellers");
+  const featuredSection = useSection(sections, "featured_products");
 
   const submitSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,50 +141,57 @@ function Index() {
     nav({ to: "/search", search: { q: q.trim(), city: city !== "All cities" ? city : undefined } });
   };
 
+  /* ------------------------------------------------------------------ */
+  /* Keyframes injected once                                             */
+  /* ------------------------------------------------------------------ */
+  const keyframes = `
+    @keyframes sutura-bounce {
+      0%, 80%, 100% { transform: translateY(0);    opacity: 0.4; }
+      40%            { transform: translateY(-8px); opacity: 1;   }
+    }
+    @keyframes card-enter {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0);    }
+    }
+    .card-enter { animation: card-enter 0.35s ease both; }
+  `;
+
   return (
     <div className="min-h-screen bg-background">
+      <style>{keyframes}</style>
       <TopBar />
 
       {/* ------------------------------------------------------------------ */}
-      {/* Hero — isolate creates a stacking context so z-index layers work    */}
+      {/* Hero                                                                 */}
       {/* ------------------------------------------------------------------ */}
       <section className="relative isolate overflow-hidden">
-        {/* Background image layer — z-0 */}
         <div className="absolute inset-0 -z-10">
           <img
             src={heroImg}
-            alt="Northern Nigerian market scene with women selling fabrics and food"
+            alt="Northern Nigerian market scene"
             className="h-full w-full object-cover object-center"
             loading="eager"
             decoding="async"
           />
-          {/* Warm dark overlay for text readability */}
           <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-background" />
         </div>
 
-        {/* Decorative ambient blobs — z-[-5] so they sit above image but below content */}
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden" style={{ zIndex: -5 }}>
-          <div
-            className="absolute -left-10 top-6 h-72 w-72 rounded-full bg-primary blur-3xl animate-float"
-            style={{ opacity: 0.15 }}
-          />
-          <div
-            className="absolute -bottom-20 -right-10 h-96 w-96 rounded-full bg-rose blur-3xl animate-float"
-            style={{ opacity: 0.15, animationDuration: "16s", animationDirection: "reverse", animationDelay: "2s" }}
-          />
+          <div className="absolute -left-10 top-6 h-72 w-72 rounded-full bg-primary blur-3xl animate-float" style={{ opacity: 0.15 }} />
+          <div className="absolute -bottom-20 -right-10 h-96 w-96 rounded-full bg-rose blur-3xl animate-float"
+            style={{ opacity: 0.15, animationDuration: "16s", animationDirection: "reverse", animationDelay: "2s" }} />
         </div>
 
-        {/* Content */}
         <div className="mx-auto max-w-3xl px-5 pt-16 pb-14 text-center sm:pt-24 sm:pb-20">
           <div className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white backdrop-blur">
             <Sparkles className="h-3 w-3" /> Kasuwa · Community marketplace
           </div>
           <h1 className="font-serif text-4xl font-medium leading-[1.05] text-white drop-shadow sm:text-6xl">
-            Kasuwa <br />
-            <span className="italic text-secondary">Shop from Northern Nigeria's Best.</span>
+            {heroSection?.title ?? "Kasuwa"} <br />
+            <span className="italic text-secondary">{heroSection?.subtitle ?? "Shop from Northern Nigeria's Best."}</span>
           </h1>
           <p className="mx-auto mt-4 max-w-md text-base text-white/85">
-            Discover trusted local sellers, handmade products, fashion, food, and everyday essentials.
+            {heroSection?.content ?? "Discover trusted local sellers, handmade products, fashion, food, and everyday essentials."}
           </p>
 
           {/* Search + city filter */}
@@ -151,7 +215,7 @@ function Index() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="All cities">All cities</SelectItem>
-                {NIGERIAN_CITIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                {NIGERIAN_CITIES.filter((c) => c !== "Other").map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
             <Button type="submit" className="h-11 rounded-full bg-primary px-6 text-primary-foreground hover:bg-primary/90">
@@ -159,18 +223,25 @@ function Index() {
             </Button>
           </form>
 
-          {/* CTA */}
+          {/* CTAs */}
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link to="/register">
-              <Button
-                size="lg"
-                className="group h-12 rounded-full bg-primary px-7 text-base font-medium text-primary-foreground shadow-warm-lg transition hover:bg-primary/90 hover:shadow-warm active:scale-[0.98]"
-              >
+              <Button size="lg"
+                className="group h-12 rounded-full bg-primary px-7 text-base font-medium text-primary-foreground shadow-warm-lg transition hover:bg-primary/90 hover:shadow-warm active:scale-[0.98]">
                 <Store className="mr-2 h-5 w-5" />
                 Open Your Store · Fara Kasuwanci
                 <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-0.5" />
               </Button>
             </Link>
+            {wishlistCount > 0 && (
+              <Link to="/wishlist">
+                <Button variant="outline" size="lg"
+                  className="h-12 rounded-full border-white/30 bg-white/10 px-6 text-white backdrop-blur hover:bg-white/20">
+                  <Heart className="mr-2 h-5 w-5 fill-rose-400 text-rose-400" />
+                  Saved ({wishlistCount})
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </section>
@@ -185,15 +256,9 @@ function Index() {
             <p className="text-xs text-muted-foreground">Zaɓi kasuwa</p>
           </div>
         </div>
-        {/* 3-column grid — no scrolling required */}
         <div className="mx-auto max-w-5xl px-5 grid grid-cols-3 gap-4">
           {categoriesLoading
-            ? Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="flex flex-col items-center gap-2.5 rounded-2xl border border-[#F0DDD0] bg-white p-4">
-                  <Skeleton className="h-20 w-20 rounded-full" />
-                  <Skeleton className="h-3 w-16 rounded" />
-                </div>
-              ))
+            ? Array.from({ length: 6 }).map((_, i) => <CategorySkeleton key={i} />)
             : categories?.map((c) => {
                 const { Component: IconComponent } = iconFor(c.name);
                 return (
@@ -206,37 +271,27 @@ function Index() {
                     <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#FDF3EC] transition-transform duration-200 group-hover:scale-105">
                       <IconComponent size={56} />
                     </div>
-                    <span className="text-center text-xs font-semibold leading-tight text-foreground">
-                      {c.name}
-                    </span>
+                    <span className="text-center text-xs font-semibold leading-tight text-foreground">{c.name}</span>
                   </Link>
                 );
               })}
         </div>
       </section>
 
-      {/* New sellers row */}
+      {/* ------------------------------------------------------------------ */}
+      {/* New sellers                                                         */}
+      {/* ------------------------------------------------------------------ */}
       <section className="mx-auto max-w-5xl px-5 py-6">
         <div className="mb-4 flex items-end justify-between">
           <div>
-            <h2 className="font-serif text-2xl">New sellers</h2>
-            <p className="text-xs text-muted-foreground">Sababbin masu sayarwa</p>
+            <h2 className="font-serif text-2xl">{newSellersSection?.title ?? "New sellers"}</h2>
+            <p className="text-xs text-muted-foreground">{newSellersSection?.subtitle ?? "Sababbin masu sayarwa"}</p>
           </div>
           <Link to="/sellers" className="text-xs font-medium text-primary underline underline-offset-2">View all sellers</Link>
         </div>
         <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {sellersLoading
-            ? Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="w-64 shrink-0 overflow-hidden rounded-2xl border border-border/60 bg-card p-4 shadow-warm">
-                  <div className="flex items-center gap-3">
-                    <Skeleton className="h-14 w-14 shrink-0 rounded-full" />
-                    <div className="flex-1 space-y-2">
-                      <Skeleton className="h-4 w-28 rounded" />
-                      <Skeleton className="h-3 w-20 rounded" />
-                    </div>
-                  </div>
-                </div>
-              ))
+            ? Array.from({ length: 4 }).map((_, i) => <SellerSkeleton key={i} />)
             : hasRealSellers
             ? featured!.map((s, i) => (
                 <div key={s.id} className="card-enter w-72 shrink-0" style={{ animationDelay: `${i * 0.08}s` }}>
@@ -244,21 +299,15 @@ function Index() {
                 </div>
               ))
             : PLACEHOLDER_SELLERS.map((s, i) => (
-                <div
-                  key={s.business_name}
+                <div key={s.business_name}
                   className="card-enter w-64 shrink-0 overflow-hidden rounded-2xl border border-border/60 bg-card p-4 shadow-warm"
-                  style={{ animationDelay: `${i * 0.08}s` }}
-                >
+                  style={{ animationDelay: `${i * 0.08}s` }}>
                   <div className="flex items-center gap-3">
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-secondary font-serif text-xl text-primary">
-                      {s.initial}
-                    </div>
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-secondary font-serif text-xl text-primary">{s.initial}</div>
                     <div className="min-w-0">
                       <p className="truncate font-serif text-base font-semibold">{s.business_name}</p>
                       <p className="truncate text-xs text-muted-foreground">{s.category} · {s.city}</p>
-                      <span className="mt-1 inline-block rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-medium text-accent">
-                        Coming soon
-                      </span>
+                      <span className="mt-1 inline-block rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-medium text-accent">Coming soon</span>
                     </div>
                   </div>
                 </div>
@@ -266,28 +315,25 @@ function Index() {
         </div>
       </section>
 
-      {/* Featured products */}
+      {/* ------------------------------------------------------------------ */}
+      {/* Featured products                                                   */}
+      {/* ------------------------------------------------------------------ */}
       <section className="mx-auto max-w-5xl px-5 py-10">
         <div className="mb-5 flex items-end justify-between">
           <div>
-            <h2 className="font-serif text-2xl">Featured products</h2>
-            <p className="text-xs text-muted-foreground">Kayan da aka fi so</p>
+            <h2 className="font-serif text-2xl">{featuredSection?.title ?? "Featured products"}</h2>
+            <p className="text-xs text-muted-foreground">{featuredSection?.subtitle ?? "Kayan da aka fi so"}</p>
           </div>
+          {/* "View All Products" — per spec #9 */}
+          <Link to="/products"
+            className="flex items-center gap-1 text-xs font-medium text-primary underline underline-offset-2">
+            View all products <ArrowRight className="h-3 w-3" />
+          </Link>
         </div>
 
         {productsLoading ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-warm">
-                <Skeleton className="aspect-square w-full rounded-none" />
-                <div className="p-3 space-y-2">
-                  <Skeleton className="h-4 w-3/4 rounded" />
-                  <Skeleton className="h-5 w-1/2 rounded" />
-                  <Skeleton className="h-3 w-2/3 rounded" />
-                  <Skeleton className="mt-3 h-8 w-full rounded-full" />
-                </div>
-              </div>
-            ))}
+            {Array.from({ length: 8 }).map((_, i) => <ProductSkeleton key={i} />)}
           </div>
         ) : hasRealProducts ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -296,16 +342,11 @@ function Index() {
               return (
                 <div key={p.id} className="card-enter" style={{ animationDelay: `${i * 0.05}s` }}>
                   <ProductCard
-                    id={p.id}
-                    name={p.name}
-                    price={Number(p.price)}
-                    image_url={p.image_url}
-                    stock_status={p.stock_status}
+                    id={p.id} name={p.name} price={Number(p.price)}
+                    image_url={p.image_url} stock_status={p.stock_status}
                     seller_id={p.seller_id}
-                    seller_name={s?.business_name}
-                    seller_city={s?.city}
-                    seller_slug={s?.slug}
-                    whatsapp_number={s?.whatsapp_number ?? ""}
+                    seller_name={s?.business_name} seller_city={s?.city}
+                    seller_slug={s?.slug} whatsapp_number={s?.whatsapp_number ?? ""}
                   />
                 </div>
               );
@@ -314,14 +355,10 @@ function Index() {
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {PLACEHOLDER_PRODUCTS.map((p, i) => (
-              <div
-                key={p.name}
+              <div key={p.name}
                 className="card-enter overflow-hidden rounded-2xl border border-border/60 bg-card shadow-warm"
-                style={{ animationDelay: `${i * 0.05}s` }}
-              >
-                <div className="flex aspect-square w-full items-center justify-center bg-gradient-to-br from-secondary/60 to-rose/60 text-6xl">
-                  {p.emoji}
-                </div>
+                style={{ animationDelay: `${i * 0.05}s` }}>
+                <div className="flex aspect-square w-full items-center justify-center bg-gradient-to-br from-secondary/60 to-rose/60 text-6xl">{p.emoji}</div>
                 <div className="p-3">
                   <h4 className="line-clamp-1 font-medium">{p.name}</h4>
                   <p className="mt-0.5 font-serif text-lg text-primary">₦{p.price.toLocaleString()}</p>
@@ -335,11 +372,19 @@ function Index() {
           </div>
         )}
 
-        {!hasRealProducts && (
-          <p className="mt-4 text-center text-xs text-muted-foreground">
-            <Link to="/register" className="font-medium text-primary underline">Be the first to list real products.</Link>
-          </p>
-        )}
+        {/* View all / register CTAs */}
+        <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+          <Link to="/products">
+            <Button variant="outline" className="rounded-full">
+              Browse all products <ArrowRight className="ml-1.5 h-4 w-4" />
+            </Button>
+          </Link>
+          {!hasRealProducts && (
+            <Link to="/register" className="text-xs font-medium text-primary underline">
+              Be the first to list real products.
+            </Link>
+          )}
+        </div>
       </section>
 
       <Footer />

@@ -68,6 +68,39 @@ export type Database = {
         }
         Relationships: []
       }
+      cities_of_business: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          sort_order: number
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          sort_order?: number
+          state: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+          sort_order?: number
+          state?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       homepage_sections: {
         Row: {
           content: string | null
@@ -160,6 +193,63 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          preferred_city_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          preferred_city_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          preferred_city_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_preferred_city_id_fkey"
+            columns: ["preferred_city_id"]
+            isOneToOne: false
+            referencedRelation: "cities_of_business"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_preferred_city_id_fkey"
+            columns: ["preferred_city_id"]
+            isOneToOne: false
+            referencedRelation: "cities_with_stats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recently_viewed: {
+        Row: {
+          product_id: string
+          user_id: string
+          viewed_at: string
+        }
+        Insert: {
+          product_id: string
+          user_id: string
+          viewed_at?: string
+        }
+        Update: {
+          product_id?: string
+          user_id?: string
+          viewed_at?: string
+        }
+        Relationships: []
+      }
       seller_notices: {
         Row: {
           created_at: string
@@ -201,6 +291,7 @@ export type Database = {
           business_name: string
           category: string
           city: string
+          city_id: string | null
           cover_photo_url: string | null
           created_at: string
           id: string
@@ -208,10 +299,15 @@ export type Database = {
           name: string
           profile_photo_url: string | null
           rating: number
+          rejection_reason: string | null
           slug: string
           status: string
           subscription_expires_at: string | null
           user_id: string
+          verification_decided_at: string | null
+          verification_decided_by: string | null
+          verification_documents: Json
+          verification_status: string
           whatsapp_number: string
         }
         Insert: {
@@ -221,6 +317,7 @@ export type Database = {
           business_name: string
           category: string
           city: string
+          city_id?: string | null
           cover_photo_url?: string | null
           created_at?: string
           id?: string
@@ -228,10 +325,15 @@ export type Database = {
           name: string
           profile_photo_url?: string | null
           rating?: number
+          rejection_reason?: string | null
           slug: string
           status?: string
           subscription_expires_at?: string | null
           user_id: string
+          verification_decided_at?: string | null
+          verification_decided_by?: string | null
+          verification_documents?: Json
+          verification_status?: string
           whatsapp_number: string
         }
         Update: {
@@ -241,6 +343,7 @@ export type Database = {
           business_name?: string
           category?: string
           city?: string
+          city_id?: string | null
           cover_photo_url?: string | null
           created_at?: string
           id?: string
@@ -248,13 +351,33 @@ export type Database = {
           name?: string
           profile_photo_url?: string | null
           rating?: number
+          rejection_reason?: string | null
           slug?: string
           status?: string
           subscription_expires_at?: string | null
           user_id?: string
+          verification_decided_at?: string | null
+          verification_decided_by?: string | null
+          verification_documents?: Json
+          verification_status?: string
           whatsapp_number?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sellers_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities_of_business"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sellers_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities_with_stats"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -346,9 +469,43 @@ export type Database = {
           },
         ]
       }
+      wishlists: {
+        Row: {
+          created_at: string
+          product_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          product_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          product_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      cities_with_stats: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          is_active: boolean | null
+          name: string | null
+          products_added_30d: number | null
+          products_count: number | null
+          sellers_added_30d: number | null
+          sellers_count: number | null
+          slug: string | null
+          sort_order: number | null
+          state: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {

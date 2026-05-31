@@ -8,18 +8,20 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
+import { Route as rootRouteImport }       from './routes/__root'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
-import { Route as VerifiedRouteImport } from './routes/verified'
-import { Route as SellersRouteImport } from './routes/sellers'
-import { Route as SearchRouteImport } from './routes/search'
+import { Route as VerifiedRouteImport }    from './routes/verified'
+import { Route as WishlistRouteImport }    from './routes/wishlist'
+import { Route as SearchRouteImport }      from './routes/search'
+import { Route as RegisterRouteImport }    from './routes/register'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as RegisterRouteImport } from './routes/register'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AdminRouteImport } from './routes/admin'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as StoreSlugRouteImport } from './routes/store.$slug'
+import { Route as ProductsRouteImport }    from './routes/products'
+import { Route as DashboardRouteImport }   from './routes/dashboard'
+import { Route as AuthRouteImport }        from './routes/auth'
+import { Route as AdminRouteImport }       from './routes/admin'
+import { Route as SellersRouteImport }     from './routes/sellers'
+import { Route as IndexRouteImport }       from './routes/index'
+import { Route as StoreSlugRouteImport }   from './routes/store.$slug'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
@@ -27,252 +29,117 @@ const VerifyEmailRoute = VerifyEmailRouteImport.update({
   path: '/verify-email',
   getParentRoute: () => rootRouteImport,
 } as any)
+
 const VerifiedRoute = VerifiedRouteImport.update({
   id: '/verified',
   path: '/verified',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SellersRoute = SellersRouteImport.update({
-  id: '/sellers',
-  path: '/sellers',
+
+const WishlistRoute = WishlistRouteImport.update({
+  id: '/wishlist',
+  path: '/wishlist',
   getParentRoute: () => rootRouteImport,
 } as any)
+
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
+
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
+
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+
+const ProductsRoute = ProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
+
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+
+const SellersRoute = SellersRouteImport.update({
+  id: '/sellers',
+  path: '/sellers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+
 const StoreSlugRoute = StoreSlugRouteImport.update({
   id: '/store/$slug',
   path: '/store/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+
 const CategorySlugRoute = CategorySlugRouteImport.update({
   id: '/category/$slug',
   path: '/category/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 
-export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
-  '/auth': typeof AuthRoute
-  '/dashboard': typeof DashboardRoute
-  '/register': typeof RegisterRoute
-  '/reset-password': typeof ResetPasswordRoute
-  '/search': typeof SearchRoute
-  '/sellers': typeof SellersRoute
-  '/verified': typeof VerifiedRoute
-  '/verify-email': typeof VerifyEmailRoute
-  '/category/$slug': typeof CategorySlugRoute
-  '/store/$slug': typeof StoreSlugRoute
+export interface FileRoutesByPath {
+  '/': { id: '/'; path: '/'; fullPath: '/'; preLoaderRoute: typeof IndexRouteImport; parentRoute: typeof rootRouteImport; }
+  '/admin': { id: '/admin'; path: '/admin'; fullPath: '/admin'; preLoaderRoute: typeof AdminRouteImport; parentRoute: typeof rootRouteImport; }
+  '/auth': { id: '/auth'; path: '/auth'; fullPath: '/auth'; preLoaderRoute: typeof AuthRouteImport; parentRoute: typeof rootRouteImport; }
+  '/dashboard': { id: '/dashboard'; path: '/dashboard'; fullPath: '/dashboard'; preLoaderRoute: typeof DashboardRouteImport; parentRoute: typeof rootRouteImport; }
+  '/products': { id: '/products'; path: '/products'; fullPath: '/products'; preLoaderRoute: typeof ProductsRouteImport; parentRoute: typeof rootRouteImport; }
+  '/register': { id: '/register'; path: '/register'; fullPath: '/register'; preLoaderRoute: typeof RegisterRouteImport; parentRoute: typeof rootRouteImport; }
+  '/reset-password': { id: '/reset-password'; path: '/reset-password'; fullPath: '/reset-password'; preLoaderRoute: typeof ResetPasswordRouteImport; parentRoute: typeof rootRouteImport; }
+  '/search': { id: '/search'; path: '/search'; fullPath: '/search'; preLoaderRoute: typeof SearchRouteImport; parentRoute: typeof rootRouteImport; }
+  '/sellers': { id: '/sellers'; path: '/sellers'; fullPath: '/sellers'; preLoaderRoute: typeof SellersRouteImport; parentRoute: typeof rootRouteImport; }
+  '/verified': { id: '/verified'; path: '/verified'; fullPath: '/verified'; preLoaderRoute: typeof VerifiedRouteImport; parentRoute: typeof rootRouteImport; }
+  '/verify-email': { id: '/verify-email'; path: '/verify-email'; fullPath: '/verify-email'; preLoaderRoute: typeof VerifyEmailRouteImport; parentRoute: typeof rootRouteImport; }
+  '/wishlist': { id: '/wishlist'; path: '/wishlist'; fullPath: '/wishlist'; preLoaderRoute: typeof WishlistRouteImport; parentRoute: typeof rootRouteImport; }
+  '/category/$slug': { id: '/category/$slug'; path: '/category/$slug'; fullPath: '/category/$slug'; preLoaderRoute: typeof CategorySlugRouteImport; parentRoute: typeof rootRouteImport; }
+  '/store/$slug': { id: '/store/$slug'; path: '/store/$slug'; fullPath: '/store/$slug'; preLoaderRoute: typeof StoreSlugRouteImport; parentRoute: typeof rootRouteImport; }
 }
-export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
-  '/auth': typeof AuthRoute
-  '/dashboard': typeof DashboardRoute
-  '/register': typeof RegisterRoute
-  '/reset-password': typeof ResetPasswordRoute
-  '/search': typeof SearchRoute
-  '/sellers': typeof SellersRoute
-  '/verified': typeof VerifiedRoute
-  '/verify-email': typeof VerifyEmailRoute
-  '/category/$slug': typeof CategorySlugRoute
-  '/store/$slug': typeof StoreSlugRoute
-}
-export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
-  '/auth': typeof AuthRoute
-  '/dashboard': typeof DashboardRoute
-  '/register': typeof RegisterRoute
-  '/reset-password': typeof ResetPasswordRoute
-  '/search': typeof SearchRoute
-  '/sellers': typeof SellersRoute
-  '/verified': typeof VerifiedRoute
-  '/verify-email': typeof VerifyEmailRoute
-  '/category/$slug': typeof CategorySlugRoute
-  '/store/$slug': typeof StoreSlugRoute
-}
-export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/admin'
-    | '/auth'
-    | '/dashboard'
-    | '/register'
-    | '/reset-password'
-    | '/search'
-    | '/sellers'
-    | '/verified'
-    | '/verify-email'
-    | '/category/$slug'
-    | '/store/$slug'
-  fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/admin'
-    | '/auth'
-    | '/dashboard'
-    | '/register'
-    | '/reset-password'
-    | '/search'
-    | '/sellers'
-    | '/verified'
-    | '/verify-email'
-    | '/category/$slug'
-    | '/store/$slug'
-  id:
-    | '__root__'
-    | '/'
-    | '/admin'
-    | '/auth'
-    | '/dashboard'
-    | '/register'
-    | '/reset-password'
-    | '/search'
-    | '/sellers'
-    | '/verified'
-    | '/verify-email'
-    | '/category/$slug'
-    | '/store/$slug'
-  fileRoutesById: FileRoutesById
-}
+
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRoute
+  ProductsRoute: typeof ProductsRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SearchRoute: typeof SearchRoute
   SellersRoute: typeof SellersRoute
   VerifiedRoute: typeof VerifiedRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
+  WishlistRoute: typeof WishlistRoute
   CategorySlugRoute: typeof CategorySlugRoute
   StoreSlugRoute: typeof StoreSlugRoute
-}
-
-declare module '@tanstack/react-router' {
-  interface FileRoutesByPath {
-    '/verify-email': {
-      id: '/verify-email'
-      path: '/verify-email'
-      fullPath: '/verify-email'
-      preLoaderRoute: typeof VerifyEmailRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/verified': {
-      id: '/verified'
-      path: '/verified'
-      fullPath: '/verified'
-      preLoaderRoute: typeof VerifiedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sellers': {
-      id: '/sellers'
-      path: '/sellers'
-      fullPath: '/sellers'
-      preLoaderRoute: typeof SellersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/search': {
-      id: '/search'
-      path: '/search'
-      fullPath: '/search'
-      preLoaderRoute: typeof SearchRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/register': {
-      id: '/register'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof RegisterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/store/$slug': {
-      id: '/store/$slug'
-      path: '/store/$slug'
-      fullPath: '/store/$slug'
-      preLoaderRoute: typeof StoreSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/category/$slug': {
-      id: '/category/$slug'
-      path: '/category/$slug'
-      fullPath: '/category/$slug'
-      preLoaderRoute: typeof CategorySlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-  }
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -280,18 +147,50 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRoute,
+  ProductsRoute: ProductsRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SearchRoute: SearchRoute,
   SellersRoute: SellersRoute,
   VerifiedRoute: VerifiedRoute,
   VerifyEmailRoute: VerifyEmailRoute,
+  WishlistRoute: WishlistRoute,
   CategorySlugRoute: CategorySlugRoute,
   StoreSlugRoute: StoreSlugRoute,
 }
+
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath extends FileRoutesByPath {}
+}
+
+type FileRouteTypes = {
+  fileRoutesByFullPath: FileRoutesByPath
+  fullPaths: '/' | '/admin' | '/auth' | '/dashboard' | '/products' | '/register' | '/reset-password' | '/search' | '/sellers' | '/verified' | '/verify-email' | '/wishlist' | '/category/$slug' | '/store/$slug'
+  fileRoutesByTo: FileRoutesByPath
+  to: '/' | '/admin' | '/auth' | '/dashboard' | '/products' | '/register' | '/reset-password' | '/search' | '/sellers' | '/verified' | '/verify-email' | '/wishlist' | '/category/$slug' | '/store/$slug'
+  id: '__root__' | '/' | '/admin' | '/auth' | '/dashboard' | '/products' | '/register' | '/reset-password' | '/search' | '/sellers' | '/verified' | '/verify-email' | '/wishlist' | '/category/$slug' | '/store/$slug'
+  fileRoutesById: {
+    '__root__': typeof rootRouteImport
+    '/': typeof IndexRoute
+    '/admin': typeof AdminRoute
+    '/auth': typeof AuthRoute
+    '/dashboard': typeof DashboardRoute
+    '/products': typeof ProductsRoute
+    '/register': typeof RegisterRoute
+    '/reset-password': typeof ResetPasswordRoute
+    '/search': typeof SearchRoute
+    '/sellers': typeof SellersRoute
+    '/verified': typeof VerifiedRoute
+    '/verify-email': typeof VerifyEmailRoute
+    '/wishlist': typeof WishlistRoute
+    '/category/$slug': typeof CategorySlugRoute
+    '/store/$slug': typeof StoreSlugRoute
+  }
+}
 
 import type { getRouter } from './router.tsx'
 import type { startInstance } from './start.ts'

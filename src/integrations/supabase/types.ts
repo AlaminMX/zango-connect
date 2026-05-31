@@ -68,14 +68,52 @@ export type Database = {
         }
         Relationships: []
       }
+      homepage_sections: {
+        Row: {
+          content: string | null
+          created_at: string
+          id: string
+          is_visible: boolean
+          key: string
+          sort_order: number
+          subtitle: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          key: string
+          sort_order?: number
+          subtitle?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          key?: string
+          sort_order?: number
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           blocked_at: string | null
           blocked_reason: string | null
           created_at: string
           description: string | null
+          featured_order: number
           id: string
           image_url: string | null
+          is_featured: boolean
           name: string
           price: number
           seller_id: string
@@ -87,8 +125,10 @@ export type Database = {
           blocked_reason?: string | null
           created_at?: string
           description?: string | null
+          featured_order?: number
           id?: string
           image_url?: string | null
+          is_featured?: boolean
           name: string
           price: number
           seller_id: string
@@ -100,8 +140,10 @@ export type Database = {
           blocked_reason?: string | null
           created_at?: string
           description?: string | null
+          featured_order?: number
           id?: string
           image_url?: string | null
+          is_featured?: boolean
           name?: string
           price?: number
           seller_id?: string

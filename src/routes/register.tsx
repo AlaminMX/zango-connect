@@ -1,10 +1,8 @@
 /**
- * register.tsx
- * Multi-step seller registration with:
- *  • Strict field validation before each step advance.
- *  • Previous / Next navigation with data preserved between steps.
- *  • Clear inline validation messages.
- *  • Loading animation during saves.
+ * register.tsx — Seller registration (2 steps + confirmation).
+ * Pending verification: product creation is gated until admin approval,
+ * so the registration flow only collects profile + photos and ends with
+ * a confirmation screen.
  */
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -17,14 +15,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ImageUploader } from "@/components/ImageUploader";
 import { toast } from "sonner";
 import { slugify, validateNigerianPhone } from "@/lib/whatsapp";
-import { Check, Copy, Share2, ChevronLeft, ChevronRight, Loader2, AlertCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, AlertCircle, Clock, Home } from "lucide-react";
 import { NIGERIAN_CITIES } from "@/lib/categories";
 
 export const Route = createFileRoute("/register")({ component: Register });
 
-// Validation error map
 type Errors = Record<string, string>;
 
 function FieldError({ msg }: { msg?: string }) {
@@ -40,12 +38,11 @@ function Register() {
   const nav = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
   const [sellerId, setSellerId] = useState<string | null>(null);
-  const [sellerSlug, setSellerSlug] = useState<string | null>(null);
   const [step, setStep] = useState(1);
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
 
-  // Step 1 fields
+  // Step 1
   const [name, setName] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -54,15 +51,9 @@ function Register() {
   const [category, setCategory] = useState("");
   const [bio, setBio] = useState("");
 
-  // Step 2 fields
-  const [profileFile, setProfileFile] = useState<File | null>(null);
-  const [coverFile, setCoverFile] = useState<File | null>(null);
-
-  // Step 3 fields
-  const [pName, setPName] = useState("");
-  const [pPrice, setPPrice] = useState("");
-  const [pDesc, setPDesc] = useState("");
-  const [pImg, setPImg] = useState<File | null>(null);
+  // Step 2
+  const [profileUrl, setProfileUrl] = useState<string | null>(null);
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
 
   const [categories, setCategories] = useState<{ name: string }[]>([]);
 
@@ -71,50 +62,27 @@ function Register() {
       if (!data.user) { nav({ to: "/auth" }); return; }
       setUserId(data.user.id);
       const { data: existing } = await supabase
-        .from("sellers").select("id, slug").eq("user_id", data.user.id).maybeSingle();
-      if (existing) { setSellerId(existing.id); setSellerSlug(existing.slug); setStep(3); }
+        .from("sellers").select("id, profile_photo_url, cover_photo_url, verification_status").eq("user_id", data.user.id).maybeSingle();
+      if (existing) {
+        setSellerId(existing.id);
+        setProfileUrl(existing.profile_photo_url ?? null);
+        setCoverUrl(existing.cover_photo_url ?? null);
+        // If they already submitted, jump to confirmation
+        setStep(existing.profile_photo_url ? 3 : 2);
+      }
     });
     supabase.from("categories").select("name").order("sort_order").then(({ data }) => setCategories(data ?? []));
   }, [nav]);
 
-  const uploadImage = async (file: File, prefix: string): Promise<string | null> => {
-    if (!userId) return null;
-    const ext = file.name.split(".").pop();
-    const path = `${userId}/${prefix}-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("sutura").upload(path, file, { upsert: true });
-    if (error) { toast.error(error.message); return null; }
-    return supabase.storage.from("sutura").getPublicUrl(path).data.publicUrl;
-  };
-
-  // ── Step 1 validation ──
   const validateStep1 = (): Errors => {
     const e: Errors = {};
     if (!businessName.trim()) e.businessName = "Business name is required";
-    if (!name.trim())         e.name         = "Your name is required";
-    if (!whatsapp.trim()) {
-      e.whatsapp = "WhatsApp number is required";
-    } else {
-      const check = validateNigerianPhone(whatsapp);
-      if (!check.valid) e.whatsapp = check.error ?? "Invalid phone number";
-    }
+    if (!name.trim()) e.name = "Your name is required";
+    if (!whatsapp.trim()) e.whatsapp = "WhatsApp number is required";
+    else { const c = validateNigerianPhone(whatsapp); if (!c.valid) e.whatsapp = c.error ?? "Invalid phone number"; }
     if (!city) e.city = "Please choose a city";
     if (city === "Other" && !otherCity.trim()) e.otherCity = "Please type your city";
     if (!category) e.category = "Please choose a category";
-    return e;
-  };
-
-  // ── Step 2 validation ──
-  const validateStep2 = (): Errors => {
-    const e: Errors = {};
-    if (!profileFile) e.profileFile = "A profile photo is required";
-    return e;
-  };
-
-  // ── Step 3 validation ──
-  const validateStep3 = (): Errors => {
-    const e: Errors = {};
-    if (!pName.trim())               e.pName  = "Product name is required";
-    if (!pPrice || Number(pPrice) <= 0) e.pPrice = "Enter a valid price greater than 0";
     return e;
   };
 
@@ -124,18 +92,14 @@ function Register() {
     setErrors({});
     if (!userId) return;
     setBusy(true);
-    const phoneCheck = validateNigerianPhone(whatsapp);
-    if (!phoneCheck.valid) { toast.error(phoneCheck.error); setBusy(false); return; }
     const baseSlug = slugify(businessName);
     let slug = baseSlug;
-    let attempt = 0;
-    while (attempt < 5) {
+    for (let i = 0; i < 5; i++) {
       const { data: clash } = await supabase.from("sellers").select("id").eq("slug", slug).maybeSingle();
       if (!clash) break;
-      attempt++; slug = `${baseSlug}-${Math.floor(Math.random() * 999)}`;
+      slug = `${baseSlug}-${Math.floor(Math.random() * 999)}`;
     }
     const finalCity = city === "Other" ? otherCity.trim() : city;
-    // Resolve city_id from cities_of_business so the new verification workflow + city pages work.
     const { data: cityRow } = await supabase
       .from("cities_of_business").select("id").ilike("name", finalCity).maybeSingle();
     const { data, error } = await supabase.from("sellers").insert({
@@ -144,70 +108,46 @@ function Register() {
     }).select().single();
     setBusy(false);
     if (error) { toast.error(error.message); return; }
-    setSellerId(data.id); setSellerSlug(data.slug); setStep(2);
+    setSellerId(data.id);
+    setStep(2);
   };
 
   const submitStep2 = async () => {
-    const errs = validateStep2();
-    if (Object.keys(errs).length) { setErrors(errs); return; }
+    if (!profileUrl) { setErrors({ profileUrl: "A profile photo is required" }); return; }
     setErrors({});
     if (!sellerId) return;
     setBusy(true);
-    const updates: { profile_photo_url?: string; cover_photo_url?: string } = {};
-    if (profileFile) { const url = await uploadImage(profileFile, "profile"); if (url) updates.profile_photo_url = url; }
-    if (coverFile)   { const url = await uploadImage(coverFile,   "cover");   if (url) updates.cover_photo_url   = url; }
-    if (Object.keys(updates).length) {
-      const { error } = await supabase.from("sellers").update(updates).eq("id", sellerId);
-      if (error) { toast.error(error.message); setBusy(false); return; }
-    }
-    setBusy(false); setStep(3);
-  };
-
-  const submitStep3 = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const errs = validateStep3();
-    if (Object.keys(errs).length) { setErrors(errs); return; }
-    setErrors({});
-    if (!sellerId) return;
-    setBusy(true);
-    let image_url: string | null = null;
-    if (pImg) image_url = await uploadImage(pImg, "product");
-    const { error } = await supabase.from("products").insert({
-      seller_id: sellerId, name: pName.trim(), price: Number(pPrice), description: pDesc, image_url,
-    });
+    const { error } = await supabase.from("sellers")
+      .update({ profile_photo_url: profileUrl, cover_photo_url: coverUrl })
+      .eq("id", sellerId);
     setBusy(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Product added!");
-    setPName(""); setPPrice(""); setPDesc(""); setPImg(null);
-    setStep(4);
+    setStep(3);
   };
-
-  const shareUrl = sellerSlug && typeof window !== "undefined"
-    ? `${window.location.origin}/store/${sellerSlug}` : "";
 
   return (
     <div className="min-h-screen bg-background">
       <TopBar />
       <div className="mx-auto max-w-xl px-5 py-8">
-        {step === 1 && (
-          <div className="mb-6"><BackButton fallback="/" /></div>
+        {step === 1 && <div className="mb-6"><BackButton fallback="/" /></div>}
+
+        {step < 3 && (
+          <>
+            <h1 className="font-serif text-3xl">Fara Kasuwanci — Start Your Store</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Welcome to the community · Step {step} of 2
+            </p>
+
+            <div className="mt-4 flex gap-1.5">
+              {[1, 2].map((n) => (
+                <div key={n} className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${step >= n ? "bg-primary" : "bg-muted"}`} />
+              ))}
+            </div>
+          </>
         )}
-
-        <h1 className="font-serif text-3xl">Fara Kasuwanci — Start Your Store</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Welcome to the community · Step {Math.min(step, 3)} of 3
-        </p>
-
-        {/* Progress bar */}
-        <div className="mt-4 flex gap-1.5">
-          {[1, 2, 3].map((n) => (
-            <div key={n} className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${step >= n ? "bg-primary" : "bg-muted"}`} />
-          ))}
-        </div>
 
         <div className="mt-8 rounded-2xl border bg-card p-6 shadow-warm">
 
-          {/* ── Step 1: Business info ── */}
           {step === 1 && (
             <div className="space-y-4">
               <h2 className="font-serif text-xl">Business info</h2>
@@ -277,28 +217,27 @@ function Register() {
             </div>
           )}
 
-          {/* ── Step 2: Photos ── */}
           {step === 2 && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <h2 className="font-serif text-xl">Upload photos</h2>
 
-              <div>
-                <Label>Profile photo *</Label>
-                <Input type="file" accept="image/*"
-                  onChange={(e) => { setProfileFile(e.target.files?.[0] ?? null); setErrors((prev) => ({ ...prev, profileFile: "" })); }}
-                  className={errors.profileFile ? "border-destructive" : ""}
-                />
-                <FieldError msg={errors.profileFile} />
-                {profileFile && <p className="mt-1 text-xs text-muted-foreground">✓ {profileFile.name}</p>}
-              </div>
+              <ImageUploader
+                value={profileUrl}
+                onChange={setProfileUrl}
+                aspect={1}
+                shape="circle"
+                pathPrefix="profile"
+                label="Profile photo *"
+              />
+              <FieldError msg={errors.profileUrl} />
 
-              <div>
-                <Label>Cover photo <span className="text-muted-foreground">(optional)</span></Label>
-                <Input type="file" accept="image/*"
-                  onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)}
-                />
-                {coverFile && <p className="mt-1 text-xs text-muted-foreground">✓ {coverFile.name}</p>}
-              </div>
+              <ImageUploader
+                value={coverUrl}
+                onChange={setCoverUrl}
+                aspect={16 / 9}
+                pathPrefix="cover"
+                label="Cover photo (optional)"
+              />
 
               <div className="flex gap-2 pt-2">
                 <Button variant="outline" onClick={() => setStep(1)} className="flex-1 rounded-full">
@@ -306,87 +245,37 @@ function Register() {
                 </Button>
                 <Button onClick={submitStep2} disabled={busy} className="flex-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
                   {busy
-                    ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading…</>
-                    : <>Next <ChevronRight className="ml-1 h-4 w-4" /></>}
+                    ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting…</>
+                    : <>Submit application <ChevronRight className="ml-1 h-4 w-4" /></>}
                 </Button>
               </div>
             </div>
           )}
 
-          {/* ── Step 3: First product ── */}
           {step === 3 && (
-            <form onSubmit={submitStep3} className="space-y-4">
-              <h2 className="font-serif text-xl">Add your first product</h2>
-
-              <div>
-                <Label>Product name *</Label>
-                <Input value={pName} onChange={(e) => { setPName(e.target.value); setErrors((p) => ({ ...p, pName: "" })); }}
-                  className={errors.pName ? "border-destructive" : ""} placeholder="e.g. Suya Plate" />
-                <FieldError msg={errors.pName} />
-              </div>
-
-              <div>
-                <Label>Price (₦) *</Label>
-                <Input type="number" min="1" value={pPrice}
-                  onChange={(e) => { setPPrice(e.target.value); setErrors((p) => ({ ...p, pPrice: "" })); }}
-                  className={errors.pPrice ? "border-destructive" : ""} placeholder="e.g. 2500" />
-                <FieldError msg={errors.pPrice} />
-              </div>
-
-              <div>
-                <Label>Product photo</Label>
-                <Input type="file" accept="image/*" onChange={(e) => setPImg(e.target.files?.[0] ?? null)} />
-              </div>
-
-              <div>
-                <Label>Short description</Label>
-                <Textarea value={pDesc} onChange={(e) => setPDesc(e.target.value)} placeholder="What makes this product special?" />
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <Button type="button" variant="outline" onClick={() => setStep(2)} className="flex-1 rounded-full">
-                  <ChevronLeft className="mr-1 h-4 w-4" /> Previous
-                </Button>
-                <Button type="submit" disabled={busy} className="flex-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
-                  {busy
-                    ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding…</>
-                    : <>Add Product <ChevronRight className="ml-1 h-4 w-4" /></>}
-                </Button>
-              </div>
-
-              {sellerSlug && (
-                <Link to="/store/$slug" params={{ slug: sellerSlug }}
-                  className="block text-center text-sm text-muted-foreground underline">
-                  Skip — view my store
-                </Link>
-              )}
-            </form>
-          )}
-
-          {/* ── Step 4: Completion ── */}
-          {step === 4 && sellerSlug && (
             <div className="space-y-5 text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <Check className="h-7 w-7" />
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                <Clock className="h-8 w-8" />
               </div>
-              <h2 className="font-serif text-2xl">Your store is live! 🎉</h2>
-              <p className="text-sm text-muted-foreground">Share it everywhere to start getting orders.</p>
-              <div className="flex items-center gap-2 rounded-full border bg-muted px-3 py-2 text-sm">
-                <span className="flex-1 truncate text-left">{shareUrl}</span>
-                <button onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Copied"); }}>
-                  <Copy className="h-4 w-4" />
-                </button>
+              <h2 className="font-serif text-2xl">Your application has been submitted</h2>
+              <p className="text-sm text-muted-foreground">
+                Thank you! Your store is now <strong>under review</strong> by our admin team.
+              </p>
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-left text-sm text-amber-900">
+                <p className="font-semibold">What happens next</p>
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  <li>An admin will review your application (usually within 24–48 hours).</li>
+                  <li>You'll receive an in-app notice once a decision is made.</li>
+                  <li>Once approved, you'll be able to add products and your store will go live.</li>
+                </ul>
+                <p className="mt-3 font-semibold">In the meantime</p>
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  <li>You can edit your profile and re-upload photos.</li>
+                  <li>You <strong>cannot</strong> publish products until your store is approved.</li>
+                </ul>
               </div>
-              <a
-                href={`https://wa.me/?text=${encodeURIComponent(`Check out my store on Sutura Market 🛍️ ${shareUrl}`)}`}
-                target="_blank" rel="noopener noreferrer"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[var(--color-whatsapp)] py-3 font-medium text-[var(--color-whatsapp-foreground)]"
-              >
-                <Share2 className="h-4 w-4" /> Share on WhatsApp
-              </a>
-              <Link to="/store/$slug" params={{ slug: sellerSlug }}
-                className="block text-sm text-primary underline">
-                View my store →
+              <Link to="/" className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3 font-medium text-primary-foreground hover:bg-primary/90">
+                <Home className="h-4 w-4" /> Return to homepage
               </Link>
             </div>
           )}

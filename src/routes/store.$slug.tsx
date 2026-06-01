@@ -18,6 +18,7 @@ import { TopBar } from "@/components/TopBar";
 import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
 import { BackButton } from "@/components/BackButton";
+import { VerificationBanner, ApprovedBanner } from "@/components/VerificationBanner";
 import { SectionLoader } from "@/components/LoadingSpinner";
 import {
   BadgeCheck, MapPin, Share2, Heart, Pencil, X, Check,

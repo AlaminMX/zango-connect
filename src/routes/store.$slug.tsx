@@ -272,6 +272,16 @@ function StorePage() {
       </div>
 
       <div className="mx-auto max-w-3xl px-5">
+        {/* Verification banner — owner only */}
+        {isOwner && seller.verification_status && seller.verification_status !== "approved" && (
+          <div className="pt-4">
+            <VerificationBanner status={seller.verification_status as any} reason={seller.rejection_reason} />
+          </div>
+        )}
+        {isOwner && seller.verification_status === "approved" && (
+          <div className="pt-4"><ApprovedBanner /></div>
+        )}
+
         {/* Profile picture */}
         <div className="-mt-14 flex items-end gap-4">
           <div className="relative z-10 h-28 w-28 shrink-0 overflow-hidden rounded-full border-4 border-background bg-secondary shadow-warm-lg ring-2 ring-primary/15 transition-shadow duration-200">

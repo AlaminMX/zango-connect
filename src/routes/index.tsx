@@ -23,7 +23,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sparkles, Search, MapPin, Store, ArrowRight, Heart } from "lucide-react";
 import { iconFor, NIGERIAN_CITIES } from "@/lib/categories";
 import { ExploreCities } from "@/components/ExploreCities";
-import { supabase } from "@/integrations/supabase/client";
 import heroImg from "@/assets/hero-market.jpg";
 
 export const Route = createFileRoute("/")({ component: Index });

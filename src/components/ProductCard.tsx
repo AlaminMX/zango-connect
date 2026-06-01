@@ -1,39 +1,53 @@
 /**
  * ProductCard.tsx
- * • Adds a heart/save (wishlist) button — persisted in localStorage.
- * • Keeps the WhatsApp "Order" button for direct product inquiries.
- * • Optional `hideWhatsApp` prop for store pages that handle ordering differently.
+ * Wishlist heart persists to the `wishlists` table (RLS scoped to auth.uid()).
+ * Unauthenticated users are prompted to sign in.
  */
 
 import { useState, useEffect } from "react";
 import { buildWhatsAppUrl, trackClick } from "@/lib/whatsapp";
 import { MessageCircle, Heart } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 /* ------------------------------------------------------------------ */
-/* Wishlist helpers (localStorage)                                      */
+/* Legacy localStorage helpers — retained for one-time migration.      */
 /* ------------------------------------------------------------------ */
-const WISHLIST_KEY = "sutura_wishlist";
+const LEGACY_KEY = "sutura_wishlist";
 
-export function getWishlist(): string[] {
-  try { return JSON.parse(localStorage.getItem(WISHLIST_KEY) ?? "[]"); }
+export function getLegacyWishlist(): string[] {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem(LEGACY_KEY) ?? "[]"); }
   catch { return []; }
 }
 
-function saveWishlistIds(ids: string[]) {
-  localStorage.setItem(WISHLIST_KEY, JSON.stringify(ids));
+export function clearLegacyWishlist() {
+  if (typeof window !== "undefined") localStorage.removeItem(LEGACY_KEY);
 }
 
-export function isWishlisted(id: string): boolean {
-  return getWishlist().includes(id);
+/* ------------------------------------------------------------------ */
+/* In-memory cache of wishlist ids for the current session.            */
+/* ------------------------------------------------------------------ */
+let cache: Set<string> | null = null;
+const listeners = new Set<() => void>();
+
+async function loadCache(): Promise<Set<string>> {
+  if (cache) return cache;
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) { cache = new Set(); return cache; }
+  const { data } = await supabase.from("wishlists").select("product_id").eq("user_id", u.user.id);
+  cache = new Set((data ?? []).map((r: any) => r.product_id));
+  return cache;
 }
 
-export function toggleWishlist(id: string): boolean {
-  const list = getWishlist();
-  const idx = list.indexOf(id);
-  if (idx === -1) { saveWishlistIds([...list, id]); return true; }
-  saveWishlistIds(list.filter((x) => x !== id)); return false;
+export function invalidateWishlistCache() {
+  cache = null;
+  listeners.forEach((l) => l());
+}
+
+if (typeof window !== "undefined") {
+  supabase.auth.onAuthStateChange(() => invalidateWishlistCache());
 }
 
 /* ------------------------------------------------------------------ */
@@ -50,14 +64,11 @@ export interface ProductCardProps {
   seller_slug?: string;
   whatsapp_number: string;
   stock_status?: "available" | "low_stock" | "sold_out" | string;
-  /** Hide the WhatsApp button (e.g. when rendering on a store profile page) */
   hideWhatsApp?: boolean;
 }
 
-/* ------------------------------------------------------------------ */
-/* Component                                                            */
-/* ------------------------------------------------------------------ */
 export function ProductCard(p: ProductCardProps) {
+  const nav = useNavigate();
   const storeUrl = p.seller_slug && typeof window !== "undefined"
     ? `${window.location.origin}/store/${p.seller_slug}` : undefined;
   const waUrl = buildWhatsAppUrl(p.whatsapp_number, p.name, storeUrl);
@@ -65,18 +76,47 @@ export function ProductCard(p: ProductCardProps) {
   const low = p.stock_status === "low_stock";
 
   const [saved, setSaved] = useState(false);
-  useEffect(() => { setSaved(isWishlisted(p.id)); }, [p.id]);
 
-  const handleSave = (e: React.MouseEvent) => {
+  useEffect(() => {
+    let alive = true;
+    const update = async () => {
+      const c = await loadCache();
+      if (alive) setSaved(c.has(p.id));
+    };
+    update();
+    listeners.add(update);
+    return () => { alive = false; listeners.delete(update); };
+  }, [p.id]);
+
+  const handleSave = async (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
-    const nowSaved = toggleWishlist(p.id);
-    setSaved(nowSaved);
-    toast(nowSaved ? "Saved to wishlist 💛" : "Removed from wishlist", { duration: 1800 });
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) {
+      toast("Sign in to save items", {
+        description: "Your wishlist syncs across devices when you're signed in.",
+        action: { label: "Sign in", onClick: () => nav({ to: "/auth" }) },
+      });
+      return;
+    }
+    if (saved) {
+      const { error } = await supabase.from("wishlists").delete()
+        .eq("user_id", u.user.id).eq("product_id", p.id);
+      if (error) { toast.error(error.message); return; }
+      toast("Removed from wishlist", { duration: 1500 });
+    } else {
+      const { error } = await supabase.from("wishlists").insert({
+        user_id: u.user.id, product_id: p.id,
+      });
+      if (error && !error.message.toLowerCase().includes("duplicate")) {
+        toast.error(error.message); return;
+      }
+      toast("Saved to wishlist 💛", { duration: 1500 });
+    }
+    invalidateWishlistCache();
   };
 
   return (
     <div className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card shadow-warm transition hover:-translate-y-0.5 hover:shadow-warm-lg">
-      {/* Image */}
       <div className="relative aspect-square w-full overflow-hidden bg-muted">
         {p.image_url ? (
           <img src={p.image_url} alt={p.name} loading="lazy"
@@ -90,14 +130,12 @@ export function ProductCard(p: ProductCardProps) {
         {low && !soldOut && (
           <span className="absolute left-2 top-2 rounded-full bg-accent/90 px-2 py-0.5 text-[10px] font-medium text-accent-foreground">Low stock</span>
         )}
-        {/* Wishlist/Save button */}
         <button onClick={handleSave} aria-label={saved ? "Remove from wishlist" : "Save to wishlist"}
           className={`absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-background/85 backdrop-blur shadow-sm transition hover:scale-110 active:scale-95 ${saved ? "text-rose-500" : "text-muted-foreground hover:text-rose-400"}`}>
           <Heart className={`h-4 w-4 ${saved ? "fill-rose-500" : ""}`} />
         </button>
       </div>
 
-      {/* Info */}
       <div className="p-3">
         <h4 className="line-clamp-1 font-medium">{p.name}</h4>
         <p className="mt-0.5 font-serif text-lg text-primary">₦{Number(p.price).toLocaleString()}</p>

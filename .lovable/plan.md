@@ -1,245 +1,153 @@
+# Sutura Market — Final Frontend Wiring Plan
 
-# Sutura Market — Localization, Verification, Wishlist, Admin & Media Plan (v2)
-
-This plan covers Parts 1–9 of the original brief plus the 6 revisions. It builds on the existing moderation system (sellers.status, seller_notices, admin_audit_log) without breaking it.
-
----
-
-## Part 1 — Cities of Business
-
-**New table `cities_of_business`**
-- `id`, `name`, `state`, `slug` (unique, URL-safe), `is_active` (default true), `sort_order`, timestamps
-- RLS: public SELECT where `is_active = true` OR admin; admin full write
-- Seeded with: Kaduna, Kano, Bauchi, Abuja, Sokoto (admin can add more, none hardcoded in app code)
-
-**`sellers` table**
-- Add `city_id uuid REFERENCES cities_of_business(id)`
-- Keep legacy `city text` for one release; backfill `city_id` by matching name; new registrations require `city_id`
-- Admin can edit `city_id` on any seller
-
-**Seller registration**
-- Required dropdown sourced from active cities, label "City of Business" with helper text from brief
-- Block submit if empty
-
-**Admin Cities tab (new in `/admin`)**
-- Add / edit / rename / enable / disable / delete (guard: refuse delete if sellers reference it; suggest disable)
-- Drag-to-reorder via `sort_order`
-- **City analytics columns (Change 2)**: per-row `sellers_count`, `products_count`, `sellers_added_30d`, `products_added_30d`. Sort by any column; growth arrows highlight fastest-growing and underperforming cities. Stats come from a `cities_with_stats` SQL view (LEFT JOIN sellers + products, GROUP BY city) so they auto-update on every read. No materialized view — view is cheap at our scale and always fresh.
-- All actions via `cities.functions.ts` + `assertAdmin` + audit log
+Scope is strictly frontend integration. All server functions, RLS, triggers, and tables already exist. No new migrations, no new server functions, no schema edits.
 
 ---
 
-## Part 2 — Marketplace Localization
+## 1. Admin Panel — `src/routes/admin.tsx` (rewrite tabs, keep file)
 
-**User city preference**
-- Guest: `localStorage` (`sutura.preferred_city_slug`)
-- Logged-in: `profiles.preferred_city_id` (profiles table created in Part 3)
-- `useCityPreference()` hook: logged-in pref wins, falls back to localStorage, syncs on login
+Add 3 new tabs alongside existing ones. New tab order:
+`Sellers · Verification · Migration · Cities · Categories · Featured · Homepage`.
 
-**First-time prompt**
-- Lightweight dismissible sheet on first visit: "📍 Select your city to see products available near you" — lists active cities, never blocks browsing
+Replace direct `supabase.from(...)` admin writes with `useServerFn` wrappers so every admin action goes through server functions.
 
-**Header**
-- TopBar: "📍 Your Marketplace: {City}" with click-to-switch popover + "Show all cities" escape hatch
+### A. Cities tab (new)
+- Data: `adminListCitiesWithStats` (already returns sellers_count, products_count, *_added_30d).
+- Table rows: emoji-free, each shows name, state, slug, is_active toggle, sellers, products, +30d badges.
+- "New city" button → dialog calling `adminUpsertCity` (name, state, is_active, sort_order auto = max+1).
+- Edit pencil → same dialog prefilled.
+- Delete trash → confirm modal → `adminDeleteCity` (server already blocks delete if sellers reference it; surface that error toast).
+- Reorder: ChevronUp/ChevronDown buttons that swap `sort_order` between two rows via two `adminUpsertCity` calls (mirrors existing category/section reorder pattern — no new dnd library).
+- Toggle Active: calls `adminUpsertCity` with new is_active.
 
-**Filtering**
-- Homepage, `/sellers`, `/category/$slug`, `/search`, featured, recommendations all filter by `sellers.city_id = preferredCityId`
-- Switching invalidates TanStack Query caches
+### B. Verification tab (new)
+- Sub-tabs: `Pending | Approved | Rejected | Suspended`.
+- Data: `adminListSellersForReview({ status })`.
+- Each card: profile photo, business name, owner name, category, city, WhatsApp, bio, created_at, "View documents" button opening `MediaViewer` over `verification_documents` jsonb.
+- Actions per card: Approve (instant), Reject (opens reason modal), Suspend (opens reason modal), Request Changes (opens message modal → `sendNotice` severity=warning).
+- All actions call `setVerificationStatus`. After success, invalidate the list query.
+- Bulk: checkbox column + sticky bottom action bar (`Approve N · Reject N · Suspend N`) → `bulkSetVerification`.
 
----
+### C. Migration tab (new)
+- Same data source as Verification's Pending sub-tab, but explicitly filters sellers whose `verification_decided_at IS NULL` and `created_at < cutoff` (cutoff = constant date set in `verification.functions.ts` migration; client-side filter on the pending list is sufficient — no backend change).
+- Table layout (not cards), checkbox selection, sticky bulk bar with the 3 bulk actions → `bulkSetVerification`.
+- Processed rows fade out / re-fetch.
 
-## Part 2b — Dedicated City Marketplace Pages (Change 3)
-
-**New route `/city/$slug`**
-- Self-contained marketplace: hero with city name + state, featured products (city-scoped), category grid (only categories with active products in that city), seller grid, all products listing
-- Loader: looks up city by slug → 404 if inactive/missing → fetches city-scoped data via public server fn
-- Sub-routes: `/city/$slug/sellers`, `/city/$slug/category/$catSlug` (optional, reuse existing components with city filter)
-
-**SEO (Change 6)**
-- `head()` per route: title `"{City} Marketplace — Sutura"`, description `"Discover sellers and products in {City}, {State}. Shop locally on Sutura."`, og:title, og:description, og:url, canonical (leaf only)
-- JSON-LD: `@type: "Marketplace"` + `BreadcrumbList`; per-product on store/product pages already covered
-- Sitemap: extend `src/routes/sitemap[.]xml.ts` to enumerate every active city → `/city/{slug}`
-- Slugs are URL-safe (kebab-case, no diacritics)
-
----
-
-## Part 2c — Homepage "Explore by City" (Change 4)
-
-- New homepage section rendered from `cities_of_business WHERE is_active` ordered by `sort_order`
-- Card per city showing name, state, seller count (from `cities_with_stats` view), optional icon
-- Click → `/city/{slug}`
-- Zero hardcoded city names
+### D. Sellers tab cleanup
+- Add a "Verification" column showing the status badge.
+- Existing `is_verified` toggle stays as-is (separate vouch system).
+- "Manage" button per seller opens a simple drawer with: status, subscription expiry, block/suspend buttons calling `setSellerStatus`, `setSubscriptionExpiry`, `deleteSeller`, `sendNotice`. (Drawer is inline JSX in `admin.tsx`; no new component file needed unless it grows large.)
 
 ---
 
-## Part 3 — User Accounts & Wishlist
+## 2. Seller Registration — `src/routes/register.tsx`
 
-**New tables**
-- `profiles`: `user_id` PK, `display_name`, `preferred_city_id`, timestamps; RLS owner-only; auto-created via extended `handle_new_user` trigger
-- `wishlists`: `user_id`, `product_id`, `created_at`, PK(user_id, product_id); RLS owner-only
-- `recently_viewed`: `user_id`, `product_id`, `viewed_at`; RLS owner-only; capped at 50/user via trigger
+- Step 3 "Add your first product" form is **removed entirely**. Pending sellers cannot create products (DB trigger blocks them anyway).
+- After Step 2 (photos) submit succeeds → go straight to a new final confirmation screen (replaces current step 4 "Your store is live").
 
-**UI**
-- Heart icon on `ProductCard` — guests get auth modal with value message: "Create a free account to save products, follow sellers, and get recommendations from your city."
-- New `/account` route: Profile (name, preferred city), Wishlist, Recently Viewed
-- One-time migration of any existing localStorage wishlist on first login
+New confirmation screen content:
+- 🟡 large icon, heading "Your application has been submitted"
+- Body: explains store is under review, typical review window, that they'll be notified by in-app notice.
+- Bullet list: what they can do now (edit profile, upload docs), what they cannot (publish products) until approved.
+- Single CTA "Return to homepage" (Link to `/`). No "View my store" / share buttons (store is not yet public).
 
----
-
-## Part 4 — Admin Seller Visibility & Edit
-
-**Admin seller detail drawer**
-- Every column: name, business_name, whatsapp, email (joined from `auth.users` via server fn), city, state, profile/cover, verification docs, dates, subscription, status, verification_status
-- Inline edit for every field via `adminUpdateSeller` (uses `supabaseAdmin`, audited)
+Remove `pName/pPrice/pDesc/pImg/submitStep3` state and helpers.
 
 ---
 
-## Part 5 — Order/Lead Management
+## 3. Seller Dashboard Verification Banner
 
-- Extend admin "Leads" tab over `whatsapp_clicks` joined with seller name, business_name, city, state, product
-- True `orders` table out of scope unless requested
-
----
-
-## Part 6 — Admin Governance
-
-Covered by: existing admin panel + Cities tab + seller detail drawer + verification queue. Every admin action audited.
+- `src/routes/store.$slug.tsx` is the unified seller dashboard. At top, when viewing as owner, fetch the seller's `verification_status` + `rejection_reason`.
+- Render `<VerificationBanner />` (already exists) for pending/rejected/suspended; render `<ApprovedBanner />` once on first approved view (dismissible via localStorage flag).
+- When status ≠ approved, hide the "Add product" UI and any product editing controls. Existing products still listed read-only.
+- Public visitors are unaffected (RLS already hides unapproved stores; this guards the owner-view code path).
 
 ---
 
-## Part 7 — Service Role for Moderation
+## 4. Reusable Image System (new components + replacements)
 
-**Audit**: `SUPABASE_SERVICE_ROLE_KEY` already configured; `admin.functions.ts` already uses `supabaseAdmin`. Real gaps:
-- `deleteSeller` doesn't remove the `auth.users` row → call `supabaseAdmin.auth.admin.deleteUser(seller.user_id)` after cascading deletes
-- Add `adminDeleteUser` server fn
-- Extend cascades to `profiles`, `wishlists`, `recently_viewed`
-- Confirm block/suspend/notice paths execute end-to-end
+### New files
+- `src/components/ImageUploader.tsx` — props: `value`, `onChange(url)`, `bucket="sutura"`, `pathPrefix`, `aspect` (1 | 16/9 | 4/3 | 3/4), `maxSizeMb=5`, `label`. Uses `react-easy-crop` + `browser-image-compression`, uploads via browser `supabase.storage.from(bucket).upload(...)`, returns public URL. Handles delete/replace.
+- `src/components/MediaViewer.tsx` — full-screen lightbox: props `images: string[]`, `open`, `onOpenChange`, `initialIndex`. Keyboard + swipe navigation, uses existing `Dialog`.
 
-No env changes. Service-role key stays exclusively in `client.server.ts` (server-only import).
+### Dependencies to add (no other deps)
+- `react-easy-crop`
+- `browser-image-compression`
 
----
+### Replace at these call sites (delete legacy `<Input type="file">` blocks)
+- `src/routes/register.tsx` step 2 — profile photo (aspect 1), cover (aspect 16/9).
+- `src/routes/store.$slug.tsx` — owner profile/cover edit + product image edit/create.
+- `src/routes/admin.tsx` — category icon (still emoji-based; leave as-is) and any product image admin edit.
+- Verification documents upload in seller dashboard ("Upload verification documents" panel; new panel under banner) — `aspect="auto"`, multiple uploads, writes to `sellers.verification_documents` jsonb array.
 
-## Part 8 — Seller Verification Workflow (Revised — Change 1)
-
-**`sellers` additions**
-- `verification_status` text: `pending | approved | rejected | suspended` (default `pending`)
-- `verification_decided_at`, `verification_decided_by`, `rejection_reason`
-- `verification_documents jsonb` (array of `{url, label, uploaded_at}`)
-
-**RLS tightening**
-- `sellers_public_read` and `products_public_read` require `status='active' AND verification_status='approved'`
-- Owner + admin still see their own
-- **Hard server-side block**: trigger on `products` rejects INSERT/UPDATE when the owning seller's `verification_status != 'approved'` (admins bypass via `has_role`). This is the gate — UI disablement alone is not enough.
-
-**Registration flow**
-- Submit → confirmation screen: "Your application has been submitted… review… notified once approved."
-- New sellers default to `pending`
-
-**Pending seller dashboard (revised)**
-Pending sellers CAN: log in, view profile, edit profile fields, upload verification documents, mark notices as read, respond to admin requests.
-Pending sellers CANNOT: see/access product creation UI, edit existing products, publish, view product management tools (entire products section hidden behind verification gate).
-
-Prominent banner: 🟡 **Verification Pending** — "Your store is currently under review. Product creation will become available after approval."
-
-The Products tab in `/dashboard` is replaced (for pending sellers) with a verification-status panel + document upload + activity log. No empty product table, no disabled "New product" button that hints at the feature — the section simply isn't there until approval.
-
-**Admin Verification Queue (new tab in `/admin`)**
-- Default filter: pending
-- Per-row: all seller data + document previews
-- Actions: Approve / Reject (with reason) / Request changes (sends notice) / Suspend
-- Filterable by status; sortable by submission date
-
-**Approval / Rejection**
-- Approve → status flips to `approved`, critical-severity notice created, audit entry; seller dashboard reveals product tools + shows "🟢 Your store has been approved and is now live."
-- Reject → banner "🔴 Verification Rejected" + admin reason + "Resubmit" button (resets to `pending`, clears reason)
+Wherever images are displayed in a tappable context (product cards modal, store gallery, verification doc preview, admin queue card), wrap with `MediaViewer` open-on-click.
 
 ---
 
-## Part 8b — Existing Seller Migration Review (Change 5)
+## 5. Wishlist + Account
 
-**Migration strategy**
-- Add `verification_status` column with default `pending`
-- Backfill ALL existing sellers to `pending` (safe default — Option B as baseline)
-- Then surface them in a dedicated **"Migration Review"** sub-tab of the Verification Queue
+### A. ProductCard heart → DB
+- `src/components/ProductCard.tsx`: remove `localStorage` reads/writes. New flow:
+  - Maintain a React Query cache key `["wishlist-ids", userId]`.
+  - If no session → open existing auth flow (`nav({ to: "/auth", search: { redirect: currentPath } })`) with toast "Sign in to save items".
+  - If session → upsert/delete row in `wishlists` via direct authenticated client (RLS already scopes to `auth.uid()`). Invalidate cache.
+- One-time migration: on first authenticated mount of `App`, if `localStorage.sutura_wishlist` non-empty, insert any missing rows then clear the key.
 
-**Migration Review UI**
-- One row per pre-existing seller with checkbox + all key fields + document presence indicator
-- Toolbar: **Bulk Approve · Bulk Reject · Bulk Suspend** (select-all + per-row select)
-- Bulk actions go through `bulkSetVerification` server fn — one audit entry per affected seller, single critical notice per seller
-- Once a seller is decided, they leave the migration sub-tab and merge into the normal queue
+### B. `/wishlist` route
+- Replace localStorage source with TanStack Query over `supabase.from("wishlists").select("product_id, products(...)")`. Empty state unchanged. Sign-in prompt if no session.
 
-This prevents accidental approval of test/duplicate/incomplete accounts and gives admins explicit control. Admins who want Option A can use "Select all → Bulk Approve" in one click.
-
----
-
-## Part 9 — Reusable Image Upload + Media Viewer
-
-**One `<ImageUploader>` component**
-- Props: `aspect` ('square'|'circle'|'banner'|'product'|number), `onUploaded(url)`, `bucket`, `pathPrefix`, `maxSizeMb`
-- Pipeline: pick → crop/zoom/drag modal (`react-easy-crop`) → canvas resize+compress (`browser-image-compression`) → upload to `sutura` bucket → return URL
-- Single optimized JPEG/WebP, ~1600px long edge, ~85% quality
-- Replaces ad-hoc uploads in seller registration, dashboard profile/cover, product create/edit, verification docs, category images
-
-**One `<MediaViewer>` component**
-- Full-screen lightbox: zoom, fade, close (Esc/X), swipe (mobile), arrow keys + buttons (desktop)
-- Optional caption (product name + description below image)
-- Thumbnail strip when >1 image
-- Used everywhere images appear
-
-**Storage**
-- Reuse public `sutura` bucket; new prefix `verification-docs/` is private — only owner + admin can read via signed URL from server fn
+### C. `/account` (new route file `src/routes/account.tsx`)
+- Guarded: redirect to `/auth` if no session, redirect to `/store/$slug` if user is a seller (sellers use the store dashboard).
+- Tabs: `Profile | Wishlist | Recently viewed`.
+- Profile: name input (writes `profiles.display_name`), preferred city `<Select>` populated from `listActiveCities` (writes `profiles.preferred_city_id`).
+- Wishlist: same grid as `/wishlist` route, reuses the query.
+- Recently viewed: `supabase.from("recently_viewed").select("product_id, viewed_at, products(...)").order("viewed_at desc")` rendered as ProductCards.
+- Add a small `recordRecentlyView(productId)` helper called from product detail open (existing ProductCard click handler or product modal — wherever the product is viewed). Trigger already caps at 50.
 
 ---
 
-## Database Summary
+## 6. Wiring rules (enforced during implementation)
+- All admin mutations use `useServerFn(...)` from `cities.functions.ts`, `verification.functions.ts`, `admin.functions.ts`. No direct `supabase.from(...).update/delete/insert` from admin tabs except for read-only `select`.
+- Buyer-side reads stay on the browser client (RLS already filters).
+- No new tables, columns, triggers, policies, or server functions.
 
-**New tables**: `cities_of_business`, `profiles`, `wishlists`, `recently_viewed`
-**New view**: `cities_with_stats` (sellers + products counts, 30-day deltas)
-**Updated tables**: `sellers` (+ `city_id`, `verification_status`, `verification_decided_at`, `verification_decided_by`, `rejection_reason`, `verification_documents`)
-**RLS changes**: public-read on sellers/products requires `approved`; product write blocked by trigger when seller not approved
-**New triggers**: `block_unapproved_product_writes`, `cap_recently_viewed_50`
+---
 
-## Server Functions (new/extended)
+## Files changed / created
 
-- `src/lib/cities.functions.ts` — list, CRUD, reorder, stats
-- `src/lib/account.functions.ts` — profile, wishlist, recently viewed, set preferred city
-- `src/lib/verification.functions.ts` — approve, reject, suspend, request-changes, resubmit, `bulkSetVerification`
-- `src/lib/city-marketplace.functions.ts` — public city-scoped data fetchers
-- Extend `src/lib/admin.functions.ts` — `adminUpdateSeller`, `adminDeleteUser`, cascade fixes
+```text
+src/components/ImageUploader.tsx          (new)
+src/components/MediaViewer.tsx            (new)
+src/components/admin/CitiesTab.tsx        (new, split for size)
+src/components/admin/VerificationTab.tsx  (new)
+src/components/admin/MigrationTab.tsx     (new)
+src/components/admin/SellerManageDrawer.tsx (new)
+src/routes/admin.tsx                      (refactor: add tabs, server-fn wiring)
+src/routes/register.tsx                   (remove step 3, new confirmation screen)
+src/routes/store.$slug.tsx                (verification banner + gate product UI + ImageUploader)
+src/routes/wishlist.tsx                   (DB-backed, drop localStorage)
+src/routes/account.tsx                    (new)
+src/components/ProductCard.tsx            (heart → wishlists table, auth prompt)
+src/routes/__root.tsx                     (one-time localStorage→DB wishlist migration on auth)
+package.json                              (+ react-easy-crop, + browser-image-compression)
+```
 
-## New Routes
+No migrations. No edits to `src/integrations/supabase/*`, `src/lib/*.functions.ts`, or `src/start.ts`.
 
-- `/account` (authenticated)
-- `/city/$slug` (public, SEO-optimized, in sitemap)
-- Admin `/admin` gains tabs: **Cities** (with stats), **Verification** (Pending / Migration Review / All)
+---
 
-## New Components
+## Known gaps to flag (do NOT fix in this pass)
+- True multi-item orders / checkout (out of scope by prior decision).
+- Email/WhatsApp notifications on verification decisions.
+- pg_cron for subscription expiry.
+- Admin city analytics chart visualization (numbers shown, no charts).
 
-`ImageUploader`, `MediaViewer`, `CitySwitcher`, `CityPickerModal`, `CityCard`, `ExploreCitiesSection`, `VerificationBanner`, `VerificationQueueTable`, `MigrationReviewTable`, `BulkActionBar`, `AdminSellerDrawer`, `CityStatsTable`, `WishlistButton`.
-
-## Dependencies
-
-Add: `react-easy-crop`, `browser-image-compression`.
-
-## Security
-
-- All admin writes: server fn + `assertAdmin` + `supabaseAdmin` + audit log
-- Service role key only in `client.server.ts`
-- RLS denies non-approved sellers/products to public
-- Wishlist/profiles/recently_viewed scoped to `auth.uid()`
-- Product-write trigger enforces verification at DB level (defense in depth beyond UI hiding)
-- Verification documents private, served via signed URLs
-
-## Backward Compatibility
-
-- `sellers.city` retained one release; reads prefer `city_id`
-- Existing sellers → `verification_status='pending'` then routed through Migration Review (no silent auto-approval)
-- localStorage wishlist migrated on first login
-
-## Verification Checklist (post-build)
-
-City CRUD, city analytics accuracy, `/city/$slug` page renders + SEO tags present + sitemap entry, "Explore by City" homepage section dynamic, city switching, guest→login wishlist migration, admin seller edit, admin user delete cascade, verification queue approve/reject/suspend/resubmit, **pending sellers cannot reach product creation UI or DB**, migration review bulk actions, banners visible, image crop/zoom on every upload, lightbox swipe/keyboard, no service-role key in client bundle.
-
-## Out of Scope (call out for future)
-
-True multi-item orders/cart, email/WhatsApp notifications on approval, pg_cron for subscription expiry, cross-city search.
+## Success checks
+- Admin can CRUD cities, see stats, reorder.
+- Verification queue: single + bulk approve/reject/suspend + reason modal → audit log row appears.
+- Migration tab processes legacy pending sellers.
+- New seller after registration lands on confirmation screen, cannot reach product creation.
+- Approved seller sees green banner once; pending sees yellow with no product UI.
+- Heart on product card while logged-out → auth prompt. Logged in → row in `wishlists`.
+- `/account` profile updates persist; preferred city drives city filter via existing hook.
+- No remaining `<Input type="file">` in upload flows; all use `<ImageUploader />`.

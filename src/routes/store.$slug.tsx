@@ -396,7 +396,7 @@ function StorePage() {
         </div>
 
         {/* ── Add product form (owner + edit mode) ── */}
-        {isOwner && editMode && (
+        {isOwner && editMode && seller.verification_status === "approved" && (
           <section className="mt-8 rounded-2xl border border-primary/20 bg-card p-5 shadow-warm">
             <h2 className="mb-4 font-serif text-xl text-primary">Add New Product</h2>
             <form onSubmit={addProduct} className="space-y-3">
@@ -433,7 +433,7 @@ function StorePage() {
                   whatsapp_number={seller.whatsapp_number}
                 />
                 {/* Edit/delete overlay for owner in edit mode */}
-                {isOwner && editMode && (
+                {isOwner && editMode && seller.verification_status === "approved" && (
                   <div className="absolute inset-0 flex items-start justify-end gap-1 p-2 pointer-events-none">
                     <button
                       onClick={() => openEditProduct(p)}

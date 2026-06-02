@@ -3,10 +3,8 @@
  * Homepage — fully dynamic:
  *  • Section text driven by homepage_sections table (admin-managed)
  *  • Featured products (admin-controlled via is_featured flag)
- *  • "View All Products" link/button
- *  • Wishlist count badge
- *  • Anime.js-style CSS loading animations
- *  • Top-right Search & Dashboard icons removed (per spec #10)
+ *  • Category cards now show uploaded image if available (falls back to icon)
+ *  • Blocked sellers/products automatically excluded via RLS
  */
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -42,7 +40,6 @@ const PLACEHOLDER_PRODUCTS = [
   { name: "Black Soap",       price: 1500, seller: "Fati Glow Beauty", city: "Abuja",  emoji: "🧼" },
 ];
 
-/* Helper: find a section from the CMS data */
 function useSection(sections: any[] | undefined, key: string) {
   return sections?.find((s: any) => s.key === key && s.is_visible !== false);
 }
@@ -53,7 +50,6 @@ function Index() {
   const [city, setCity] = useState<string>("All cities");
   const [wishlistCount, setWishlistCount] = useState(0);
 
-  // Keep wishlist badge count in sync (DB-backed)
   useEffect(() => {
     let alive = true;
     const load = async () => {
@@ -67,15 +63,10 @@ function Index() {
     return () => { alive = false; sub.subscription.unsubscribe(); };
   }, []);
 
-  /* ── Data fetching ── */
   const { data: sections } = useQuery({
     queryKey: ["homepage-sections"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("homepage_sections")
-        .select("*")
-        .eq("is_visible", true)
-        .order("sort_order");
+      const { data } = await supabase.from("homepage_sections").select("*").eq("is_visible", true).order("sort_order");
       return data ?? [];
     },
   });
@@ -95,6 +86,7 @@ function Index() {
       let qb = supabase
         .from("sellers")
         .select("id, slug, business_name, category, city, profile_photo_url, is_verified, rating")
+        .eq("is_blocked", false)
         .order("is_verified", { ascending: false })
         .order("created_at",  { ascending: false })
         .limit(10);
@@ -105,15 +97,15 @@ function Index() {
     },
   });
 
-  // Featured products: prefer admin-curated (is_featured=true), fall back to latest
   const { data: featuredProducts, isLoading: productsLoading } = useQuery({
     queryKey: ["featured-products", city],
     queryFn: async () => {
-      // First try to get admin-featured products
       let qb = supabase
         .from("products")
-        .select("id, name, price, image_url, stock_status, is_featured, featured_order, seller_id, sellers!inner(business_name, city, slug, whatsapp_number)")
+        .select("id, name, price, image_url, stock_status, is_featured, featured_order, status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, is_blocked)")
         .eq("is_featured", true)
+        .eq("status", "active")
+        .eq("sellers.is_blocked", false)
         .order("featured_order")
         .limit(8);
       if (city !== "All cities") qb = qb.eq("sellers.city", city);
@@ -121,10 +113,11 @@ function Index() {
 
       if (featData && featData.length > 0) return featData;
 
-      // Fallback: latest products
       let qb2 = supabase
         .from("products")
-        .select("id, name, price, image_url, stock_status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number)")
+        .select("id, name, price, image_url, stock_status, status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, is_blocked)")
+        .eq("status", "active")
+        .eq("sellers.is_blocked", false)
         .order("created_at", { ascending: false })
         .limit(8);
       if (city !== "All cities") qb2 = qb2.eq("sellers.city", city);
@@ -137,9 +130,9 @@ function Index() {
   const hasRealSellers  = (featured?.length ?? 0) > 0;
   const hasRealProducts = (featuredProducts?.length ?? 0) > 0;
 
-  const heroSection     = useSection(sections, "hero");
+  const heroSection       = useSection(sections, "hero");
   const newSellersSection = useSection(sections, "new_sellers");
-  const featuredSection = useSection(sections, "featured_products");
+  const featuredSection   = useSection(sections, "featured_products");
 
   const submitSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,9 +140,6 @@ function Index() {
     nav({ to: "/search", search: { q: q.trim(), city: city !== "All cities" ? city : undefined } });
   };
 
-  /* ------------------------------------------------------------------ */
-  /* Keyframes injected once                                             */
-  /* ------------------------------------------------------------------ */
   const keyframes = `
     @keyframes sutura-bounce {
       0%, 80%, 100% { transform: translateY(0);    opacity: 0.4; }
@@ -167,18 +157,10 @@ function Index() {
       <style>{keyframes}</style>
       <TopBar />
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Hero                                                                 */}
-      {/* ------------------------------------------------------------------ */}
+      {/* ── Hero ── */}
       <section className="relative isolate overflow-hidden">
         <div className="absolute inset-0 -z-10">
-          <img
-            src={heroImg}
-            alt="Northern Nigerian market scene"
-            className="h-full w-full object-cover object-center"
-            loading="eager"
-            decoding="async"
-          />
+          <img src={heroImg} alt="Northern Nigerian market scene" className="h-full w-full object-cover object-center" loading="eager" decoding="async" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-background" />
         </div>
 
@@ -200,7 +182,6 @@ function Index() {
             {heroSection?.content ?? "Discover trusted local sellers, handmade products, fashion, food, and everyday essentials."}
           </p>
 
-          {/* Search + city filter */}
           <form
             onSubmit={submitSearch}
             className="mx-auto mt-7 flex max-w-xl flex-col gap-2 rounded-3xl border border-white/20 bg-card/95 p-2 shadow-warm-lg backdrop-blur sm:flex-row sm:rounded-full"
@@ -229,11 +210,9 @@ function Index() {
             </Button>
           </form>
 
-          {/* CTAs */}
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link to="/register">
-              <Button size="lg"
-                className="group h-12 rounded-full bg-primary px-7 text-base font-medium text-primary-foreground shadow-warm-lg transition hover:bg-primary/90 hover:shadow-warm active:scale-[0.98]">
+              <Button size="lg" className="group h-12 rounded-full bg-primary px-7 text-base font-medium text-primary-foreground shadow-warm-lg transition hover:bg-primary/90 hover:shadow-warm active:scale-[0.98]">
                 <Store className="mr-2 h-5 w-5" />
                 Open Your Store · Fara Kasuwanci
                 <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-0.5" />
@@ -241,8 +220,7 @@ function Index() {
             </Link>
             {wishlistCount > 0 && (
               <Link to="/wishlist">
-                <Button variant="outline" size="lg"
-                  className="h-12 rounded-full border-white/30 bg-white/10 px-6 text-white backdrop-blur hover:bg-white/20">
+                <Button variant="outline" size="lg" className="h-12 rounded-full border-white/30 bg-white/10 px-6 text-white backdrop-blur hover:bg-white/20">
                   <Heart className="mr-2 h-5 w-5 fill-rose-400 text-rose-400" />
                   Saved ({wishlistCount})
                 </Button>
@@ -252,9 +230,7 @@ function Index() {
         </div>
       </section>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Categories                                                          */}
-      {/* ------------------------------------------------------------------ */}
+      {/* ── Categories — image-based ── */}
       <section id="categories" className="py-10 scroll-mt-20">
         <div className="mx-auto max-w-5xl px-5 mb-5 flex items-end justify-between">
           <div>
@@ -274,8 +250,16 @@ function Index() {
                     params={{ slug: c.slug }}
                     className="group flex flex-col items-center gap-2.5 rounded-2xl border border-[#F0DDD0] bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                   >
-                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#FDF3EC] transition-transform duration-200 group-hover:scale-105">
-                      <IconComponent size={56} />
+                    <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-[#FDF3EC] transition-transform duration-200 group-hover:scale-105">
+                      {(c as any).image_url ? (
+                        <img
+                          src={(c as any).image_url}
+                          alt={c.name}
+                          className="h-full w-full object-cover rounded-full"
+                        />
+                      ) : (
+                        <IconComponent size={56} />
+                      )}
                     </div>
                     <span className="text-center text-xs font-semibold leading-tight text-foreground">{c.name}</span>
                   </Link>
@@ -287,9 +271,7 @@ function Index() {
       {/* Explore by City */}
       <ExploreCities />
 
-      {/* ------------------------------------------------------------------ */}
-      {/* New sellers                                                         */}
-      {/* ------------------------------------------------------------------ */}
+      {/* ── New sellers ── */}
       <section className="mx-auto max-w-5xl px-5 py-6">
         <div className="mb-4 flex items-end justify-between">
           <div>
@@ -324,18 +306,14 @@ function Index() {
         </div>
       </section>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Featured products                                                   */}
-      {/* ------------------------------------------------------------------ */}
+      {/* ── Featured products ── */}
       <section className="mx-auto max-w-5xl px-5 py-10">
         <div className="mb-5 flex items-end justify-between">
           <div>
             <h2 className="font-serif text-2xl">{featuredSection?.title ?? "Featured products"}</h2>
             <p className="text-xs text-muted-foreground">{featuredSection?.subtitle ?? "Kayan da aka fi so"}</p>
           </div>
-          {/* "View All Products" — per spec #9 */}
-          <Link to="/products"
-            className="flex items-center gap-1 text-xs font-medium text-primary underline underline-offset-2">
+          <Link to="/products" className="flex items-center gap-1 text-xs font-medium text-primary underline underline-offset-2">
             View all products <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
@@ -353,6 +331,7 @@ function Index() {
                   <ProductCard
                     id={p.id} name={p.name} price={Number(p.price)}
                     image_url={p.image_url} stock_status={p.stock_status}
+                    status={(p as any).status}
                     seller_id={p.seller_id}
                     seller_name={s?.business_name} seller_city={s?.city}
                     seller_slug={s?.slug} whatsapp_number={s?.whatsapp_number ?? ""}
@@ -381,7 +360,6 @@ function Index() {
           </div>
         )}
 
-        {/* View all / register CTAs */}
         <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
           <Link to="/products">
             <Button variant="outline" className="rounded-full">

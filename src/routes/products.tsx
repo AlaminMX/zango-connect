@@ -1,6 +1,7 @@
 /**
  * products.tsx — /products
  * Full product catalog with category + city filtering and load-more pagination.
+ * Blocked products and products from blocked sellers are excluded.
  */
 
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -55,7 +56,9 @@ function ProductsPage() {
     queryFn: async () => {
       let qb = supabase
         .from("products")
-        .select("id, name, price, image_url, stock_status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, category)")
+        .select("id, name, price, image_url, stock_status, status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, category, is_blocked)")
+        .eq("status", "active")
+        .eq("sellers.is_blocked", false)
         .order("created_at", { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
@@ -69,7 +72,6 @@ function ProductsPage() {
     },
   });
 
-  // Reset page when filters change
   const applyFilter = (type: "cat" | "city", val: string) => {
     setPage(1);
     if (type === "cat")  setFilterCat(val);
@@ -97,7 +99,6 @@ function ProductsPage() {
 
         {/* Filters bar */}
         <div className="mt-5 flex flex-wrap gap-3">
-          {/* Inline search */}
           <form onSubmit={handleSearch} className="flex flex-1 min-w-[180px] items-center gap-2 rounded-full border border-border bg-card px-4 py-2 shadow-warm">
             <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
             <input
@@ -145,6 +146,7 @@ function ProductsPage() {
                     <ProductCard
                       id={p.id} name={p.name} price={Number(p.price)}
                       image_url={p.image_url} stock_status={p.stock_status}
+                      status={(p as any).status}
                       seller_id={p.seller_id}
                       seller_name={s?.business_name} seller_city={s?.city}
                       seller_slug={s?.slug} whatsapp_number={s?.whatsapp_number ?? ""}

@@ -1,48 +1,14 @@
 /**
  * TopBar.tsx
- * Simplified header — logo only.
- * Search has moved to the homepage hero.
- * Navigation has moved to SellerBottomNav (for sellers).
- * A subtle "Sign in" text link appears for unauthenticated users.
+ * Header with logo + wishlist icon. No visible auth UI (MVP).
  */
 
 import { Link } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { Heart } from "lucide-react";
+import { useWishlistCount } from "@/lib/wishlist";
 
 export function TopBar() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
-      setIsLoggedIn(!!data.session);
-      if (data.session) {
-        const { data: role } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", data.session.user.id)
-          .eq("role", "admin")
-          .maybeSingle();
-        setIsAdmin(!!role);
-      }
-    });
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setIsLoggedIn(!!session);
-      if (session) {
-        const { data: role } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .eq("role", "admin")
-          .maybeSingle();
-        setIsAdmin(!!role);
-      } else {
-        setIsAdmin(false);
-      }
-    });
-    return () => listener.subscription.unsubscribe();
-  }, []);
+  const count = useWishlistCount();
 
   return (
     <header className="sticky top-0 z-40 w-full bg-background/85 backdrop-blur-md">
@@ -52,6 +18,8 @@ export function TopBar() {
           <img
             src="/sutura-logo.png"
             alt="Sutura Market"
+            width={80}
+            height={80}
             className="h-20 w-20 object-contain"
           />
           <div className="flex flex-col leading-none">
@@ -70,25 +38,22 @@ export function TopBar() {
           </div>
         </Link>
 
-        {/* Right side — minimal */}
-        <div className="flex items-center gap-2 text-sm">
-          {isAdmin && (
-            <Link
-              to="/admin"
-              className="rounded-full border border-border/60 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-primary transition"
-            >
-              Admin
-            </Link>
+        {/* Wishlist */}
+        <Link
+          to="/wishlist"
+          aria-label={`Wishlist${count > 0 ? ` (${count})` : ""}`}
+          className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-border/60 bg-card shadow-warm transition hover:bg-secondary hover:border-primary/20 active:scale-95"
+        >
+          <Heart
+            className={`h-5 w-5 transition ${count > 0 ? "fill-rose-500 text-rose-500" : "text-foreground/70"}`}
+            strokeWidth={2}
+          />
+          {count > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+              {count > 99 ? "99+" : count}
+            </span>
           )}
-          {!isLoggedIn && (
-            <Link
-              to="/auth"
-              className="rounded-full bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition"
-            >
-              Sign in
-            </Link>
-          )}
-        </div>
+        </Link>
       </div>
       <div className="border-shift h-px w-full opacity-40" />
     </header>

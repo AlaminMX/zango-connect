@@ -6,12 +6,9 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { LangProvider } from "@/lib/i18n";
 import { SellerBottomNav } from "@/components/SellerBottomNav";
-import { supabase } from "@/integrations/supabase/client";
-import { getLegacyWishlist, clearLegacyWishlist, invalidateWishlistCache } from "@/components/ProductCard";
 
 import appCss from "../styles.css?url";
 
@@ -79,24 +76,6 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-
-  // One-time migration of legacy localStorage wishlist into the DB on sign-in.
-  useEffect(() => {
-    const migrate = async (uid: string) => {
-      const ids = getLegacyWishlist();
-      if (!ids.length) return;
-      const rows = ids.map((product_id) => ({ user_id: uid, product_id }));
-      await supabase.from("wishlists").upsert(rows, { onConflict: "user_id,product_id", ignoreDuplicates: true });
-      clearLegacyWishlist();
-      invalidateWishlistCache();
-    };
-    supabase.auth.getUser().then(({ data }) => { if (data.user) migrate(data.user.id); });
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session?.user) migrate(session.user.id);
-    });
-    return () => sub.subscription.unsubscribe();
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <LangProvider>

@@ -9,7 +9,7 @@
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
 import { Footer } from "@/components/Footer";
@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sparkles, Search, MapPin, Store, ArrowRight, Heart } from "lucide-react";
 import { iconFor, NIGERIAN_CITIES } from "@/lib/categories";
 import { ExploreCities } from "@/components/ExploreCities";
+import { useWishlistCount } from "@/lib/wishlist";
 import heroImg from "@/assets/hero-market.jpg";
 
 export const Route = createFileRoute("/")({ component: Index });
@@ -48,20 +49,7 @@ function Index() {
   const nav = useNavigate();
   const [q, setQ] = useState("");
   const [city, setCity] = useState<string>("All cities");
-  const [wishlistCount, setWishlistCount] = useState(0);
-
-  useEffect(() => {
-    let alive = true;
-    const load = async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) { if (alive) setWishlistCount(0); return; }
-      const { count } = await supabase.from("wishlists").select("product_id", { count: "exact", head: true }).eq("user_id", u.user.id);
-      if (alive) setWishlistCount(count ?? 0);
-    };
-    load();
-    const { data: sub } = supabase.auth.onAuthStateChange(() => load());
-    return () => { alive = false; sub.subscription.unsubscribe(); };
-  }, []);
+  const wishlistCount = useWishlistCount();
 
   const { data: sections } = useQuery({
     queryKey: ["homepage-sections"],

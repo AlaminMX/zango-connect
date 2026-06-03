@@ -1,11 +1,12 @@
 /**
- * register.tsx — Seller registration (2 steps + confirmation).
- * Pending verification: product creation is gated until admin approval,
- * so the registration flow only collects profile + photos and ends with
- * a confirmation screen.
+ * register.tsx — Seller registration with inline account creation.
+ * Step 1: business info + email + password (collected only if not signed in).
+ * Step 2: profile/cover photos.
+ * Step 3: confirmation that the store is under review.
+ * No /auth redirect — registration is reachable by everyone.
  */
 
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
@@ -13,6 +14,7 @@ import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ImageUploader } from "@/components/ImageUploader";
@@ -35,14 +37,18 @@ function FieldError({ msg }: { msg?: string }) {
 }
 
 function Register() {
-  const nav = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
+  const [hasAccount, setHasAccount] = useState(false); // already signed in
   const [sellerId, setSellerId] = useState<string | null>(null);
   const [step, setStep] = useState(1);
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
 
-  // Step 1
+  // Step 1 — auth (only when not signed in)
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  // Step 1 — business
   const [name, setName] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -58,24 +64,33 @@ function Register() {
   const [categories, setCategories] = useState<{ name: string }[]>([]);
 
   useEffect(() => {
+    // Non-blocking: check if user already has a session/seller, but never redirect away.
     supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) { nav({ to: "/auth" }); return; }
-      setUserId(data.user.id);
-      const { data: existing } = await supabase
-        .from("sellers").select("id, profile_photo_url, cover_photo_url, verification_status").eq("user_id", data.user.id).maybeSingle();
-      if (existing) {
-        setSellerId(existing.id);
-        setProfileUrl(existing.profile_photo_url ?? null);
-        setCoverUrl(existing.cover_photo_url ?? null);
-        // If they already submitted, jump to confirmation
-        setStep(existing.profile_photo_url ? 3 : 2);
+      if (data.user) {
+        setUserId(data.user.id);
+        setHasAccount(true);
+        const { data: existing } = await supabase
+          .from("sellers")
+          .select("id, profile_photo_url, cover_photo_url")
+          .eq("user_id", data.user.id)
+          .maybeSingle();
+        if (existing) {
+          setSellerId(existing.id);
+          setProfileUrl(existing.profile_photo_url ?? null);
+          setCoverUrl(existing.cover_photo_url ?? null);
+          setStep(existing.profile_photo_url ? 3 : 2);
+        }
       }
     });
     supabase.from("categories").select("name").order("sort_order").then(({ data }) => setCategories(data ?? []));
-  }, [nav]);
+  }, []);
 
   const validateStep1 = (): Errors => {
     const e: Errors = {};
+    if (!hasAccount) {
+      if (!email.trim() || !/^\S+@\S+\.\S+$/.test(email.trim())) e.email = "Enter a valid email";
+      if (!password || password.length < 6) e.password = "Password must be at least 6 characters";
+    }
     if (!businessName.trim()) e.businessName = "Business name is required";
     if (!name.trim()) e.name = "Your name is required";
     if (!whatsapp.trim()) e.whatsapp = "WhatsApp number is required";
@@ -90,8 +105,63 @@ function Register() {
     const errs = validateStep1();
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
-    if (!userId) return;
     setBusy(true);
+
+    let uid = userId;
+
+    // Create the account inline if needed.
+    if (!hasAccount) {
+      const { data: signUp, error: signErr } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+      });
+      if (signErr) {
+        // If the email is already registered, try signing in with the provided password.
+        if (signErr.message.toLowerCase().includes("registered") || signErr.message.toLowerCase().includes("exists")) {
+          const { data: signIn, error: inErr } = await supabase.auth.signInWithPassword({
+            email: email.trim(),
+            password,
+          });
+          if (inErr || !signIn.user) {
+            setBusy(false);
+            setErrors({ email: "An account exists for this email. The password didn't match." });
+            return;
+          }
+          uid = signIn.user.id;
+        } else {
+          setBusy(false);
+          toast.error(signErr.message);
+          return;
+        }
+      } else if (signUp.user) {
+        uid = signUp.user.id;
+      }
+
+      if (!uid) {
+        setBusy(false);
+        toast.error("Couldn't create your account. Please try again.");
+        return;
+      }
+      setUserId(uid);
+      setHasAccount(true);
+
+      // If this email already has a seller, jump to the right step.
+      const { data: existing } = await supabase
+        .from("sellers")
+        .select("id, profile_photo_url, cover_photo_url")
+        .eq("user_id", uid)
+        .maybeSingle();
+      if (existing) {
+        setSellerId(existing.id);
+        setProfileUrl(existing.profile_photo_url ?? null);
+        setCoverUrl(existing.cover_photo_url ?? null);
+        setBusy(false);
+        setStep(existing.profile_photo_url ? 3 : 2);
+        return;
+      }
+    }
+
+    // Create the seller record.
     const baseSlug = slugify(businessName);
     let slug = baseSlug;
     for (let i = 0; i < 5; i++) {
@@ -103,7 +173,7 @@ function Register() {
     const { data: cityRow } = await supabase
       .from("cities_of_business").select("id").ilike("name", finalCity).maybeSingle();
     const { data, error } = await supabase.from("sellers").insert({
-      user_id: userId, name, business_name: businessName.trim(), slug,
+      user_id: uid!, name, business_name: businessName.trim(), slug,
       whatsapp_number: whatsapp, city: finalCity, city_id: cityRow?.id ?? null, category, bio,
     }).select().single();
     setBusy(false);
@@ -150,6 +220,26 @@ function Register() {
 
           {step === 1 && (
             <div className="space-y-4">
+              {!hasAccount && (
+                <>
+                  <h2 className="font-serif text-xl">Your login</h2>
+                  <p className="-mt-2 text-xs text-muted-foreground">
+                    We'll create your seller account so you can manage your store later.
+                  </p>
+                  <div>
+                    <Label>Email *</Label>
+                    <Input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+                    <FieldError msg={errors.email} />
+                  </div>
+                  <div>
+                    <Label>Password *</Label>
+                    <PasswordInput minLength={6} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" />
+                    <FieldError msg={errors.password} />
+                  </div>
+                  <div className="my-2 h-px bg-border" />
+                </>
+              )}
+
               <h2 className="font-serif text-xl">Business info</h2>
 
               <div>
@@ -267,11 +357,6 @@ function Register() {
                   <li>An admin will review your application (usually within 24–48 hours).</li>
                   <li>You'll receive an in-app notice once a decision is made.</li>
                   <li>Once approved, you'll be able to add products and your store will go live.</li>
-                </ul>
-                <p className="mt-3 font-semibold">In the meantime</p>
-                <ul className="mt-2 list-disc space-y-1 pl-5">
-                  <li>You can edit your profile and re-upload photos.</li>
-                  <li>You <strong>cannot</strong> publish products until your store is approved.</li>
                 </ul>
               </div>
               <Link to="/" className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3 font-medium text-primary-foreground hover:bg-primary/90">

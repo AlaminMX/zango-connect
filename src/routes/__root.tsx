@@ -48,16 +48,43 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Sutura Market — Your Business, Discovered." },
       { name: "description", content: "The marketplace built for northern Nigeria's women entrepreneurs. Discover sellers, order on WhatsApp." },
+      { property: "og:site_name", content: "Sutura Market" },
       { property: "og:title", content: "Sutura Market — Your Business, Discovered." },
       { property: "og:description", content: "The marketplace built for northern Nigeria's women entrepreneurs. Discover sellers, order on WhatsApp." },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://sutura-connect.lovable.app/" },
       { name: "twitter:title", content: "Sutura Market — Your Business, Discovered." },
       { name: "twitter:description", content: "The marketplace built for northern Nigeria's women entrepreneurs. Discover sellers, order on WhatsApp." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/sgPidVUphLSGVGq51GiPoIX6I323/social-images/social-1779979957518-de2fabe1-9118-4df0-b36b-cade9a776284.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/sgPidVUphLSGVGq51GiPoIX6I323/social-images/social-1779979957518-de2fabe1-9118-4df0-b36b-cade9a776284.webp" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "Sutura Market",
+          url: "https://sutura-connect.lovable.app/",
+          description: "The marketplace built for northern Nigeria's women entrepreneurs.",
+          potentialAction: {
+            "@type": "SearchAction",
+            target: "https://sutura-connect.lovable.app/search?q={search_term_string}",
+            "query-input": "required name=search_term_string",
+          },
+        }),
+      },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "Sutura Market",
+          url: "https://sutura-connect.lovable.app/",
+          description: "WhatsApp-first marketplace for northern Nigeria's women entrepreneurs.",
+        }),
+      },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -79,7 +106,9 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <LangProvider>
-        <Outlet />
+        <main>
+          <Outlet />
+        </main>
         <SellerBottomNav />
         <Toaster />
       </LangProvider>

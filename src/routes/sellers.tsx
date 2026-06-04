@@ -82,6 +82,7 @@ function SellersPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, city, or category…"
+              aria-label="Search sellers"
               className="pl-9 rounded-full"
             />
           </div>

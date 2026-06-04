@@ -180,6 +180,7 @@ function Index() {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search tuwo, ankara, zobo, shoes…"
+                aria-label="Search products and sellers"
                 className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               />
             </div>

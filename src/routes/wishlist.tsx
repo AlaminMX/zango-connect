@@ -22,10 +22,10 @@ function WishlistPage() {
         <BackButton fallback="/" />
 
         <div className="mt-4 flex items-center gap-3">
-          <Heart className="h-6 w-6 fill-rose-400 text-rose-400" />
+          <Bookmark className="h-6 w-6 fill-primary text-primary" />
           <div>
-            <h1 className="font-serif text-3xl">Saved Products</h1>
-            <p className="text-xs text-muted-foreground">Kayan da aka ajiye</p>
+            <h1 className="font-serif text-3xl">Bookmarks</h1>
+            <p className="text-xs text-muted-foreground">Abubuwan da aka ajiye</p>
           </div>
         </div>
 

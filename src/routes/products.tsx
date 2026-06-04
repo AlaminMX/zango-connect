@@ -105,6 +105,7 @@ function ProductsPage() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search products…"
+              aria-label="Search products"
               className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
           </form>

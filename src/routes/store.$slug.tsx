@@ -35,7 +35,42 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { NIGERIAN_CITIES } from "@/lib/categories";
 import { validateNigerianPhone } from "@/lib/whatsapp";
 
-export const Route = createFileRoute("/store/$slug")({ component: StorePage });
+function prettifySlug(slug: string) {
+  return slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+}
+
+export const Route = createFileRoute("/store/$slug")({
+  component: StorePage,
+  head: ({ params }) => {
+    const name = prettifySlug(params.slug);
+    const url = `https://sutura-connect.lovable.app/store/${params.slug}`;
+    const title = `${name} — Sutura Market`;
+    const description = `Shop ${name} on Sutura Market. Browse products and order directly on WhatsApp.`;
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:url", content: url },
+        { property: "og:type", content: "profile" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: description },
+      ],
+      links: [{ rel: "canonical", href: url }],
+      scripts: [{
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Store",
+          name,
+          url,
+          description,
+        }),
+      }],
+    };
+  },
+});
 
 const STOCK_OPTIONS = [
   { value: "available", label: "Available" },

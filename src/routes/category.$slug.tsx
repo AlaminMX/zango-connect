@@ -10,7 +10,42 @@ import { BackButton } from "@/components/BackButton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { hausaFor, iconFor, NIGERIAN_CITIES } from "@/lib/categories";
 
-export const Route = createFileRoute("/category/$slug")({ component: CategoryPage });
+function prettifySlug(slug: string) {
+  return slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+}
+
+export const Route = createFileRoute("/category/$slug")({
+  component: CategoryPage,
+  head: ({ params }) => {
+    const name = prettifySlug(params.slug);
+    const url = `https://sutura-connect.lovable.app/category/${params.slug}`;
+    const title = `${name} — Sutura Market`;
+    const description = `Browse ${name} sellers and products across northern Nigeria. Order on WhatsApp.`;
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:url", content: url },
+        { property: "og:type", content: "website" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: description },
+      ],
+      links: [{ rel: "canonical", href: url }],
+      scripts: [{
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: `${name} on Sutura Market`,
+          url,
+          description,
+        }),
+      }],
+    };
+  },
+});
 
 function CategoryPage() {
   const { slug } = Route.useParams();

@@ -217,10 +217,20 @@ function StorePage() {
 
   const uploadImage = async (file: File, prefix: string): Promise<string | null> => {
     if (!userId) return null;
-    const ext = file.name.split(".").pop();
+    const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!ALLOWED.includes(file.type)) {
+      toast.error("Only JPEG, PNG, WebP, or GIF images are allowed");
+      return null;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image too large (max 5MB)");
+      return null;
+    }
+    const extMap: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif" };
+    const ext = extMap[file.type];
     const path = `${userId}/${prefix}-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("sutura").upload(path, file, { upsert: true });
-    if (error) { toast.error(error.message); return null; }
+    const { error } = await supabase.storage.from("sutura").upload(path, file, { upsert: true, contentType: file.type });
+    if (error) { toast.error("Upload failed"); return null; }
     return supabase.storage.from("sutura").getPublicUrl(path).data.publicUrl;
   };
 

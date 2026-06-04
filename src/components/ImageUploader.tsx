@@ -60,6 +60,11 @@ export function ImageUploader({
   const [busy, setBusy] = useState(false);
 
   const handleFile = (file: File) => {
+    const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!ALLOWED.includes(file.type)) {
+      toast.error("Only JPEG, PNG, WebP, or GIF images are allowed");
+      return;
+    }
     if (file.size > maxSizeMb * 1024 * 1024) {
       toast.error(`Image too large (max ${maxSizeMb}MB)`);
       return;

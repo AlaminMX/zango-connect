@@ -57,6 +57,8 @@ function Index() {
       const { data } = await supabase.from("homepage_sections").select("*").eq("is_visible", true).order("sort_order");
       return data ?? [];
     },
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 
   const { data: categories, isLoading: categoriesLoading } = useQuery({
@@ -66,6 +68,8 @@ function Index() {
       if (error) throw error;
       return data;
     },
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 
   const { data: featured, isLoading: sellersLoading } = useQuery({
@@ -83,36 +87,45 @@ function Index() {
       if (error) throw error;
       return data;
     },
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 
   const { data: featuredProducts, isLoading: productsLoading } = useQuery({
     queryKey: ["featured-products", city],
     queryFn: async () => {
-      let qb = supabase
-        .from("products")
-        .select("id, name, price, image_url, stock_status, is_featured, featured_order, status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, is_blocked)")
-        .eq("is_featured", true)
-        .eq("status", "active")
-        .eq("sellers.is_blocked", false)
-        .order("featured_order")
-        .limit(8);
-      if (city !== "All cities") qb = qb.eq("sellers.city", city);
-      const { data: featData } = await qb;
+      const buildFeatured = () => {
+        let qb = supabase
+          .from("products")
+          .select("id, name, price, image_url, stock_status, is_featured, featured_order, status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, is_blocked)")
+          .eq("is_featured", true)
+          .eq("status", "active")
+          .eq("sellers.is_blocked", false)
+          .order("featured_order")
+          .limit(8);
+        if (city !== "All cities") qb = qb.eq("sellers.city", city);
+        return qb;
+      };
 
-      if (featData && featData.length > 0) return featData;
+      const buildRecent = () => {
+        let qb = supabase
+          .from("products")
+          .select("id, name, price, image_url, stock_status, status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, is_blocked)")
+          .eq("status", "active")
+          .eq("sellers.is_blocked", false)
+          .order("created_at", { ascending: false })
+          .limit(8);
+        if (city !== "All cities") qb = qb.eq("sellers.city", city);
+        return qb;
+      };
 
-      let qb2 = supabase
-        .from("products")
-        .select("id, name, price, image_url, stock_status, status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, is_blocked)")
-        .eq("status", "active")
-        .eq("sellers.is_blocked", false)
-        .order("created_at", { ascending: false })
-        .limit(8);
-      if (city !== "All cities") qb2 = qb2.eq("sellers.city", city);
-      const { data, error } = await qb2;
-      if (error) throw error;
-      return data;
+      const [featRes, recentRes] = await Promise.all([buildFeatured(), buildRecent()]);
+      if (featRes.data && featRes.data.length > 0) return featRes.data;
+      if (recentRes.error) throw recentRes.error;
+      return recentRes.data ?? [];
     },
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 
   const hasRealSellers  = (featured?.length ?? 0) > 0;

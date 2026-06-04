@@ -86,13 +86,25 @@ function subscribe(cb: () => void) {
   return () => { listeners.delete(cb); };
 }
 
+let lastRaw = "";
+let snapshotCache: WishlistItem[] = [];
+
 export function useWishlist(): WishlistItem[] {
-  // SSR-safe snapshot
   const items = useSyncExternalStore(
     subscribe,
     () => {
-      // Re-read on each notification; JSON.stringify gives stable identity for shallow equality
-      return read();
+      if (typeof window === "undefined") return snapshotCache;
+      const raw = localStorage.getItem(KEY) ?? "[]";
+      if (raw !== lastRaw) {
+        lastRaw = raw;
+        try {
+          const parsed = JSON.parse(raw);
+          snapshotCache = Array.isArray(parsed) ? parsed : [];
+        } catch {
+          snapshotCache = [];
+        }
+      }
+      return snapshotCache;
     },
     () => [] as WishlistItem[],
   );

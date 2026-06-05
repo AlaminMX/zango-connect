@@ -256,7 +256,13 @@ function Index() {
         <div className="mx-auto max-w-5xl px-5 grid grid-cols-3 gap-4">
           {categoriesLoading
             ? Array.from({ length: 6 }).map((_, i) => <CategorySkeleton key={i} />)
-            : categories?.map((c) => {
+            : categoriesError || !categories?.length
+            ? (
+              <p className="col-span-3 text-center text-sm text-muted-foreground py-6">
+                Categories unavailable. Check back soon.
+              </p>
+            )
+            : categories.map((c) => {
                 const { Component: IconComponent } = iconFor(c.name);
                 return (
                   <Link

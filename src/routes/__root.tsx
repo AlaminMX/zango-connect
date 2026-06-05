@@ -56,6 +56,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:title", content: "Sutura Market — Your Business, Discovered." },
       { name: "twitter:description", content: "The marketplace built for northern Nigeria's women entrepreneurs. Discover sellers, order on WhatsApp." },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/sgPidVUphLSGVGq51GiPoIX6I323/social-images/social-1780628286980-1000657853.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/sgPidVUphLSGVGq51GiPoIX6I323/social-images/social-1780628286980-1000657853.webp" },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
     scripts: [

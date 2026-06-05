@@ -54,22 +54,33 @@ function Index() {
   const { data: sections } = useQuery({
     queryKey: ["homepage-sections"],
     queryFn: async () => {
-      const { data } = await supabase.from("homepage_sections").select("*").eq("is_visible", true).order("sort_order");
+      const { data } = await supabase
+        .from("homepage_sections")
+        .select("*")
+        .eq("is_visible", true)
+        .order("sort_order")
+        .abortSignal(AbortSignal.timeout(8000));
       return data ?? [];
     },
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
+    retry: 1,
   });
 
-  const { data: categories, isLoading: categoriesLoading } = useQuery({
+  const { data: categories, isLoading: categoriesLoading, isError: categoriesError } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("categories").select("*").order("sort_order");
+      const { data, error } = await supabase
+        .from("categories")
+        .select("*")
+        .order("sort_order")
+        .abortSignal(AbortSignal.timeout(8000));
       if (error) throw error;
       return data;
     },
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
+    retry: 1,
   });
 
   const { data: featured, isLoading: sellersLoading } = useQuery({
@@ -83,12 +94,13 @@ function Index() {
         .order("created_at",  { ascending: false })
         .limit(10);
       if (city !== "All cities") qb = qb.eq("city", city);
-      const { data, error } = await qb;
+      const { data, error } = await qb.abortSignal(AbortSignal.timeout(8000));
       if (error) throw error;
       return data;
     },
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
+    retry: 1,
   });
 
   const { data: featuredProducts, isLoading: productsLoading } = useQuery({
@@ -104,7 +116,7 @@ function Index() {
           .order("featured_order")
           .limit(8);
         if (city !== "All cities") qb = qb.eq("sellers.city", city);
-        return qb;
+        return qb.abortSignal(AbortSignal.timeout(8000));
       };
 
       const buildRecent = () => {
@@ -116,7 +128,7 @@ function Index() {
           .order("created_at", { ascending: false })
           .limit(8);
         if (city !== "All cities") qb = qb.eq("sellers.city", city);
-        return qb;
+        return qb.abortSignal(AbortSignal.timeout(8000));
       };
 
       const [featRes, recentRes] = await Promise.all([buildFeatured(), buildRecent()]);
@@ -126,6 +138,7 @@ function Index() {
     },
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
+    retry: 1,
   });
 
   const hasRealSellers  = (featured?.length ?? 0) > 0;

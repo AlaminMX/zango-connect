@@ -26,7 +26,8 @@ function AuthPage() {
     const { data: role } = await supabase.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
     if (role) { nav({ to: "/admin" }); return; }
     const { data: s } = await supabase.from("sellers").select("id").eq("user_id", userId).maybeSingle();
-    nav({ to: s ? "/dashboard" : "/register" });
+    // Sellers → their dashboard. Buyers / new users → home (they can open a store from there).
+    nav({ to: s ? "/dashboard" : "/" });
   };
 
   useEffect(() => {
@@ -265,6 +266,9 @@ function AuthPage() {
         </form>
         <p className="mt-4 text-center text-xs text-muted-foreground">
           Just browsing? <Link to="/" className="text-primary underline">Go to marketplace</Link>
+        </p>
+        <p className="mt-2 text-center text-xs text-muted-foreground">
+          Want to sell? <Link to="/register" className="text-primary underline">Open your store →</Link>
         </p>
       </div>
     </div>

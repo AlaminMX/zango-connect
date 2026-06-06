@@ -1,17 +1,31 @@
 /**
  * TopBar.tsx
- * Header with logo, optional sign-in button (guests only), and bookmark icon.
+ * Header with logo, city-filter selector, sign-in button (guests only), and bookmark icon.
+ *
+ * FIX: City / State selector moved into the top-nav so it persists across pages
+ * and is always visible. Selection is stored in localStorage (useCityFilter) and
+ * picked up by any page that calls the same hook.
  */
 
 import { Link } from "@tanstack/react-router";
-import { Bookmark, LogIn } from "lucide-react";
+import { Bookmark, LogIn, MapPin } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWishlistCount } from "@/lib/wishlist";
+import { useCityFilter, ALL_CITIES } from "@/lib/cityFilter";
+import { NIGERIAN_CITIES } from "@/lib/categories";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function TopBar() {
   const count = useWishlistCount();
   const [isSignedIn, setIsSignedIn] = useState(false);
+  const { city, setCity } = useCityFilter();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -25,9 +39,9 @@ export function TopBar() {
 
   return (
     <header className="sticky top-0 z-40 w-full bg-background/85 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
+      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-2 px-4">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5">
+        <Link to="/" className="flex shrink-0 items-center gap-2.5">
           <img
             src="/sutura-logo.png"
             alt="Sutura Market"
@@ -35,7 +49,7 @@ export function TopBar() {
             height={80}
             className="h-20 w-20 object-contain"
           />
-          <div className="flex flex-col leading-none">
+          <div className="hidden flex-col leading-none sm:flex">
             <span
               className="font-serif text-lg font-bold tracking-wide text-primary"
               style={{ letterSpacing: "0.08em" }}
@@ -51,15 +65,34 @@ export function TopBar() {
           </div>
         </Link>
 
+        {/* ── City / State selector — centre of the bar ── */}
+        <div className="flex-1 max-w-[200px]">
+          <Select value={city} onValueChange={setCity}>
+            <SelectTrigger
+              className="h-9 rounded-full border border-border/60 bg-card px-3 text-xs shadow-warm transition hover:border-primary/30 focus:ring-0"
+              aria-label="Filter by city"
+            >
+              <MapPin className="mr-1 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <SelectValue placeholder="All cities" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_CITIES}>All cities</SelectItem>
+              {NIGERIAN_CITIES.filter((c) => c !== "Other").map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Right actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {!isSignedIn && (
             <Link
               to="/auth"
               className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border/60 bg-card px-3 text-xs font-medium shadow-warm transition hover:bg-secondary hover:border-primary/20 active:scale-95"
             >
               <LogIn className="h-4 w-4 text-foreground/70" />
-              <span>Sign In</span>
+              <span className="hidden sm:inline">Sign In</span>
             </Link>
           )}
           <Link

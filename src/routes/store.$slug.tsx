@@ -132,13 +132,17 @@ function StorePage() {
 
   useEffect(() => {
     supabase.from("categories").select("name").order("sort_order").then(({ data }) => setCategories(data ?? []));
-    supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) return;
-      setUserId(data.user.id);
-      const { data: s } = await supabase.from("sellers").select("id").eq("user_id", data.user.id).maybeSingle();
+    // FIX: use getSession() (reads localStorage instantly) instead of getUser()
+    // (getUser() makes a server-side network call — on page refresh this can fail
+    //  before the token is auto-refreshed, causing empty userId / missing ownership)
+    supabase.auth.getSession().then(async ({ data }) => {
+      const user = data.session?.user;
+      if (!user) return;
+      setUserId(user.id);
+      const { data: s } = await supabase.from("sellers").select("id").eq("user_id", user.id).maybeSingle();
       if (s) setMySellerId(s.id);
       // Check admin
-      const { data: role } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id).eq("role", "admin").maybeSingle();
+      const { data: role } = await supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
       if (role) setIsAdmin(true);
     });
   }, []);

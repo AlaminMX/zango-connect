@@ -18,6 +18,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { ProductSkeleton, CategorySkeleton, SellerSkeleton } from "@/components/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useCityFilter, ALL_CITIES } from "@/lib/cityFilter";
 import { Sparkles, Search, MapPin, Store, ArrowRight, Heart } from "lucide-react";
 import { iconFor, NIGERIAN_CITIES } from "@/lib/categories";
 import { ExploreCities } from "@/components/ExploreCities";
@@ -48,7 +49,8 @@ function useSection(sections: any[] | undefined, key: string) {
 function Index() {
   const nav = useNavigate();
   const [q, setQ] = useState("");
-  const [city, setCity] = useState<string>("All cities");
+  // City filter is shared with TopBar via useCityFilter (localStorage-backed)
+  const { city, setCity } = useCityFilter();
   const wishlistCount = useWishlistCount();
 
   const { data: sections } = useQuery({

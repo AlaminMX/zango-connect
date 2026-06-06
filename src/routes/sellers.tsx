@@ -11,12 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Users } from "lucide-react";
 import { NIGERIAN_CITIES } from "@/lib/categories";
 import { BackButton } from "@/components/BackButton";
+import { useCityFilter, ALL_CITIES } from "@/lib/cityFilter";
 
 export const Route = createFileRoute("/sellers")({ component: SellersPage });
 
 function SellersPage() {
   const [search, setSearch] = useState("");
-  const [city, setCity] = useState("All cities");
+  // Pick up the city pre-selected in TopBar
+  const { city, setCity } = useCityFilter();
   const [category, setCategory] = useState("All categories");
 
   const { data: sellers, isLoading } = useQuery({

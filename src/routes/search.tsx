@@ -60,10 +60,11 @@ function SearchPage() {
     queryFn: async () => {
       let qb = supabase
         .from("products")
-        .select("id, name, price, image_url, stock_status, status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, category, is_blocked)")
+        .select("id, name, price, image_url, stock_status, status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, category, is_blocked, verification_status)")
         .or(`name.ilike.%${q}%,description.ilike.%${q}%`)
         .eq("status", "active")
         .eq("sellers.is_blocked", false)
+        .eq("sellers.verification_status", "approved")
         .limit(40);
       if (activeCity) qb = qb.eq("sellers.city", activeCity);
       if (activeCat)  qb = qb.eq("sellers.category", activeCat);
@@ -82,6 +83,7 @@ function SearchPage() {
         .select("id, slug, business_name, category, city, profile_photo_url, is_verified, rating")
         .or(`business_name.ilike.%${q}%,name.ilike.%${q}%,bio.ilike.%${q}%,category.ilike.%${q}%,city.ilike.%${q}%`)
         .eq("is_blocked", false)
+        .eq("verification_status", "approved")
         .limit(20);
       if (activeCity) qb = qb.eq("city", activeCity);
       if (activeCat)  qb = qb.eq("category", activeCat);

@@ -1,15 +1,15 @@
 /**
  * TopBar.tsx
- * Header with logo, city-filter selector, sign-in button (guests only),
- * admin dashboard button (admins only), and bookmark icon.
+ * Header with logo, state/city selector, optional sign-in button, and bookmark icon.
+ * The state selector is global — persisted via CityContext (localStorage).
  */
 
 import { Link } from "@tanstack/react-router";
-import { Bookmark, LogIn, MapPin, ShieldCheck } from "lucide-react";
+import { Bookmark, LogIn, MapPin } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWishlistCount } from "@/lib/wishlist";
-import { useCityFilter, ALL_CITIES } from "@/lib/cityFilter";
+import { useCity } from "@/lib/cityContext";
 import { NIGERIAN_CITIES } from "@/lib/categories";
 import {
   Select,
@@ -22,32 +22,22 @@ import {
 export function TopBar() {
   const count = useWishlistCount();
   const [isSignedIn, setIsSignedIn] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const { city, setCity } = useCityFilter();
+  const { selectedCity, setSelectedCity } = useCity();
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
+    // FIX: use getSession (reads localStorage, no network) to avoid logout-on-refresh
+    supabase.auth.getSession().then(({ data }) => {
       setIsSignedIn(!!data.session);
-      if (data.session?.user) {
-        const { data: role } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", data.session.user.id)
-          .eq("role", "admin")
-          .maybeSingle();
-        setIsAdmin(!!role);
-      }
     });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsSignedIn(!!session);
-      if (!session) setIsAdmin(false);
     });
     return () => listener.subscription.unsubscribe();
   }, []);
 
   return (
     <header className="sticky top-0 z-40 w-full bg-background/85 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-2 px-4">
+      <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-3 px-4">
         {/* Logo */}
         <Link to="/" className="flex shrink-0 items-center gap-2.5">
           <img
@@ -73,20 +63,22 @@ export function TopBar() {
           </div>
         </Link>
 
-        {/* ── City / State selector — centre of the bar ── */}
-        <div className="flex-1 max-w-[200px]">
-          <Select value={city} onValueChange={setCity}>
+        {/* ── State / City selector ── */}
+        <div className="flex flex-1 items-center justify-center">
+          <Select value={selectedCity} onValueChange={setSelectedCity}>
             <SelectTrigger
-              className="h-9 rounded-full border border-border/60 bg-card px-3 text-xs shadow-warm transition hover:border-primary/30 focus:ring-0"
-              aria-label="Filter by city"
+              className="h-9 w-auto max-w-[180px] rounded-full border border-border/60 bg-card px-3 text-xs shadow-warm transition hover:border-primary/30 focus:ring-0 [&>svg]:ml-1"
+              aria-label="Select state"
             >
-              <MapPin className="mr-1 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              <SelectValue placeholder="All cities" />
+              <MapPin className="mr-1 h-3.5 w-3.5 text-primary/70 shrink-0" />
+              <SelectValue placeholder="All states" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={ALL_CITIES}>All cities</SelectItem>
+              <SelectItem value="All">📍 All states</SelectItem>
               {NIGERIAN_CITIES.filter((c) => c !== "Other").map((c) => (
-                <SelectItem key={c} value={c}>{c}</SelectItem>
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -94,27 +86,15 @@ export function TopBar() {
 
         {/* Right actions */}
         <div className="flex shrink-0 items-center gap-2">
-          {/* Admin dashboard button — only visible to admins */}
-          {isAdmin && (
-            <Link
-              to="/admin"
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 text-xs font-medium text-primary shadow-warm transition hover:bg-primary/20 active:scale-95"
-            >
-              <ShieldCheck className="h-4 w-4" />
-              <span className="hidden sm:inline">Admin</span>
-            </Link>
-          )}
-
           {!isSignedIn && (
             <Link
               to="/auth"
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border/60 bg-card px-3 text-xs font-medium shadow-warm transition hover:bg-secondary hover:border-primary/20 active:scale-95"
+              className="hidden sm:inline-flex h-9 items-center gap-1.5 rounded-full border border-border/60 bg-card px-3 text-xs font-medium shadow-warm transition hover:bg-secondary hover:border-primary/20 active:scale-95"
             >
               <LogIn className="h-4 w-4 text-foreground/70" />
-              <span className="hidden sm:inline">Sign In</span>
+              <span>Sign In</span>
             </Link>
           )}
-
           <Link
             to="/wishlist"
             aria-label={`Bookmarks${count > 0 ? ` (${count})` : ""}`}

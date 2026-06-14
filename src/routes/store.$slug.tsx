@@ -132,19 +132,36 @@ function StorePage() {
 
   useEffect(() => {
     supabase.from("categories").select("name").order("sort_order").then(({ data }) => setCategories(data ?? []));
-    // FIX: use getSession() (reads localStorage instantly) instead of getUser()
-    // (getUser() makes a server-side network call — on page refresh this can fail
-    //  before the token is auto-refreshed, causing empty userId / missing ownership)
-    supabase.auth.getSession().then(async ({ data }) => {
-      const user = data.session?.user;
-      if (!user) return;
-      setUserId(user.id);
-      const { data: s } = await supabase.from("sellers").select("id").eq("user_id", user.id).maybeSingle();
+
+    const initAuth = async (userId: string) => {
+      setUserId(userId);
+      const [{ data: s }, { data: role }] = await Promise.all([
+        supabase.from("sellers").select("id").eq("user_id", userId).maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle(),
+      ]);
       if (s) setMySellerId(s.id);
-      // Check admin
-      const { data: role } = await supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
       if (role) setIsAdmin(true);
+    };
+
+    // FIX: use getSession (localStorage read, instant) instead of getUser
+    // (getUser makes a server-side network request that can fail/hang on refresh,
+    //  causing the owner to see a public view and feel "logged out")
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user) initAuth(data.session.user.id);
     });
+
+    // Keep in sync if auth changes mid-session
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        initAuth(session.user.id);
+      } else {
+        setUserId(null);
+        setMySellerId(null);
+        setIsOwner(false);
+        setIsAdmin(false);
+      }
+    });
+    return () => listener.subscription.unsubscribe();
   }, []);
 
   const { data: seller, isLoading } = useQuery({

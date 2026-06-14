@@ -1,11 +1,12 @@
 /**
  * SellerBottomNav.tsx
  * Persistent bottom navigation for authenticated sellers.
- * Tabs: Home · Add Product (centre) · Profile
  *
- * • Only renders when the current user has a seller profile.
- * • "Add Product" opens a sheet overlay — no page navigation required.
- * • Pushes page content up via a spacer div so nothing is hidden behind the bar.
+ * FIXES:
+ *  1. handleAddProduct now inserts status:"active" so products are publicly
+ *     visible immediately (was missing before → invisible products bug).
+ *  2. Auth check uses getSession() (localStorage read) instead of getUser()
+ *     (network request) so the nav stays visible after page refresh.
  */
 
 import { useEffect, useState } from "react";
@@ -28,6 +29,7 @@ interface SellerMeta {
   id: string;
   slug: string;
   userId: string;
+  verificationStatus: string;
 }
 
 export function SellerBottomNav() {
@@ -46,33 +48,34 @@ export function SellerBottomNav() {
   const routerState = useRouterState();
   const pathname = routerState.location.pathname;
 
+  const loadSeller = async (userId: string) => {
+    const { data: s } = await supabase
+      .from("sellers")
+      .select("id, slug, user_id, verification_status")
+      .eq("user_id", userId)
+      .maybeSingle();
+    setSeller(
+      s ? { id: s.id, slug: s.slug, userId, verificationStatus: s.verification_status ?? "pending" } : null
+    );
+  };
+
   useEffect(() => {
     (async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) { setChecked(true); return; }
-      const { data: s } = await supabase
-        .from("sellers")
-        .select("id, slug, user_id")
-        .eq("user_id", u.user.id)
-        .maybeSingle();
-      if (s) setSeller({ id: s.id, slug: s.slug, userId: u.user.id });
+      // FIX: getSession reads localStorage instantly — prevents blank nav after refresh
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData.session?.user) {
+        await loadSeller(sessionData.session.user.id);
+      }
       setChecked(true);
     })();
 
-    // Re-check on auth state changes
     const { data: listener } = supabase.auth.onAuthStateChange(async (_e, session) => {
       if (!session) { setSeller(null); return; }
-      const { data: s } = await supabase
-        .from("sellers")
-        .select("id, slug, user_id")
-        .eq("user_id", session.user.id)
-        .maybeSingle();
-      setSeller(s ? { id: s.id, slug: s.slug, userId: session.user.id } : null);
+      await loadSeller(session.user.id);
     });
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  // Hide until check is done, or if user has no seller profile
   if (!checked || !seller) return null;
 
   const uploadImage = async (file: File): Promise<string | null> => {
@@ -97,24 +100,34 @@ export function SellerBottomNav() {
 
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Only approved sellers can add products
+    if (seller.verificationStatus !== "approved") {
+      toast.error("Your store must be approved before adding products.");
+      setSheetOpen(false);
+      return;
+    }
+
     if (!pName.trim()) { toast.error("Product name is required"); return; }
     if (!pPrice || Number(pPrice) <= 0) { toast.error("Enter a valid price"); return; }
     setAdding(true);
     let image_url: string | null = null;
     if (pImg) image_url = await uploadImage(pImg);
+
+    // FIX: status: "active" — without this products are hidden from all public listings
     const { error } = await supabase.from("products").insert({
       seller_id: seller.id,
       name: pName.trim(),
       price: Number(pPrice),
       description: pDesc.trim() || null,
       image_url,
+      status: "active",
     });
     setAdding(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Product added! 🎉");
     setPName(""); setPPrice(""); setPDesc(""); setPImg(null);
     setSheetOpen(false);
-    // If already on the store page, soft-refresh
     if (pathname === `/store/${seller.slug}`) {
       nav({ to: `/store/${seller.slug}`, replace: true });
     }
@@ -129,22 +142,18 @@ export function SellerBottomNav() {
 
   return (
     <>
-      {/* Spacer so page content isn't hidden behind nav */}
       <div className="h-20" aria-hidden />
 
-      {/* Bottom nav bar */}
       <nav
         className="fixed bottom-0 inset-x-0 z-50 flex h-16 items-stretch border-t border-border/60 bg-card/95 backdrop-blur-md shadow-[0_-2px_12px_rgba(0,0,0,0.06)]"
         role="navigation"
         aria-label="Seller navigation"
       >
-        {/* Home */}
         <Link to="/" className={`${tabBase} ${isHome ? activeTab : inactiveTab}`}>
           <Home className="h-5 w-5" />
           Home
         </Link>
 
-        {/* Add Product — prominent centre button */}
         <div className="flex flex-1 items-center justify-center">
           <button
             onClick={() => setSheetOpen(true)}
@@ -155,7 +164,6 @@ export function SellerBottomNav() {
           </button>
         </div>
 
-        {/* Profile / Store */}
         <Link
           to="/store/$slug"
           params={{ slug: seller.slug }}
@@ -166,61 +174,40 @@ export function SellerBottomNav() {
         </Link>
       </nav>
 
-      {/* Add Product Sheet */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent side="bottom" className="rounded-t-3xl pb-8">
           <SheetHeader className="mb-4">
             <SheetTitle className="font-serif text-xl">Add New Product</SheetTitle>
           </SheetHeader>
-          <form onSubmit={handleAddProduct} className="space-y-4">
-            <div>
-              <Label>Product name *</Label>
-              <Input
-                required
-                placeholder="e.g. Suya Plate, Ankara Gele…"
-                value={pName}
-                onChange={(e) => setPName(e.target.value)}
-              />
+
+          {seller.verificationStatus !== "approved" ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 text-center">
+              <p className="font-semibold">Store not yet approved</p>
+              <p className="mt-1 text-xs">Your store is under review. You'll be able to add products once an admin approves it.</p>
             </div>
-            <div>
-              <Label>Price (₦) *</Label>
-              <Input
-                required
-                type="number"
-                min="1"
-                placeholder="e.g. 2500"
-                value={pPrice}
-                onChange={(e) => setPPrice(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label>Product photo</Label>
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setPImg(e.target.files?.[0] ?? null)}
-              />
-            </div>
-            <div>
-              <Label>Description (optional)</Label>
-              <Textarea
-                placeholder="Brief description of your product…"
-                value={pDesc}
-                onChange={(e) => setPDesc(e.target.value)}
-              />
-            </div>
-            <Button
-              type="submit"
-              disabled={adding}
-              className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              {adding ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding…</>
-              ) : (
-                <><Plus className="mr-2 h-4 w-4" /> Add Product</>
-              )}
-            </Button>
-          </form>
+          ) : (
+            <form onSubmit={handleAddProduct} className="space-y-4">
+              <div>
+                <Label>Product name *</Label>
+                <Input required placeholder="e.g. Suya Plate, Ankara Gele…" value={pName} onChange={(e) => setPName(e.target.value)} />
+              </div>
+              <div>
+                <Label>Price (₦) *</Label>
+                <Input required type="number" min="1" placeholder="e.g. 2500" value={pPrice} onChange={(e) => setPPrice(e.target.value)} />
+              </div>
+              <div>
+                <Label>Product photo</Label>
+                <Input type="file" accept="image/*" onChange={(e) => setPImg(e.target.files?.[0] ?? null)} />
+              </div>
+              <div>
+                <Label>Description (optional)</Label>
+                <Textarea placeholder="Brief description…" value={pDesc} onChange={(e) => setPDesc(e.target.value)} />
+              </div>
+              <Button type="submit" disabled={adding} className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
+                {adding ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding…</> : <><Plus className="mr-2 h-4 w-4" /> Add Product</>}
+              </Button>
+            </form>
+          )}
         </SheetContent>
       </Sheet>
     </>

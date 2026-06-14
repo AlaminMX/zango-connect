@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
 import { LangProvider } from "@/lib/i18n";
+import { CityProvider } from "@/lib/cityContext";
 import { SellerBottomNav } from "@/components/SellerBottomNav";
 
 import appCss from "../styles.css?url";
@@ -108,11 +109,13 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <LangProvider>
-        <main>
-          <Outlet />
-        </main>
-        <SellerBottomNav />
-        <Toaster />
+        <CityProvider>
+          <main>
+            <Outlet />
+          </main>
+          <SellerBottomNav />
+          <Toaster />
+        </CityProvider>
       </LangProvider>
     </QueryClientProvider>
   );

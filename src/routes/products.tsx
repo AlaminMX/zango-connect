@@ -17,8 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search } from "lucide-react";
 import { NIGERIAN_CITIES } from "@/lib/categories";
+import { useCity } from "@/lib/cityContext";
 import { z } from "zod";
-import { useCityFilter, ALL_CITIES } from "@/lib/cityFilter";
 
 const PAGE_SIZE = 16;
 
@@ -35,19 +35,13 @@ export const Route = createFileRoute("/products")({
 function ProductsPage() {
   const { category: initCat, city: initCity } = Route.useSearch();
   const nav = useNavigate();
-  // Initialize from URL param if present, otherwise from global TopBar city filter
-  const { city: globalCity, setCity: setGlobalCity } = useCityFilter();
+  const { selectedCity: globalCity } = useCity();
 
   const [filterCat,  setFilterCat]  = useState(initCat  ?? "All");
-  const [filterCity, _setFilterCity] = useState(initCity ?? (globalCity !== ALL_CITIES ? globalCity : "All"));
+  // Use URL city param first, then global context city, then "All"
+  const [filterCity, setFilterCity] = useState(initCity ?? (globalCity !== "All" ? globalCity : "All"));
   const [q, setQ]                   = useState("");
   const [page, setPage]             = useState(1);
-
-  // Keep city filter in sync both ways
-  const setFilterCity = (val: string) => {
-    _setFilterCity(val);
-    setGlobalCity(val === "All" ? ALL_CITIES : val);
-  };
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
@@ -65,9 +59,10 @@ function ProductsPage() {
     queryFn: async () => {
       let qb = supabase
         .from("products")
-        .select("id, name, price, image_url, stock_status, status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, category, is_blocked)")
+        .select("id, name, price, image_url, stock_status, status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, category, is_blocked, verification_status)")
         .eq("status", "active")
         .eq("sellers.is_blocked", false)
+        .eq("sellers.verification_status", "approved")
         .order("created_at", { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
@@ -75,7 +70,7 @@ function ProductsPage() {
       if (activeCity) qb = qb.eq("sellers.city", activeCity);
       if (q.trim())   qb = qb.or(`name.ilike.%${q.trim()}%,description.ilike.%${q.trim()}%`);
 
-      const { data, error } = await qb;
+      const { data, error } = await qb.abortSignal(AbortSignal.timeout(10000));
       if (error) throw error;
       return data ?? [];
     },

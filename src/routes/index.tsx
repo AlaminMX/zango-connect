@@ -16,13 +16,13 @@ import { Footer } from "@/components/Footer";
 import { SellerCard } from "@/components/SellerCard";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductSkeleton, CategorySkeleton, SellerSkeleton } from "@/components/LoadingSpinner";
+import { WelcomeModal } from "@/components/WelcomeModal";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCityFilter, ALL_CITIES } from "@/lib/cityFilter";
-import { Sparkles, Search, MapPin, Store, ArrowRight, Heart } from "lucide-react";
-import { iconFor, NIGERIAN_CITIES } from "@/lib/categories";
+import { Sparkles, Search, Store, ArrowRight, Heart } from "lucide-react";
+import { iconFor } from "@/lib/categories";
 import { ExploreCities } from "@/components/ExploreCities";
 import { useWishlistCount } from "@/lib/wishlist";
+import { useCity } from "@/lib/cityContext";
 import heroImg from "@/assets/hero-market.jpg";
 
 export const Route = createFileRoute("/")({ component: Index });
@@ -49,8 +49,7 @@ function useSection(sections: any[] | undefined, key: string) {
 function Index() {
   const nav = useNavigate();
   const [q, setQ] = useState("");
-  // City filter is shared with TopBar via useCityFilter (localStorage-backed)
-  const { city, setCity } = useCityFilter();
+  const { selectedCity: city, setSelectedCity: setCity } = useCity();
   const wishlistCount = useWishlistCount();
 
   const { data: sections } = useQuery({
@@ -92,10 +91,11 @@ function Index() {
         .from("sellers")
         .select("id, slug, business_name, category, city, profile_photo_url, is_verified, rating")
         .eq("is_blocked", false)
+        .eq("verification_status", "approved")
         .order("is_verified", { ascending: false })
         .order("created_at",  { ascending: false })
         .limit(10);
-      if (city !== "All cities") qb = qb.eq("city", city);
+      if (city !== "All") qb = qb.eq("city", city);
       const { data, error } = await qb.abortSignal(AbortSignal.timeout(8000));
       if (error) throw error;
       return data;
@@ -111,25 +111,27 @@ function Index() {
       const buildFeatured = () => {
         let qb = supabase
           .from("products")
-          .select("id, name, price, image_url, stock_status, is_featured, featured_order, status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, is_blocked)")
+          .select("id, name, price, image_url, stock_status, is_featured, featured_order, status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, is_blocked, verification_status)")
           .eq("is_featured", true)
           .eq("status", "active")
           .eq("sellers.is_blocked", false)
+          .eq("sellers.verification_status", "approved")
           .order("featured_order")
           .limit(8);
-        if (city !== "All cities") qb = qb.eq("sellers.city", city);
+        if (city !== "All") qb = qb.eq("sellers.city", city);
         return qb.abortSignal(AbortSignal.timeout(8000));
       };
 
       const buildRecent = () => {
         let qb = supabase
           .from("products")
-          .select("id, name, price, image_url, stock_status, status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, is_blocked)")
+          .select("id, name, price, image_url, stock_status, status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, is_blocked, verification_status)")
           .eq("status", "active")
           .eq("sellers.is_blocked", false)
+          .eq("sellers.verification_status", "approved")
           .order("created_at", { ascending: false })
           .limit(8);
-        if (city !== "All cities") qb = qb.eq("sellers.city", city);
+        if (city !== "All") qb = qb.eq("sellers.city", city);
         return qb.abortSignal(AbortSignal.timeout(8000));
       };
 
@@ -153,7 +155,7 @@ function Index() {
   const submitSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!q.trim()) return;
-    nav({ to: "/search", search: { q: q.trim(), city: city !== "All cities" ? city : undefined } });
+    nav({ to: "/search", search: { q: q.trim(), city: city !== "All" ? city : undefined } });
   };
 
   const keyframes = `
@@ -171,6 +173,7 @@ function Index() {
   return (
     <div className="min-h-screen bg-background">
       <style>{keyframes}</style>
+      <WelcomeModal />
       <TopBar />
 
       {/* ── Hero ── */}
@@ -212,16 +215,6 @@ function Index() {
                 className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               />
             </div>
-            <Select value={city} onValueChange={setCity}>
-              <SelectTrigger className="h-11 w-full rounded-full border-0 bg-background text-sm sm:w-36">
-                <MapPin className="mr-1 h-4 w-4 text-muted-foreground" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="All cities">All cities</SelectItem>
-                {NIGERIAN_CITIES.filter((c) => c !== "Other").map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
             <Button type="submit" className="h-11 rounded-full bg-primary px-6 text-primary-foreground hover:bg-primary/90">
               Search
             </Button>

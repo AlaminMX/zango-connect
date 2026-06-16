@@ -657,6 +657,9 @@ function AdminPage() {
                 <Plus className="mr-1 h-4 w-4" /> New category
               </Button>
             </div>
+            {categoriesState === "loading" && <SectionSkeleton />}
+            {categoriesState === "error" && <SectionError label="categories" onRetry={loadCategories} />}
+            {categoriesState === "ok" && (
             <div className="space-y-2">
               {categories.map((c, idx) => (
                 <div key={c.id} className="flex items-center gap-3 rounded-xl border bg-card p-3 shadow-warm">
@@ -684,6 +687,7 @@ function AdminPage() {
                 </div>
               ))}
             </div>
+            )}
           </section>
         )}
 
@@ -692,6 +696,10 @@ function AdminPage() {
           <section className="mt-6">
             <h2 className="mb-2 font-serif text-xl">Products ({products.length})</h2>
             <p className="mb-4 text-xs text-muted-foreground">Block products to hide them everywhere. Featured control is also here.</p>
+            {productsState === "loading" && <SectionSkeleton />}
+            {productsState === "error" && <SectionError label="products" onRetry={loadProducts} />}
+            {productsState === "ok" && (<>
+
 
             {featuredProducts.length > 0 && (
               <div className="mb-6">
@@ -752,12 +760,22 @@ function AdminPage() {
               ))}
               {products.length === 0 && <p className="text-sm text-muted-foreground">No products yet.</p>}
             </div>
+            </>)}
           </section>
         )}
 
         {/* ── Vouches tab ── */}
         {activeTab === "vouches" && (
           <section className="mt-6">
+            <h2 className="mb-2 font-serif text-xl">Vouch Analytics</h2>
+            <p className="mb-4 text-xs text-muted-foreground">
+              Badge is earned after 5 vouches from verified sellers. Click a row to see who vouched.
+            </p>
+            {vouchesState === "loading" && <SectionSkeleton />}
+            {vouchesState === "error" && <SectionError label="vouches" onRetry={loadVouches} />}
+            {vouchesState === "ok" && (
+              <>
+
             <h2 className="mb-2 font-serif text-xl">Vouch Analytics</h2>
             <p className="mb-4 text-xs text-muted-foreground">
               Badge is earned after 5 vouches from verified sellers. Click a row to see who vouched.

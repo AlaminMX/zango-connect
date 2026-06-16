@@ -151,10 +151,13 @@ function StorePage() {
     });
 
     // Keep in sync if auth changes mid-session
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         initAuth(session.user.id);
-      } else {
+      } else if (event === "SIGNED_OUT") {
+        // Only clear on explicit sign-out. Token refresh and INITIAL_SESSION
+        // can fire with a null session transiently; clearing here would drop
+        // isOwner on every refresh and make the page look like a public view.
         setUserId(null);
         setMySellerId(null);
         setIsOwner(false);

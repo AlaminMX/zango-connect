@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/authContext";
 import { Home, Plus, Store, Loader2 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -12,8 +13,8 @@ import { toast } from "sonner";
 interface SellerMeta { id: string; slug: string; userId: string; verificationStatus: string; }
 
 export function SellerBottomNav() {
+  const { user, isReady } = useAuth();
   const [seller, setSeller] = useState<SellerMeta | null>(null);
-  const [checked, setChecked] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const nav = useNavigate();
   const [pName, setPName] = useState("");
@@ -23,30 +24,30 @@ export function SellerBottomNav() {
   const [adding, setAdding] = useState(false);
   const pathname = useRouterState({ select: s => s.location.pathname });
 
-  const loadSeller = async (userId: string) => {
-    const { data: s } = await supabase.from("sellers").select("id, slug, user_id, verification_status").eq("user_id", userId).maybeSingle();
-    setSeller(s ? { id: s.id, slug: s.slug, userId, verificationStatus: s.verification_status ?? "pending" } : null);
-  };
-
   useEffect(() => {
-    // getSession reads localStorage instantly — no lock wait, no network call
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (data.session?.user) await loadSeller(data.session.user.id);
-      setChecked(true);
-    });
-    const { data: l } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        await loadSeller(session.user.id);
-      } else if (event === "SIGNED_OUT") {
-        // Only clear on explicit sign-out — token refresh fires transient null sessions
-        // that would otherwise wipe the seller and hide the bottom nav momentarily
+    if (!isReady) return;
+    if (!user) { setSeller(null); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: s } = await supabase
+          .from("sellers")
+          .select("id, slug, user_id, verification_status")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (cancelled) return;
+        setSeller(s ? { id: s.id, slug: s.slug, userId: user.id, verificationStatus: s.verification_status ?? "pending" } : null);
+      } catch (err) {
+        if (cancelled) return;
+        console.warn("[SellerBottomNav] seller lookup failed:", err);
         setSeller(null);
       }
-    });
-    return () => l.subscription.unsubscribe();
-  }, []);
+    })();
+    return () => { cancelled = true; };
+  }, [isReady, user]);
 
-  if (!checked || !seller) return null;
+  if (!isReady || !seller) return null;
+
 
   const uploadImage = async (file: File): Promise<string | null> => {
     const ALLOWED = ["image/jpeg","image/png","image/webp","image/gif"];

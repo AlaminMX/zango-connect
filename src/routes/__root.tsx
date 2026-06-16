@@ -9,6 +9,7 @@ import {
 import { Toaster } from "@/components/ui/sonner";
 import { LangProvider } from "@/lib/i18n";
 import { CityProvider } from "@/lib/cityContext";
+import { AuthProvider } from "@/lib/authContext";
 import { SellerBottomNav } from "@/components/SellerBottomNav";
 
 import appCss from "../styles.css?url";
@@ -108,15 +109,17 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <LangProvider>
-        <CityProvider>
-          <main>
-            <Outlet />
-          </main>
-          <SellerBottomNav />
-          <Toaster />
-        </CityProvider>
-      </LangProvider>
+      <AuthProvider>
+        <LangProvider>
+          <CityProvider>
+            <main>
+              <Outlet />
+            </main>
+            <SellerBottomNav />
+            <Toaster />
+          </CityProvider>
+        </LangProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

@@ -16,8 +16,9 @@
  */
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/authContext";
 import { TopBar } from "@/components/TopBar";
 import { ImageUploader } from "@/components/ImageUploader";
 import { Button } from "@/components/ui/button";
@@ -31,10 +32,41 @@ import {
   BadgeCheck, Plus, Pencil, Trash2, ChevronUp, ChevronDown,
   Star, StarOff, Eye, EyeOff, Loader2, GripVertical,
   ShieldOff, ShieldCheck, Users, CheckCircle2, XCircle, Clock,
+  AlertCircle, RefreshCw,
 } from "lucide-react";
 import { PageLoader } from "@/components/LoadingSpinner";
 
 export const Route = createFileRoute("/admin")({ component: AdminPage });
+
+type LoadState = "loading" | "ok" | "error";
+
+/** Tiny inline retry card for a section that failed to load. */
+function SectionError({ label, onRetry }: { label: string; onRetry: () => void }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm">
+      <div className="flex items-center gap-2 text-destructive">
+        <AlertCircle className="h-4 w-4 shrink-0" />
+        <span>Couldn't load {label}.</span>
+      </div>
+      <button
+        onClick={onRetry}
+        className="inline-flex items-center gap-1 rounded-full border border-destructive/30 px-3 py-1 text-xs font-medium text-destructive transition hover:bg-destructive/10"
+      >
+        <RefreshCw className="h-3 w-3" /> Retry
+      </button>
+    </div>
+  );
+}
+
+function SectionSkeleton() {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="h-16 animate-pulse rounded-xl border bg-muted/40" />
+      ))}
+    </div>
+  );
+}
 
 interface SellerRow {
   id: string; business_name: string; slug: string;
@@ -73,14 +105,31 @@ function VerifBadge({ status }: { status: string }) {
 
 function AdminPage() {
   const nav = useNavigate();
-  const [allowed, setAllowed] = useState<boolean | null>(null);
+  const { user, isAdmin, isReady } = useAuth();
+  const allowed = isReady && !!user && isAdmin;
 
+  // Auth gate — runs after auth resolves. Never blocks indefinitely.
+  useEffect(() => {
+    if (!isReady) return;
+    if (!user) { nav({ to: "/auth", replace: true }); return; }
+    if (!isAdmin) { nav({ to: "/", replace: true }); return; }
+  }, [isReady, user, isAdmin, nav]);
+
+  // ── Per-section state (independent loading + error per dataset) ──
   const [sellers,    setSellers]    = useState<SellerRow[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [products,   setProducts]   = useState<ProductRow[]>([]);
   const [sections,   setSections]   = useState<Section[]>([]);
   const [vouches,    setVouches]    = useState<VouchRow[]>([]);
   const [stats,      setStats]      = useState({ sellers: 0, products: 0, clicks: 0 });
+
+  const [sellersState,    setSellersState]    = useState<LoadState>("loading");
+  const [categoriesState, setCategoriesState] = useState<LoadState>("loading");
+  const [productsState,   setProductsState]   = useState<LoadState>("loading");
+  const [sectionsState,   setSectionsState]   = useState<LoadState>("loading");
+  const [vouchesState,    setVouchesState]    = useState<LoadState>("loading");
+  const [statsState,      setStatsState]      = useState<LoadState>("loading");
+
   const [activeTab,  setActiveTab]  = useState<"sellers"|"categories"|"products"|"vouches"|"homepage">("sellers");
 
   // Category editor state
@@ -106,105 +155,106 @@ function AdminPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [rejectSaving, setRejectSaving] = useState(false);
 
-  // ── FIX: use getSession() (reads localStorage instantly) instead of getUser()
-  // (getUser() makes a server-side network request — on refresh it could fail
-  //  before the token is refreshed, which was causing automatic logouts)
-  // Auth strategy:
-  // 1. getSession() reads localStorage instantly (no network, no lock wait)
-  // 2. onAuthStateChange fires INITIAL_SESSION shortly after, and TOKEN_REFRESHED
-  //    when the token is silently refreshed — we re-verify on those events too.
-  // 3. SIGNED_OUT redirects to /auth.
-  // We only redirect to /auth if getSession returns nothing AND no
-  // INITIAL_SESSION fires within 4 s (handles the brief moment on refresh where
-  // the session hasn't been hydrated from localStorage yet).
-  useEffect(() => {
-    let isMounted  = true;
-    let didAuth    = false;
-    let fallbackId: ReturnType<typeof setTimeout>;
+  // ── Resilient per-section loaders. Each runs independently — one failure
+  //    no longer blocks the rest of the dashboard.
+  const ABORT = () => AbortSignal.timeout(8000);
 
-    const doAuth = async (session: { user: { id: string } }) => {
-      if (didAuth || !isMounted) return;
-      didAuth = true;
-      clearTimeout(fallbackId);
-      try {
-        const { data: role } = await supabase
-          .from("user_roles").select("role")
-          .eq("user_id", session.user.id).eq("role", "admin").maybeSingle();
-        if (!isMounted) return;
-        if (!role) { nav({ to: "/" }); return; }
-        setAllowed(true);
-        await loadAll();
-      } catch (err) {
-        console.error("Admin auth error:", err);
-        if (isMounted) nav({ to: "/auth" });
-      }
-    };
+  const loadSellers = useCallback(async () => {
+    setSellersState("loading");
+    try {
+      const { data, error } = await supabase
+        .from("sellers")
+        .select("id, business_name, slug, category, city, is_verified, is_blocked, verification_status, rejection_reason")
+        .order("created_at", { ascending: false })
+        .abortSignal(ABORT());
+      if (error) throw error;
+      setSellers((data ?? []) as SellerRow[]);
+      setSellersState("ok");
+    } catch (err) {
+      console.warn("[admin] sellers failed:", err);
+      setSellersState("error");
+    }
+  }, []);
 
-    // Immediate check from localStorage
-    supabase.auth.getSession().then(({ data }) => {
-      if (!isMounted) return;
-      if (data.session) doAuth(data.session);
-    });
+  const loadCategories = useCallback(async () => {
+    setCategoriesState("loading");
+    try {
+      const { data, error } = await supabase
+        .from("categories").select("*").order("sort_order").abortSignal(ABORT());
+      if (error) throw error;
+      setCategories((data ?? []) as Category[]);
+      setCategoriesState("ok");
+    } catch (err) {
+      console.warn("[admin] categories failed:", err);
+      setCategoriesState("error");
+    }
+  }, []);
 
-    // Listen for auth state events (handles refresh + INITIAL_SESSION)
-    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!isMounted) return;
-      if (event === "SIGNED_OUT") { nav({ to: "/auth" }); return; }
-      // INITIAL_SESSION can fire with null when the access token is expired but
-      // the refresh token is still valid — Supabase fires TOKEN_REFRESHED shortly
-      // after. Only call doAuth when we actually have a session, so we don't
-      // incorrectly redirect to /auth before the token refresh completes.
-      if (session?.user && ["INITIAL_SESSION", "SIGNED_IN", "TOKEN_REFRESHED"].includes(event)) {
-        await doAuth(session);
-      }
-    });
-
-    // Fallback: if nothing loaded in 5 s, give up and go to /auth
-    fallbackId = setTimeout(() => {
-      if (!didAuth && isMounted) nav({ to: "/auth" });
-    }, 5000);
-
-    return () => {
-      isMounted = false;
-      clearTimeout(fallbackId);
-      listener.subscription.unsubscribe();
-    };
-  }, [nav]);
-
-  const loadAll = async () => {
-    const [
-      { data: sl },
-      { count: pc },
-      { count: cc },
-      { data: cats },
-      { data: prods },
-      { data: secs },
-    ] = await Promise.all([
-      // ── FIX: include verification_status + rejection_reason in seller fetch ──
-      supabase.from("sellers").select(
-        "id, business_name, slug, category, city, is_verified, is_blocked, verification_status, rejection_reason"
-      ).order("created_at", { ascending: false }),
-      supabase.from("products").select("id", { count: "exact", head: true }),
-      supabase.from("whatsapp_clicks").select("id", { count: "exact", head: true }),
-      supabase.from("categories").select("*").order("sort_order"),
-      supabase.from("products")
+  const loadProducts = useCallback(async () => {
+    setProductsState("loading");
+    try {
+      const { data, error } = await supabase
+        .from("products")
         .select("id, name, price, image_url, is_featured, featured_order, status, sellers(business_name, city)")
-        .order("is_featured", { ascending: false }).order("featured_order").limit(100),
-      supabase.from("homepage_sections").select("*").order("sort_order"),
-    ]);
-    setSellers(sl ?? []);
-    setCategories((cats ?? []) as Category[]);
-    setProducts((prods ?? []) as any);
-    setSections(secs ?? []);
-    setStats({ sellers: sl?.length ?? 0, products: pc ?? 0, clicks: cc ?? 0 });
+        .order("is_featured", { ascending: false })
+        .order("featured_order")
+        .limit(100)
+        .abortSignal(ABORT());
+      if (error) throw error;
+      setProducts((data ?? []) as any);
+      setProductsState("ok");
+    } catch (err) {
+      console.warn("[admin] products failed:", err);
+      setProductsState("error");
+    }
+  }, []);
 
-    // Load vouch analytics
-    const { data: vData } = await supabase
-      .from("vouches")
-      .select("vouched_seller_id, sellers!vouches_vouched_seller_id_fkey(business_name)");
-    if (vData) {
+  const loadSections = useCallback(async () => {
+    setSectionsState("loading");
+    try {
+      const { data, error } = await supabase
+        .from("homepage_sections").select("*").order("sort_order").abortSignal(ABORT());
+      if (error) throw error;
+      setSections(data ?? []);
+      setSectionsState("ok");
+    } catch (err) {
+      console.warn("[admin] homepage_sections failed:", err);
+      setSectionsState("error");
+    }
+  }, []);
+
+  const loadStats = useCallback(async () => {
+    setStatsState("loading");
+    try {
+      const [sellersCount, productsCount, clicksCount] = await Promise.allSettled([
+        supabase.from("sellers").select("id", { count: "exact", head: true }).abortSignal(ABORT()),
+        supabase.from("products").select("id", { count: "exact", head: true }).abortSignal(ABORT()),
+        supabase.from("whatsapp_clicks").select("id", { count: "exact", head: true }).abortSignal(ABORT()),
+      ]);
+      const pick = (r: PromiseSettledResult<{ count: number | null }>): number =>
+        r.status === "fulfilled" ? (r.value.count ?? 0) : 0;
+      setStats({
+        sellers:  pick(sellersCount as any),
+        products: pick(productsCount as any),
+        clicks:   pick(clicksCount as any),
+      });
+      setStatsState("ok");
+    } catch (err) {
+      console.warn("[admin] stats failed:", err);
+      setStatsState("error");
+    }
+  }, []);
+
+  const loadVouches = useCallback(async () => {
+    setVouchesState("loading");
+    try {
+      const { data, error } = await supabase
+        .from("vouches")
+        .select("vouched_seller_id, sellers!vouches_vouched_seller_id_fkey(business_name)")
+        .abortSignal(ABORT());
+      if (error) throw error;
       const map = new Map<string, { name: string; count: number }>();
-      for (const row of vData as any[]) {
+      for (const row of (data ?? []) as any[]) {
         const id = row.vouched_seller_id;
         const name = row.sellers?.business_name ?? "Unknown";
         if (!map.has(id)) map.set(id, { name, count: 0 });
@@ -213,8 +263,31 @@ function AdminPage() {
       setVouches(Array.from(map.entries())
         .map(([seller_id, { name, count }]) => ({ seller_id, seller_name: name, vouch_count: count }))
         .sort((a, b) => b.vouch_count - a.vouch_count));
+      setVouchesState("ok");
+    } catch (err) {
+      console.warn("[admin] vouches failed:", err);
+      setVouchesState("error");
     }
-  };
+  }, []);
+
+  // Fire all loaders independently once auth resolves.
+  useEffect(() => {
+    if (!allowed) return;
+    void loadSellers();
+    void loadCategories();
+    void loadProducts();
+    void loadSections();
+    void loadStats();
+    void loadVouches();
+  }, [allowed, loadSellers, loadCategories, loadProducts, loadSections, loadStats, loadVouches]);
+
+  // Convenience: reload affected sections after mutations.
+  const loadAll = useCallback(async () => {
+    await Promise.allSettled([
+      loadSellers(), loadCategories(), loadProducts(), loadSections(), loadStats(), loadVouches(),
+    ]);
+  }, [loadSellers, loadCategories, loadProducts, loadSections, loadStats, loadVouches]);
+
 
   // ── Seller verification approval ──
   const approveSeller = async (id: string, name: string) => {
@@ -433,7 +506,10 @@ function AdminPage() {
     setVouchDetailLoading(false);
   };
 
-  if (allowed === null) return <PageLoader label="Loading admin…" />;
+  // Auth gate. !isReady → still resolving (skeleton). Not signed in or not admin → redirect handled in useEffect; render nothing in the meantime.
+  if (!isReady) return <PageLoader label="Loading admin…" />;
+  if (!allowed) return <PageLoader label="Checking access…" />;
+
 
   const tabCls = (t: typeof activeTab) =>
     `rounded-full px-4 py-1.5 text-sm font-medium transition ${activeTab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`;
@@ -492,79 +568,85 @@ function AdminPage() {
         {/* ── Sellers tab ── */}
         {activeTab === "sellers" && (
           <section className="mt-6 space-y-8">
+            {sellersState === "loading" && <SectionSkeleton />}
+            {sellersState === "error" && <SectionError label="sellers" onRetry={loadSellers} />}
+            {sellersState === "ok" && (
+              <>
+                {/* Pending sellers — shown at top, action required */}
+                {pendingSellers.length > 0 && (
+                  <div>
+                    <h2 className="mb-3 flex items-center gap-2 font-serif text-xl">
+                      <Clock className="h-5 w-5 text-amber-500" />
+                      Awaiting Approval ({pendingSellers.length})
+                    </h2>
+                    <div className="space-y-2">
+                      {pendingSellers.map((s) => (
+                        <SellerRow
+                          key={s.id} s={s}
+                          onApprove={() => approveSeller(s.id, s.business_name)}
+                          onReject={() => openRejectDialog(s.id, s.business_name)}
+                          onResetPending={null}
+                          onToggleVerify={() => toggleVerify(s.id, s.is_verified)}
+                          onToggleBlock={() => toggleBlock(s.id, s.is_blocked)}
+                          onDelete={() => deleteSeller(s.id, s.business_name)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-            {/* Pending sellers — shown at top, action required */}
-            {pendingSellers.length > 0 && (
-              <div>
-                <h2 className="mb-3 flex items-center gap-2 font-serif text-xl">
-                  <Clock className="h-5 w-5 text-amber-500" />
-                  Awaiting Approval ({pendingSellers.length})
-                </h2>
-                <div className="space-y-2">
-                  {pendingSellers.map((s) => (
-                    <SellerRow
-                      key={s.id} s={s}
-                      onApprove={() => approveSeller(s.id, s.business_name)}
-                      onReject={() => openRejectDialog(s.id, s.business_name)}
-                      onResetPending={null}
-                      onToggleVerify={() => toggleVerify(s.id, s.is_verified)}
-                      onToggleBlock={() => toggleBlock(s.id, s.is_blocked)}
-                      onDelete={() => deleteSeller(s.id, s.business_name)}
-                    />
-                  ))}
-                </div>
-              </div>
+                {/* Approved sellers */}
+                {approvedSellers.length > 0 && (
+                  <div>
+                    <h2 className="mb-3 flex items-center gap-2 font-serif text-xl">
+                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                      Approved Sellers ({approvedSellers.length})
+                    </h2>
+                    <div className="space-y-2">
+                      {approvedSellers.map((s) => (
+                        <SellerRow
+                          key={s.id} s={s}
+                          onApprove={null}
+                          onReject={() => openRejectDialog(s.id, s.business_name)}
+                          onResetPending={null}
+                          onToggleVerify={() => toggleVerify(s.id, s.is_verified)}
+                          onToggleBlock={() => toggleBlock(s.id, s.is_blocked)}
+                          onDelete={() => deleteSeller(s.id, s.business_name)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Rejected / other sellers */}
+                {otherSellers.length > 0 && (
+                  <div>
+                    <h2 className="mb-3 flex items-center gap-2 font-serif text-xl">
+                      <XCircle className="h-5 w-5 text-rose-400" />
+                      Rejected / Suspended ({otherSellers.length})
+                    </h2>
+                    <div className="space-y-2">
+                      {otherSellers.map((s) => (
+                        <SellerRow
+                          key={s.id} s={s}
+                          onApprove={() => approveSeller(s.id, s.business_name)}
+                          onReject={null}
+                          onResetPending={() => resetToPending(s.id, s.business_name)}
+                          onToggleVerify={() => toggleVerify(s.id, s.is_verified)}
+                          onToggleBlock={() => toggleBlock(s.id, s.is_blocked)}
+                          onDelete={() => deleteSeller(s.id, s.business_name)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {sellers.length === 0 && <p className="text-sm text-muted-foreground">No sellers yet.</p>}
+              </>
             )}
-
-            {/* Approved sellers */}
-            {approvedSellers.length > 0 && (
-              <div>
-                <h2 className="mb-3 flex items-center gap-2 font-serif text-xl">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                  Approved Sellers ({approvedSellers.length})
-                </h2>
-                <div className="space-y-2">
-                  {approvedSellers.map((s) => (
-                    <SellerRow
-                      key={s.id} s={s}
-                      onApprove={null}
-                      onReject={() => openRejectDialog(s.id, s.business_name)}
-                      onResetPending={null}
-                      onToggleVerify={() => toggleVerify(s.id, s.is_verified)}
-                      onToggleBlock={() => toggleBlock(s.id, s.is_blocked)}
-                      onDelete={() => deleteSeller(s.id, s.business_name)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Rejected / other sellers */}
-            {otherSellers.length > 0 && (
-              <div>
-                <h2 className="mb-3 flex items-center gap-2 font-serif text-xl">
-                  <XCircle className="h-5 w-5 text-rose-400" />
-                  Rejected / Suspended ({otherSellers.length})
-                </h2>
-                <div className="space-y-2">
-                  {otherSellers.map((s) => (
-                    <SellerRow
-                      key={s.id} s={s}
-                      onApprove={() => approveSeller(s.id, s.business_name)}
-                      onReject={null}
-                      onResetPending={() => resetToPending(s.id, s.business_name)}
-                      onToggleVerify={() => toggleVerify(s.id, s.is_verified)}
-                      onToggleBlock={() => toggleBlock(s.id, s.is_blocked)}
-                      onDelete={() => deleteSeller(s.id, s.business_name)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {sellers.length === 0 && <p className="text-sm text-muted-foreground">No sellers yet.</p>}
           </section>
         )}
+
 
         {/* ── Categories tab ── */}
         {activeTab === "categories" && (
@@ -575,6 +657,9 @@ function AdminPage() {
                 <Plus className="mr-1 h-4 w-4" /> New category
               </Button>
             </div>
+            {categoriesState === "loading" && <SectionSkeleton />}
+            {categoriesState === "error" && <SectionError label="categories" onRetry={loadCategories} />}
+            {categoriesState === "ok" && (
             <div className="space-y-2">
               {categories.map((c, idx) => (
                 <div key={c.id} className="flex items-center gap-3 rounded-xl border bg-card p-3 shadow-warm">
@@ -602,6 +687,7 @@ function AdminPage() {
                 </div>
               ))}
             </div>
+            )}
           </section>
         )}
 
@@ -610,6 +696,10 @@ function AdminPage() {
           <section className="mt-6">
             <h2 className="mb-2 font-serif text-xl">Products ({products.length})</h2>
             <p className="mb-4 text-xs text-muted-foreground">Block products to hide them everywhere. Featured control is also here.</p>
+            {productsState === "loading" && <SectionSkeleton />}
+            {productsState === "error" && <SectionError label="products" onRetry={loadProducts} />}
+            {productsState === "ok" && (<>
+
 
             {featuredProducts.length > 0 && (
               <div className="mb-6">
@@ -670,6 +760,7 @@ function AdminPage() {
               ))}
               {products.length === 0 && <p className="text-sm text-muted-foreground">No products yet.</p>}
             </div>
+            </>)}
           </section>
         )}
 
@@ -680,64 +771,75 @@ function AdminPage() {
             <p className="mb-4 text-xs text-muted-foreground">
               Badge is earned after 5 vouches from verified sellers. Click a row to see who vouched.
             </p>
-            {vouches.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No vouches recorded yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {vouches.map((v) => (
-                  <button
-                    key={v.seller_id}
-                    onClick={() => openVouchDetail(v.seller_id, v.seller_name)}
-                    className="flex w-full items-center gap-3 rounded-xl border bg-card p-3 shadow-warm text-left transition hover:border-primary/30 hover:bg-muted/30"
-                  >
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600 font-bold text-sm">
-                      {v.vouch_count}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{v.seller_name}</p>
-                      <p className="text-xs text-muted-foreground">{v.vouch_count} vouch{v.vouch_count !== 1 ? "es" : ""} · click to see who</p>
-                    </div>
-                    {v.vouch_count >= 5 && (
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-amber-500 shrink-0">
-                        <path fillRule="evenodd" d="M8.603 3.799A4.49 4.49 0 0 1 12 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 0 1 3.498 1.307 4.491 4.491 0 0 1 1.307 3.497A4.49 4.49 0 0 1 21.75 12a4.49 4.49 0 0 1-1.549 3.397 4.491 4.491 0 0 1-1.307 3.497 4.491 4.491 0 0 1-3.497 1.307A4.49 4.49 0 0 1 12 21.75a4.49 4.49 0 0 1-3.397-1.549 4.49 4.49 0 0 1-3.498-1.306 4.491 4.491 0 0 1-1.307-3.498A4.49 4.49 0 0 1 2.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 0 1 1.307-3.497 4.49 4.49 0 0 1 3.497-1.307Zm7.007 6.387a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                  </button>
-                ))}
-              </div>
+            {vouchesState === "loading" && <SectionSkeleton />}
+            {vouchesState === "error" && <SectionError label="vouches" onRetry={loadVouches} />}
+            {vouchesState === "ok" && (
+              <>
+                {vouches.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No vouches recorded yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {vouches.map((v) => (
+                      <button
+                        key={v.seller_id}
+                        onClick={() => openVouchDetail(v.seller_id, v.seller_name)}
+                        className="flex w-full items-center gap-3 rounded-xl border bg-card p-3 shadow-warm text-left transition hover:border-primary/30 hover:bg-muted/30"
+                      >
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600 font-bold text-sm">
+                          {v.vouch_count}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{v.seller_name}</p>
+                          <p className="text-xs text-muted-foreground">{v.vouch_count} vouch{v.vouch_count !== 1 ? "es" : ""} · click to see who</p>
+                        </div>
+                        {v.vouch_count >= 5 && (
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-amber-500 shrink-0">
+                            <path fillRule="evenodd" d="M8.603 3.799A4.49 4.49 0 0 1 12 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 0 1 3.498 1.307 4.491 4.491 0 0 1 1.307 3.497A4.49 4.49 0 0 1 21.75 12a4.49 4.49 0 0 1-1.549 3.397 4.491 4.491 0 0 1-1.307 3.497 4.491 4.491 0 0 1-3.497 1.307A4.49 4.49 0 0 1 12 21.75a4.49 4.49 0 0 1-3.397-1.549 4.49 4.49 0 0 1-3.498-1.306 4.491 4.491 0 0 1-1.307-3.498A4.49 4.49 0 0 1 2.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 0 1 1.307-3.497 4.49 4.49 0 0 1 3.497-1.307Zm7.007 6.387a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </section>
         )}
+
 
         {/* ── Homepage sections tab ── */}
         {activeTab === "homepage" && (
           <section className="mt-6">
             <h2 className="mb-2 font-serif text-xl">Homepage Sections</h2>
             <p className="mb-4 text-xs text-muted-foreground">Edit text, show/hide, and reorder sections on the homepage.</p>
-            <div className="space-y-3">
-              {sections.map((s, idx) => (
-                <div key={s.id} className={`rounded-xl border bg-card p-4 shadow-warm ${!s.is_visible ? "opacity-50" : ""}`}>
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium">{s.title}</p>
-                      {s.subtitle && <p className="text-xs text-muted-foreground">{s.subtitle}</p>}
-                      {s.content  && <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{s.content}</p>}
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1">
-                      <button onClick={() => moveSec(s.id, "up")} disabled={idx === 0}
-                        className="rounded p-1 hover:bg-muted disabled:opacity-30"><ChevronUp className="h-4 w-4" /></button>
-                      <button onClick={() => moveSec(s.id, "down")} disabled={idx === sections.length - 1}
-                        className="rounded p-1 hover:bg-muted disabled:opacity-30"><ChevronDown className="h-4 w-4" /></button>
-                      <button onClick={() => toggleSectionVisible(s)} className="rounded p-1 hover:bg-muted">
-                        {s.is_visible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
-                      </button>
-                      <button onClick={() => openEditSection(s)} className="rounded p-1 hover:bg-muted">
-                        <Pencil className="h-4 w-4" /></button>
+            {sectionsState === "loading" && <SectionSkeleton />}
+            {sectionsState === "error" && <SectionError label="homepage sections" onRetry={loadSections} />}
+            {sectionsState === "ok" && (
+              <div className="space-y-3">
+                {sections.map((s, idx) => (
+                  <div key={s.id} className={`rounded-xl border bg-card p-4 shadow-warm ${!s.is_visible ? "opacity-50" : ""}`}>
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium">{s.title}</p>
+                        {s.subtitle && <p className="text-xs text-muted-foreground">{s.subtitle}</p>}
+                        {s.content  && <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{s.content}</p>}
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <button onClick={() => moveSec(s.id, "up")} disabled={idx === 0}
+                          className="rounded p-1 hover:bg-muted disabled:opacity-30"><ChevronUp className="h-4 w-4" /></button>
+                        <button onClick={() => moveSec(s.id, "down")} disabled={idx === sections.length - 1}
+                          className="rounded p-1 hover:bg-muted disabled:opacity-30"><ChevronDown className="h-4 w-4" /></button>
+                        <button onClick={() => toggleSectionVisible(s)} className="rounded p-1 hover:bg-muted">
+                          {s.is_visible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
+                        </button>
+                        <button onClick={() => openEditSection(s)} className="rounded p-1 hover:bg-muted">
+                          <Pencil className="h-4 w-4" /></button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </section>
         )}
 

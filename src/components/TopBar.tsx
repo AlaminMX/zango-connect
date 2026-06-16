@@ -1,32 +1,18 @@
 import { Link } from "@tanstack/react-router";
 import { Bookmark, LogIn, MapPin } from "lucide-react";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useWishlistCount } from "@/lib/wishlist";
 import { useCity } from "@/lib/cityContext";
+import { useAuth } from "@/lib/authContext";
 import { NIGERIAN_CITIES } from "@/lib/categories";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function TopBar() {
   const count = useWishlistCount();
-  // null = auth not yet resolved (suppress Sign In button entirely to prevent flash)
-  // false = confirmed signed out, true = confirmed signed in
-  const [isSignedIn, setIsSignedIn] = useState<boolean | null>(null);
+  // Suppress Sign In button until auth resolves (prevents flash on refresh)
+  const { user, isReady } = useAuth();
+  const isSignedIn = isReady ? !!user : null;
   const { selectedCity, setSelectedCity } = useCity();
 
-  useEffect(() => {
-    // getSession reads localStorage instantly — no network, no lock wait
-    supabase.auth.getSession().then(({ data }) => setIsSignedIn(!!data.session));
-    // Only update on real auth transitions, not transient token-refresh nulls
-    const { data: l } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        setIsSignedIn(true);
-      } else if (event === "SIGNED_OUT") {
-        setIsSignedIn(false);
-      }
-    });
-    return () => l.subscription.unsubscribe();
-  }, []);
 
   return (
     <header className="sticky top-0 z-40 w-full bg-background/85 backdrop-blur-md">

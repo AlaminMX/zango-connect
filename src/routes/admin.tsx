@@ -775,39 +775,37 @@ function AdminPage() {
             {vouchesState === "error" && <SectionError label="vouches" onRetry={loadVouches} />}
             {vouchesState === "ok" && (
               <>
-
-            <h2 className="mb-2 font-serif text-xl">Vouch Analytics</h2>
-            <p className="mb-4 text-xs text-muted-foreground">
-              Badge is earned after 5 vouches from verified sellers. Click a row to see who vouched.
-            </p>
-            {vouches.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No vouches recorded yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {vouches.map((v) => (
-                  <button
-                    key={v.seller_id}
-                    onClick={() => openVouchDetail(v.seller_id, v.seller_name)}
-                    className="flex w-full items-center gap-3 rounded-xl border bg-card p-3 shadow-warm text-left transition hover:border-primary/30 hover:bg-muted/30"
-                  >
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600 font-bold text-sm">
-                      {v.vouch_count}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{v.seller_name}</p>
-                      <p className="text-xs text-muted-foreground">{v.vouch_count} vouch{v.vouch_count !== 1 ? "es" : ""} · click to see who</p>
-                    </div>
-                    {v.vouch_count >= 5 && (
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-amber-500 shrink-0">
-                        <path fillRule="evenodd" d="M8.603 3.799A4.49 4.49 0 0 1 12 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 0 1 3.498 1.307 4.491 4.491 0 0 1 1.307 3.497A4.49 4.49 0 0 1 21.75 12a4.49 4.49 0 0 1-1.549 3.397 4.491 4.491 0 0 1-1.307 3.497 4.491 4.491 0 0 1-3.497 1.307A4.49 4.49 0 0 1 12 21.75a4.49 4.49 0 0 1-3.397-1.549 4.49 4.49 0 0 1-3.498-1.306 4.491 4.491 0 0 1-1.307-3.498A4.49 4.49 0 0 1 2.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 0 1 1.307-3.497 4.49 4.49 0 0 1 3.497-1.307Zm7.007 6.387a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                  </button>
-                ))}
-              </div>
+                {vouches.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No vouches recorded yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {vouches.map((v) => (
+                      <button
+                        key={v.seller_id}
+                        onClick={() => openVouchDetail(v.seller_id, v.seller_name)}
+                        className="flex w-full items-center gap-3 rounded-xl border bg-card p-3 shadow-warm text-left transition hover:border-primary/30 hover:bg-muted/30"
+                      >
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600 font-bold text-sm">
+                          {v.vouch_count}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{v.seller_name}</p>
+                          <p className="text-xs text-muted-foreground">{v.vouch_count} vouch{v.vouch_count !== 1 ? "es" : ""} · click to see who</p>
+                        </div>
+                        {v.vouch_count >= 5 && (
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-amber-500 shrink-0">
+                            <path fillRule="evenodd" d="M8.603 3.799A4.49 4.49 0 0 1 12 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 0 1 3.498 1.307 4.491 4.491 0 0 1 1.307 3.497A4.49 4.49 0 0 1 21.75 12a4.49 4.49 0 0 1-1.549 3.397 4.491 4.491 0 0 1-1.307 3.497 4.491 4.491 0 0 1-3.497 1.307A4.49 4.49 0 0 1 12 21.75a4.49 4.49 0 0 1-3.397-1.549 4.49 4.49 0 0 1-3.498-1.306 4.491 4.491 0 0 1-1.307-3.498A4.49 4.49 0 0 1 2.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 0 1 1.307-3.497 4.49 4.49 0 0 1 3.497-1.307Zm7.007 6.387a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </section>
         )}
+
 
         {/* ── Homepage sections tab ── */}
         {activeTab === "homepage" && (

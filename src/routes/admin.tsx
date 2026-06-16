@@ -122,12 +122,8 @@ function AdminPage() {
     let didAuth    = false;
     let fallbackId: ReturnType<typeof setTimeout>;
 
-    const doAuth = async (session: { user: { id: string } } | null) => {
+    const doAuth = async (session: { user: { id: string } }) => {
       if (didAuth || !isMounted) return;
-      if (!session?.user) {
-        if (isMounted) nav({ to: "/auth" });
-        return;
-      }
       didAuth = true;
       clearTimeout(fallbackId);
       try {
@@ -154,7 +150,11 @@ function AdminPage() {
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!isMounted) return;
       if (event === "SIGNED_OUT") { nav({ to: "/auth" }); return; }
-      if (["INITIAL_SESSION", "SIGNED_IN", "TOKEN_REFRESHED"].includes(event)) {
+      // INITIAL_SESSION can fire with null when the access token is expired but
+      // the refresh token is still valid — Supabase fires TOKEN_REFRESHED shortly
+      // after. Only call doAuth when we actually have a session, so we don't
+      // incorrectly redirect to /auth before the token refresh completes.
+      if (session?.user && ["INITIAL_SESSION", "SIGNED_IN", "TOKEN_REFRESHED"].includes(event)) {
         await doAuth(session);
       }
     });

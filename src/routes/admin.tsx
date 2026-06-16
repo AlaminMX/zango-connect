@@ -568,79 +568,85 @@ function AdminPage() {
         {/* ── Sellers tab ── */}
         {activeTab === "sellers" && (
           <section className="mt-6 space-y-8">
+            {sellersState === "loading" && <SectionSkeleton />}
+            {sellersState === "error" && <SectionError label="sellers" onRetry={loadSellers} />}
+            {sellersState === "ok" && (
+              <>
+                {/* Pending sellers — shown at top, action required */}
+                {pendingSellers.length > 0 && (
+                  <div>
+                    <h2 className="mb-3 flex items-center gap-2 font-serif text-xl">
+                      <Clock className="h-5 w-5 text-amber-500" />
+                      Awaiting Approval ({pendingSellers.length})
+                    </h2>
+                    <div className="space-y-2">
+                      {pendingSellers.map((s) => (
+                        <SellerRow
+                          key={s.id} s={s}
+                          onApprove={() => approveSeller(s.id, s.business_name)}
+                          onReject={() => openRejectDialog(s.id, s.business_name)}
+                          onResetPending={null}
+                          onToggleVerify={() => toggleVerify(s.id, s.is_verified)}
+                          onToggleBlock={() => toggleBlock(s.id, s.is_blocked)}
+                          onDelete={() => deleteSeller(s.id, s.business_name)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-            {/* Pending sellers — shown at top, action required */}
-            {pendingSellers.length > 0 && (
-              <div>
-                <h2 className="mb-3 flex items-center gap-2 font-serif text-xl">
-                  <Clock className="h-5 w-5 text-amber-500" />
-                  Awaiting Approval ({pendingSellers.length})
-                </h2>
-                <div className="space-y-2">
-                  {pendingSellers.map((s) => (
-                    <SellerRow
-                      key={s.id} s={s}
-                      onApprove={() => approveSeller(s.id, s.business_name)}
-                      onReject={() => openRejectDialog(s.id, s.business_name)}
-                      onResetPending={null}
-                      onToggleVerify={() => toggleVerify(s.id, s.is_verified)}
-                      onToggleBlock={() => toggleBlock(s.id, s.is_blocked)}
-                      onDelete={() => deleteSeller(s.id, s.business_name)}
-                    />
-                  ))}
-                </div>
-              </div>
+                {/* Approved sellers */}
+                {approvedSellers.length > 0 && (
+                  <div>
+                    <h2 className="mb-3 flex items-center gap-2 font-serif text-xl">
+                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                      Approved Sellers ({approvedSellers.length})
+                    </h2>
+                    <div className="space-y-2">
+                      {approvedSellers.map((s) => (
+                        <SellerRow
+                          key={s.id} s={s}
+                          onApprove={null}
+                          onReject={() => openRejectDialog(s.id, s.business_name)}
+                          onResetPending={null}
+                          onToggleVerify={() => toggleVerify(s.id, s.is_verified)}
+                          onToggleBlock={() => toggleBlock(s.id, s.is_blocked)}
+                          onDelete={() => deleteSeller(s.id, s.business_name)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Rejected / other sellers */}
+                {otherSellers.length > 0 && (
+                  <div>
+                    <h2 className="mb-3 flex items-center gap-2 font-serif text-xl">
+                      <XCircle className="h-5 w-5 text-rose-400" />
+                      Rejected / Suspended ({otherSellers.length})
+                    </h2>
+                    <div className="space-y-2">
+                      {otherSellers.map((s) => (
+                        <SellerRow
+                          key={s.id} s={s}
+                          onApprove={() => approveSeller(s.id, s.business_name)}
+                          onReject={null}
+                          onResetPending={() => resetToPending(s.id, s.business_name)}
+                          onToggleVerify={() => toggleVerify(s.id, s.is_verified)}
+                          onToggleBlock={() => toggleBlock(s.id, s.is_blocked)}
+                          onDelete={() => deleteSeller(s.id, s.business_name)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {sellers.length === 0 && <p className="text-sm text-muted-foreground">No sellers yet.</p>}
+              </>
             )}
-
-            {/* Approved sellers */}
-            {approvedSellers.length > 0 && (
-              <div>
-                <h2 className="mb-3 flex items-center gap-2 font-serif text-xl">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                  Approved Sellers ({approvedSellers.length})
-                </h2>
-                <div className="space-y-2">
-                  {approvedSellers.map((s) => (
-                    <SellerRow
-                      key={s.id} s={s}
-                      onApprove={null}
-                      onReject={() => openRejectDialog(s.id, s.business_name)}
-                      onResetPending={null}
-                      onToggleVerify={() => toggleVerify(s.id, s.is_verified)}
-                      onToggleBlock={() => toggleBlock(s.id, s.is_blocked)}
-                      onDelete={() => deleteSeller(s.id, s.business_name)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Rejected / other sellers */}
-            {otherSellers.length > 0 && (
-              <div>
-                <h2 className="mb-3 flex items-center gap-2 font-serif text-xl">
-                  <XCircle className="h-5 w-5 text-rose-400" />
-                  Rejected / Suspended ({otherSellers.length})
-                </h2>
-                <div className="space-y-2">
-                  {otherSellers.map((s) => (
-                    <SellerRow
-                      key={s.id} s={s}
-                      onApprove={() => approveSeller(s.id, s.business_name)}
-                      onReject={null}
-                      onResetPending={() => resetToPending(s.id, s.business_name)}
-                      onToggleVerify={() => toggleVerify(s.id, s.is_verified)}
-                      onToggleBlock={() => toggleBlock(s.id, s.is_blocked)}
-                      onDelete={() => deleteSeller(s.id, s.business_name)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {sellers.length === 0 && <p className="text-sm text-muted-foreground">No sellers yet.</p>}
           </section>
         )}
+
 
         {/* ── Categories tab ── */}
         {activeTab === "categories" && (

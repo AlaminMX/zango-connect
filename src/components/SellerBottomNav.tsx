@@ -34,9 +34,14 @@ export function SellerBottomNav() {
       if (data.session?.user) await loadSeller(data.session.user.id);
       setChecked(true);
     });
-    const { data: l } = supabase.auth.onAuthStateChange(async (_e, session) => {
-      if (!session) { setSeller(null); return; }
-      await loadSeller(session.user.id);
+    const { data: l } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        await loadSeller(session.user.id);
+      } else if (event === "SIGNED_OUT") {
+        // Only clear on explicit sign-out — token refresh fires transient null sessions
+        // that would otherwise wipe the seller and hide the bottom nav momentarily
+        setSeller(null);
+      }
     });
     return () => l.subscription.unsubscribe();
   }, []);

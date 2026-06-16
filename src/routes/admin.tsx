@@ -506,7 +506,10 @@ function AdminPage() {
     setVouchDetailLoading(false);
   };
 
-  if (allowed === null) return <PageLoader label="Loading admin…" />;
+  // Auth gate. !isReady → still resolving (skeleton). Not signed in or not admin → redirect handled in useEffect; render nothing in the meantime.
+  if (!isReady) return <PageLoader label="Loading admin…" />;
+  if (!allowed) return <PageLoader label="Checking access…" />;
+
 
   const tabCls = (t: typeof activeTab) =>
     `rounded-full px-4 py-1.5 text-sm font-medium transition ${activeTab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`;

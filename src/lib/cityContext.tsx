@@ -1,8 +1,3 @@
-/**
- * cityContext.tsx
- * Global city/state selection that persists to localStorage.
- * Used by TopBar, index, products, sellers, and search pages.
- */
 import React, { createContext, useContext, useState, useEffect } from "react";
 
 const STORAGE_KEY = "sutura-selected-city";
@@ -20,7 +15,6 @@ const CityContext = createContext<CityContextValue>({
 export function CityProvider({ children }: { children: React.ReactNode }) {
   const [selectedCity, setSelectedCityState] = useState<string>("All");
 
-  // Hydrate from localStorage on mount (client-only)
   useEffect(() => {
     const stored = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
     if (stored) setSelectedCityState(stored);
@@ -28,9 +22,7 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
 
   const setSelectedCity = (city: string) => {
     setSelectedCityState(city);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(STORAGE_KEY, city);
-    }
+    if (typeof window !== "undefined") localStorage.setItem(STORAGE_KEY, city);
   };
 
   return (
@@ -40,6 +32,4 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useCity() {
-  return useContext(CityContext);
-}
+export function useCity() { return useContext(CityContext); }

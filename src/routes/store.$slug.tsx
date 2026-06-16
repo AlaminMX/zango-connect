@@ -191,7 +191,7 @@ function StorePage() {
         qb = qb.eq("status", "active");
       }
 
-      const { data, error } = await qb;
+      const { data, error } = await qb.abortSignal(AbortSignal.timeout(10_000));
       if (error) throw error;
       return data;
     },

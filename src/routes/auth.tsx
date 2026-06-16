@@ -71,7 +71,13 @@ function AuthPage() {
         if (data.user) await routeAfterLogin(data.user.id);
 
       } else if (mode === "signin") {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        // Race the actual sign-in against a 12-second timeout so the
+        // button can never get permanently stuck in the loading state.
+        const signInPromise = supabase.auth.signInWithPassword({ email, password });
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Sign-in timed out. Please check your connection and try again.")), 12_000)
+        );
+        const { data, error } = await Promise.race([signInPromise, timeoutPromise]);
         if (error) {
           if (error.message.toLowerCase().includes("not confirmed")) {
             nav({ to: "/verify-email", search: { email } });

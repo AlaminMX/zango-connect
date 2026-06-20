@@ -1,59 +1,75 @@
+# Plan: Editorial Marketplace Bento Redesign
 
-## Goal
-Ship Part 1 only: fix the admin auth-on-refresh bug and the infinite-skeleton dashboard. Part 2 (redesign) comes next as 3 rendered directions you pick from.
+You picked **v3 — Editorial Marketplace Bento**. I'll roll it across the whole site using a single locked design system. No business logic changes; only presentation.
 
-## Root cause
+## Locked design tokens (added to `src/styles.css`)
 
-Two separate bugs compound into "admin logged out + dashboard stuck":
+| Token | Value | Use |
+|---|---|---|
+| `--background` | `#FCF9F5` (warm bone) | Page bg |
+| `--surface` | `#FFFFFF` | Tile bg |
+| `--surface-warm` | `#F2EDE7` | Soft tile bg |
+| `--border-warm` | `#E5D5C5` | Tile borders |
+| `--primary` (terracotta) | `#C05A3F` | Hero, CTAs, accents |
+| `--primary-deep` | `#B04A2F` | Hover/depth |
+| `--sage` | `#8A9A5B` | Secondary accent, prices |
+| `--sage-deep` | `#7A8A4B` | Sage hover |
+| `--espresso` | `#3E2723` | Headings, dark tiles |
+| `--muted-fg` | `#7A6B5D` | Body copy |
+| Heading font | DM Serif Display | Loaded via `<link>` in `__root.tsx` |
+| Body font | Fira Sans (300/400/500/600) | Same |
 
-1. **Auth race on refresh.** `admin.tsx` runs both `getSession()` and `onAuthStateChange` and gates rendering on a single `allowed` flag. On hard refresh, the Supabase client is lazily constructed (Proxy in `client.ts`) and the auth lock is bypassed, so `getSession()` resolves quickly — but the role check (`user_roles`) can still race with token rehydration. The 5s fallback then ships the user to `/auth` even though the session exists. Same pattern is duplicated in `dashboard.tsx`, `TopBar.tsx`, `SellerBottomNav.tsx` — each maintains its own auth state, none coordinate, and a `TOKEN_REFRESHED` mid-flight can flip one component before another.
+Radius: `rounded-3xl` (24px) tiles, `rounded-2xl` inner. Shadows: soft single-layer.
 
-2. **Single `Promise.all` loader.** `admin.tsx#loadAll()` runs 6 queries inside one `Promise.all` with no try/catch and no per-section state. If any one query hangs or errors (e.g. RLS denies one table for a millisecond while auth rehydrates), the whole `await` rejects, `loadAll` throws into the `useEffect`, `allowed` stays `true` but every section stays on its initial empty/skeleton state forever. There's also no abort signal — a stuck request never times out at the query level.
+## Files I'll touch
 
-## Fix
+### 1. Design system foundation
+- `src/styles.css` — replace color tokens with terracotta/sage palette, register `--font-display` + `--font-sans` via `@theme`, drop legacy purple/rose tokens.
+- `src/routes/__root.tsx` — add DM Serif Display + Fira Sans `<link>` tags in `<head>`, set body `font-sans`.
+- `tailwind` usage stays via `@theme` tokens — no JS config.
 
-### 1. Centralized `AuthProvider` (`src/lib/authContext.tsx` — new)
-- One `useEffect` in the provider: `getSession()` → set initial state → subscribe to `onAuthStateChange`, filtering to `SIGNED_IN | SIGNED_OUT | TOKEN_REFRESHED | USER_UPDATED | INITIAL_SESSION`.
-- Exposes `{ user, session, isReady, isAdmin, signOut }`. `isAdmin` derived from a single `user_roles` query keyed on `user.id`, cached in state, refreshed on auth changes only.
-- `isReady = true` once **both** the initial `getSession()` resolves **and** the role lookup completes (or fails — failure sets `isAdmin=false`, never blocks).
-- Hard 3s timeout on the role lookup → on timeout, `isReady=true`, `isAdmin=false`, log a diagnostic warning. No infinite wait.
-- Wrap in `__root.tsx` inside `QueryClientProvider`.
+### 2. Shared chrome
+- `src/components/TopBar.tsx` — repaint as warm-bone bar with espresso wordmark, sage hover states, terracotta active.
+- `src/components/Footer.tsx` — espresso-on-bone, DM Serif heading.
+- `src/components/SellerBottomNav.tsx` — bone bg, terracotta active pill.
+- `src/components/SellerCard.tsx` + `ProductCard.tsx` — rounded-3xl warm-bordered tiles, sage price, espresso "WhatsApp Vendor" CTA matching the prototype.
+- `src/components/LoadingSpinner.tsx` (skeletons) — match new tile shape/radius.
 
-### 2. Refactor consumers to use the provider
-- `admin.tsx`: replace the bespoke auth `useEffect` with `useAuth()`. Render `<PageLoader>` while `!isReady`; redirect to `/auth` if ready & no user; redirect to `/` if ready & not admin.
-- `dashboard.tsx`, `TopBar.tsx`, `SellerBottomNav.tsx`: replace their `getSession + onAuthStateChange` blocks with `useAuth()`. Removes 4 competing subscribers.
-- `auth.tsx`: after sign-in, the provider's listener handles state; remove any duplicate listeners there.
+### 3. Homepage — full bento rebuild
+- `src/routes/index.tsx` — rebuild layout as a 12-col bento grid mirroring v3:
+  - Hero search tile (col-span 8, row-span 3, terracotta)
+  - Top Sellers tile (col-span 4, row-span 2, white)
+  - Categories tile (col-span 4, row-span 2, sage)
+  - Explore City tile (col-span 3, row-span 2, warm)
+  - Two featured product tiles (col-span 3, row-span 3 each)
+  - Verified-sellers stat tile (espresso)
+  - Second city hub tile (warm)
+  - Below the bento: the full product grid stays, restyled as the same tile vocabulary.
 
-### 3. Resilient admin data loading
-Replace the single `Promise.all` in `loadAll()` with **per-section `useQuery` hooks** (TanStack Query is already installed):
-- `sellersQuery`, `productsQuery`, `categoriesQuery`, `sectionsQuery`, `vouchesQuery`, `statsQuery` — each independent, each with `retry: 1`, `staleTime: 30_000`, and `AbortSignal.timeout(8000)` on the Supabase call.
-- Each section renders one of: skeleton (loading), real data, or an inline "Couldn't load — Retry" error card (never infinite skeleton).
-- Mutations (approve/reject/block/etc.) call `queryClient.invalidateQueries({ queryKey: [...] })` on success — removes the manual `setSellers(prev => ...)` patching, which is also a source of stale state.
-- Queries `enabled: isReady && isAdmin` so they never fire before auth resolves.
+### 4. Listing & detail pages
+- `src/routes/products.tsx`, `sellers.tsx`, `search.tsx`, `category.$slug.tsx`, `city.$slug.tsx`, `wishlist.tsx` — page header in DM Serif on bone, filters as warm pill tiles, results as the new product/seller tile.
+- `src/routes/store.$slug.tsx` — storefront hero as a terracotta bento tile with sage stat chip; product grid uses new card.
 
-### 4. Diagnostic logging
-- `console.debug("[auth]", event, !!session)` inside the provider listener.
-- `console.warn("[admin] section failed:", key, error)` in each query's `onError`.
-- Kept behind `import.meta.env.DEV` so production stays quiet.
+### 5. Auth + account
+- `src/routes/auth.tsx`, `register.tsx`, `reset-password.tsx`, `verify-email.tsx`, `account.tsx` — bone background, white card with warm border, DM Serif headings, sage primary buttons where secondary, terracotta for primary CTAs.
 
-### 5. Database
-No schema changes needed. RLS, `user_roles`, and `has_role()` already correct (per memory). All fixes are client-side.
+### 6. Dashboard + admin (presentation only — no logic changes)
+- `src/routes/dashboard.tsx`, `src/components/dashboard/*`, `src/components/VerificationBanner.tsx` — convert panels to bento tiles in the new palette; keep all existing data hooks, queries, and `isReady`/auth gating untouched.
+- `src/routes/admin.tsx` — same tile language for stat cards and section panels; tabs restyled with sage underline.
 
-## Files changed
-- **New**: `src/lib/authContext.tsx`
-- **Edited**: `src/routes/__root.tsx` (wrap with `AuthProvider`)
-- **Edited**: `src/routes/admin.tsx` (use `useAuth`, split loader into `useQuery` per section, per-section error UI)
-- **Edited**: `src/routes/dashboard.tsx` (use `useAuth`)
-- **Edited**: `src/components/TopBar.tsx` (use `useAuth`)
-- **Edited**: `src/components/SellerBottomNav.tsx` (use `useAuth`)
+### 7. Modals / misc
+- `src/components/WelcomeModal.tsx`, `ExploreCities.tsx`, `MediaViewer.tsx`, `BackButton.tsx` — palette + radius pass to match.
 
-No other routes touched. No DB migration.
+## What I will NOT touch
+- `src/lib/authContext.tsx` and the auth bug fix already landed — left as-is.
+- `src/integrations/supabase/*` (auto-generated).
+- Server functions, RLS, migrations, routes, queries, or data shapes.
+- Business logic in dashboard/admin (only the visual shell changes).
 
 ## Verification
-- Sign in as admin → hard refresh → admin page renders, no redirect to `/auth`.
-- Throttle network in DevTools → each section either loads or shows "Retry", never infinite skeleton.
-- Sign out → all four consumers update in lockstep (one subscriber, one source of truth).
-- Close + reopen browser → session persists (no change to `client.ts` storage config).
+After implementation: run Playwright against `localhost:8080` to screenshot Home, Products, Sellers, Store, Dashboard, Admin, Auth at 1280px and 390px; compare hero/tile composition against the chosen v3 prototype; check console for errors.
 
-## Part 2 (next round, not in this plan)
-Once auth ships and you confirm it on a real refresh, I'll capture the current home page, generate 3 rendered design directions inspired by the uploaded Northern Marketplace UX vision (palette/type/composition variants), and you pick one to build out across home → listings → PDP → seller storefront → admin.
+## Database / Supabase changes
+**None.** This is a pure presentation pass.
+
+Approve and I'll start with the design tokens + root font wiring, then ship the homepage, then sweep the remaining routes.

@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
+import { BottomNav } from "@/components/BottomNav";
 import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -144,6 +145,7 @@ function AuthPage() {
             </button>
           </div>
         </div>
+        <BottomNav />
       </div>
     );
   }
@@ -165,6 +167,7 @@ function AuthPage() {
                 id="new-pw"
                 required
                 minLength={6}
+                autoComplete="new-password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
               />
@@ -178,6 +181,7 @@ function AuthPage() {
             </Button>
           </form>
         </div>
+        <BottomNav />
       </div>
     );
   }
@@ -202,6 +206,7 @@ function AuthPage() {
                 id="reset-email"
                 type="email"
                 required
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -222,17 +227,49 @@ function AuthPage() {
             </button>
           </form>
         </div>
+        <BottomNav />
       </div>
     );
   }
 
   // ── Sign in / Sign up ─────────────────────────────────────────────────────
+  const tabCls = (m: "signin" | "signup") =>
+    `flex-1 rounded-full px-4 py-1.5 text-sm font-medium transition ${
+      mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+    }`;
+
   return (
     <div className="min-h-screen bg-background">
       <TopBar />
       <div className="mx-auto max-w-md px-5 py-10">
         <BackButton fallback="/" />
-        <div className="mt-6">
+
+        <div
+          role="tablist"
+          aria-label="Sign in or sign up"
+          className="mt-6 flex gap-2 rounded-full border border-border-warm bg-card p-1 shadow-warm"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === "signin"}
+            onClick={() => setMode("signin")}
+            className={tabCls("signin")}
+          >
+            Sign in
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === "signup"}
+            onClick={() => setMode("signup")}
+            className={tabCls("signup")}
+          >
+            Sign up
+          </button>
+        </div>
+
+        <div className="mt-5">
           <h1 className="font-serif text-3xl">{mode === "signin" ? "Welcome back" : "Create your account"}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {mode === "signin" ? "Sign in to manage your store." : "Start your store in minutes."}
@@ -242,7 +279,14 @@ function AuthPage() {
         <form onSubmit={submit} className="mt-6 space-y-4 rounded-2xl border bg-card p-6 shadow-warm">
           <div>
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input
+              id="email"
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
           <div>
             <div className="flex items-center justify-between">
@@ -257,18 +301,18 @@ function AuthPage() {
                 </button>
               )}
             </div>
-            <PasswordInput id="pw" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+            <PasswordInput
+              id="pw"
+              required
+              minLength={6}
+              autoComplete={mode === "signin" ? "current-password" : "new-password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
           <Button type="submit" disabled={loading} className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
             {loading ? "…" : mode === "signin" ? "Sign in" : "Create account"}
           </Button>
-          <button
-            type="button"
-            onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-            className="block w-full text-center text-sm text-muted-foreground hover:text-primary"
-          >
-            {mode === "signin" ? "Need an account? Sign up" : "Already have an account? Sign in"}
-          </button>
         </form>
         <p className="mt-4 text-center text-xs text-muted-foreground">
           Just browsing? <Link to="/" className="text-primary underline">Go to marketplace</Link>
@@ -277,6 +321,7 @@ function AuthPage() {
           Want to sell? <Link to="/register" className="text-primary underline">Open your store →</Link>
         </p>
       </div>
+      <BottomNav />
     </div>
   );
 }

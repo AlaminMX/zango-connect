@@ -7,9 +7,10 @@
  */
 
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
+import { BottomNav } from "@/components/BottomNav";
 import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ImageUploader } from "@/components/ImageUploader";
 import { toast } from "sonner";
 import { slugify, validateNigerianPhone } from "@/lib/whatsapp";
-import { ChevronLeft, ChevronRight, Loader2, AlertCircle, Clock, Home } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, AlertCircle, Clock, Home, Check, Compass } from "lucide-react";
 import { NIGERIAN_CITIES } from "@/lib/categories";
 
 export const Route = createFileRoute("/register")({ component: Register });
@@ -32,6 +33,20 @@ function FieldError({ msg }: { msg?: string }) {
   return (
     <p className="mt-1 flex items-center gap-1 text-xs text-destructive">
       <AlertCircle className="h-3 w-3" /> {msg}
+    </p>
+  );
+}
+
+/** Required-field marker — visually distinct from the label text. */
+function Req() {
+  return <span className="text-primary"> *</span>;
+}
+
+/** Small tracked-caps eyebrow above a form section heading. */
+function SectionEyebrow({ children }: { children: ReactNode }) {
+  return (
+    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-sage-deep">
+      {children}
     </p>
   );
 }
@@ -197,6 +212,28 @@ function Register() {
     setStep(3);
   };
 
+  // Step-indicator pill state: "done" | "current" | "upcoming"
+  const stepState = (n: number): "done" | "current" | "upcoming" =>
+    step > n ? "done" : step === n ? "current" : "upcoming";
+
+  const pillCls = (n: number) => {
+    const s = stepState(n);
+    return `flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition ${
+      s === "current" ? "bg-primary text-primary-foreground" :
+      s === "done" ? "bg-sage/15 text-sage-deep" :
+      "bg-muted text-muted-foreground"
+    }`;
+  };
+
+  const dotCls = (n: number) => {
+    const s = stepState(n);
+    return `flex h-4.5 w-4.5 items-center justify-center rounded-full text-[10px] font-semibold ${
+      s === "current" ? "bg-primary-foreground text-primary" :
+      s === "done" ? "bg-sage-deep text-white" :
+      "bg-border-warm text-muted-foreground"
+    }`;
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <TopBar />
@@ -206,14 +243,18 @@ function Register() {
         {step < 3 && (
           <>
             <h1 className="font-serif text-3xl">Fara Kasuwanci — Start Your Store</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Welcome to the community · Step {step} of 2
-            </p>
+            <p className="mt-1 text-sm text-muted-foreground">Welcome to the community</p>
 
-            <div className="mt-4 flex gap-1.5">
-              {[1, 2].map((n) => (
-                <div key={n} className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${step >= n ? "bg-primary" : "bg-muted"}`} />
-              ))}
+            <div className="mt-4 flex items-center gap-2">
+              <div className={pillCls(1)}>
+                <span className={dotCls(1)}>{stepState(1) === "done" ? <Check className="h-3 w-3" /> : "1"}</span>
+                Business info
+              </div>
+              <div className={`h-px flex-1 ${stepState(1) === "done" ? "bg-sage-deep/40" : "bg-border"}`} />
+              <div className={pillCls(2)}>
+                <span className={dotCls(2)}>{stepState(2) === "done" ? <Check className="h-3 w-3" /> : "2"}</span>
+                Photos
+              </div>
             </div>
           </>
         )}
@@ -224,46 +265,60 @@ function Register() {
             <div className="space-y-4">
               {!hasAccount && (
                 <>
-                  <h2 className="font-serif text-xl">Your login</h2>
+                  <SectionEyebrow>Account</SectionEyebrow>
+                  <h2 className="-mt-1 font-serif text-xl">Your login</h2>
                   <p className="-mt-2 text-xs text-muted-foreground">
                     We'll create your seller account so you can manage your store later.
                   </p>
                   <div>
-                    <Label>Email *</Label>
-                    <Input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+                    <Label>Email<Req /></Label>
+                    <Input
+                      type="email"
+                      autoComplete="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                    />
                     <FieldError msg={errors.email} />
                   </div>
                   <div>
-                    <Label>Password *</Label>
-                    <PasswordInput minLength={6} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" />
+                    <Label>Password<Req /></Label>
+                    <PasswordInput
+                      minLength={6}
+                      autoComplete="new-password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="At least 6 characters"
+                    />
                     <FieldError msg={errors.password} />
                   </div>
                   <div className="my-2 h-px bg-border" />
                 </>
               )}
 
-              <h2 className="font-serif text-xl">Business info</h2>
+              <SectionEyebrow>Business details</SectionEyebrow>
+              <h2 className="-mt-1 font-serif text-xl">Business info</h2>
 
               <div>
-                <Label>Business name *</Label>
+                <Label>Business name<Req /></Label>
                 <Input value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="e.g. Zainab's Kitchen" />
                 <FieldError msg={errors.businessName} />
               </div>
 
               <div>
-                <Label>Your name *</Label>
+                <Label>Your name<Req /></Label>
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Zainab Musa" />
                 <FieldError msg={errors.name} />
               </div>
 
               <div>
-                <Label>WhatsApp number *</Label>
+                <Label>WhatsApp number<Req /></Label>
                 <Input placeholder="+234… or 0801…" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
                 <FieldError msg={errors.whatsapp} />
               </div>
 
               <div>
-                <Label>City *</Label>
+                <Label>City<Req /></Label>
                 <Select value={city} onValueChange={(v) => { setCity(v); if (v !== "Other") setOtherCity(""); }}>
                   <SelectTrigger className={errors.city ? "border-destructive" : ""}>
                     <SelectValue placeholder="Choose city" />
@@ -281,7 +336,7 @@ function Register() {
               </div>
 
               <div>
-                <Label>Category *</Label>
+                <Label>Category<Req /></Label>
                 <Select value={category} onValueChange={setCategory}>
                   <SelectTrigger className={errors.category ? "border-destructive" : ""}>
                     <SelectValue placeholder="Choose category" />
@@ -313,15 +368,18 @@ function Register() {
             <div className="space-y-5">
               <h2 className="font-serif text-xl">Upload photos</h2>
 
-              <ImageUploader
-                value={profileUrl}
-                onChange={setProfileUrl}
-                aspect={1}
-                shape="circle"
-                pathPrefix="profile"
-                label="Profile photo *"
-              />
-              <FieldError msg={errors.profileUrl} />
+              <div>
+                <ImageUploader
+                  value={profileUrl}
+                  onChange={setProfileUrl}
+                  aspect={1}
+                  shape="circle"
+                  pathPrefix="profile"
+                  label="Profile photo *"
+                />
+                <p className="mt-1.5 text-xs text-muted-foreground">This is the first thing buyers see.</p>
+                <FieldError msg={errors.profileUrl} />
+              </div>
 
               <ImageUploader
                 value={coverUrl}
@@ -364,10 +422,14 @@ function Register() {
               <Link to="/" className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3 font-medium text-primary-foreground hover:bg-primary/90">
                 <Home className="h-4 w-4" /> Return to homepage
               </Link>
+              <Link to="/explore" className="inline-flex w-full items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-primary">
+                While you wait, explore the marketplace <Compass className="h-3.5 w-3.5" />
+              </Link>
             </div>
           )}
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 }

@@ -1,0 +1,230 @@
+/**
+ * /explore — discovery hub. Sticky search, trending sellers (7d clicks),
+ * category quick filter, randomized products grid with "Load more".
+ */
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { TopBar } from "@/components/TopBar";
+import { Footer } from "@/components/Footer";
+import { ProductCard } from "@/components/ProductCard";
+import { ProductSkeleton } from "@/components/LoadingSpinner";
+import { BackButton } from "@/components/BackButton";
+import { Button } from "@/components/ui/button";
+import { Search, ShieldCheck } from "lucide-react";
+import { useCity } from "@/lib/cityContext";
+
+export const Route = createFileRoute("/explore")({ component: Explore });
+
+const PAGE_SIZE = 12;
+
+function Explore() {
+  const nav = useNavigate();
+  const { selectedCity } = useCity();
+  const [q, setQ] = useState("");
+  const [activeCat, setActiveCat] = useState<string | null>(null);
+  const [shown, setShown] = useState(PAGE_SIZE);
+
+  const { data: categories } = useQuery({
+    queryKey: ["explore-categories"],
+    queryFn: async () => {
+      const { data } = await supabase.from("categories").select("id, name, slug").order("sort_order")
+        .abortSignal(AbortSignal.timeout(8000));
+      return data ?? [];
+    },
+    staleTime: 5 * 60_000,
+  });
+
+  const { data: trending } = useQuery({
+    queryKey: ["trending-sellers", selectedCity],
+    queryFn: async () => {
+      const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
+      const { data: clicks } = await supabase
+        .from("whatsapp_clicks")
+        .select("seller_id")
+        .gte("created_at", since)
+        .abortSignal(AbortSignal.timeout(8000));
+      const tally = new Map<string, number>();
+      (clicks ?? []).forEach((c: any) => tally.set(c.seller_id, (tally.get(c.seller_id) ?? 0) + 1));
+      const topIds = [...tally.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([id]) => id);
+      if (topIds.length === 0) {
+        let qb = supabase.from("sellers")
+          .select("id, slug, business_name, city, profile_photo_url, is_verified")
+          .eq("is_blocked", false).eq("verification_status", "approved")
+          .order("is_verified", { ascending: false })
+          .order("created_at", { ascending: false }).limit(6);
+        if (selectedCity !== "All") qb = qb.eq("city", selectedCity);
+        const { data } = await qb.abortSignal(AbortSignal.timeout(8000));
+        return data ?? [];
+      }
+      let qb = supabase.from("sellers")
+        .select("id, slug, business_name, city, profile_photo_url, is_verified")
+        .in("id", topIds).eq("is_blocked", false).eq("verification_status", "approved");
+      if (selectedCity !== "All") qb = qb.eq("city", selectedCity);
+      const { data } = await qb.abortSignal(AbortSignal.timeout(8000));
+      const order = new Map(topIds.map((id, i) => [id, i]));
+      return (data ?? []).slice().sort((a: any, b: any) => (order.get(a.id) ?? 99) - (order.get(b.id) ?? 99)).slice(0, 6);
+    },
+    staleTime: 60_000,
+  });
+
+  const { data: products, isLoading } = useQuery({
+    queryKey: ["explore-products", selectedCity, activeCat],
+    queryFn: async () => {
+      let qb = supabase.from("products")
+        .select("id, name, price, image_url, stock_status, is_featured, featured_order, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, is_blocked, verification_status, category)")
+        .eq("status", "active")
+        .eq("sellers.is_blocked", false)
+        .eq("sellers.verification_status", "approved")
+        .limit(60);
+      if (selectedCity !== "All") qb = qb.eq("sellers.city", selectedCity);
+      if (activeCat) qb = qb.eq("sellers.category", activeCat);
+      const { data, error } = await qb.abortSignal(AbortSignal.timeout(8000));
+      if (error) throw error;
+      const rows = (data ?? []) as any[];
+      const featured = rows.filter((r) => r.is_featured).sort((a, b) => (a.featured_order ?? 0) - (b.featured_order ?? 0));
+      const rest = rows.filter((r) => !r.is_featured);
+      // pseudo-random shuffle (stable per render)
+      for (let i = rest.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [rest[i], rest[j]] = [rest[j], rest[i]];
+      }
+      return [...featured, ...rest];
+    },
+  });
+
+  const visible = useMemo(() => (products ?? []).slice(0, shown), [products, shown]);
+
+  const submitSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!q.trim()) return;
+    nav({ to: "/search", search: { q: q.trim(), city: selectedCity !== "All" ? selectedCity : undefined } });
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <TopBar />
+
+      {/* Sticky search */}
+      <div className="sticky top-16 z-30 border-b border-border-warm bg-background/95 backdrop-blur">
+        <div className="mx-auto max-w-6xl px-5 py-3">
+          <form onSubmit={submitSearch} className="flex items-center gap-2 rounded-full border border-border-warm bg-card px-3 py-1.5 shadow-warm">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search products, sellers, categories…"
+              className="min-h-[36px] flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              aria-label="Search marketplace"
+            />
+            <Button type="submit" size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90">Search</Button>
+          </form>
+        </div>
+      </div>
+
+      <main className="mx-auto max-w-6xl px-5 py-6">
+        <BackButton fallback="/" />
+
+        {/* Trending sellers */}
+        <section className="mt-4">
+          <div className="mb-3 flex items-baseline justify-between">
+            <div>
+              <h2 className="font-display text-2xl text-espresso">Trending sellers</h2>
+              <p className="text-[11px] text-muted-foreground">Shahararrun Masu Kasuwa</p>
+            </div>
+            <Link to="/sellers" className="text-xs font-semibold text-primary hover:underline">See all</Link>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {(trending ?? []).map((s: any) => (
+              <Link
+                key={s.id} to="/store/$slug" params={{ slug: s.slug }}
+                className="group flex w-24 shrink-0 flex-col items-center text-center"
+              >
+                <div className={`h-20 w-20 overflow-hidden rounded-full bg-surface-warm ring-2 transition group-hover:ring-primary ${s.is_verified ? "ring-[#C9A84C]" : "ring-border-warm"}`}>
+                  {s.profile_photo_url ? (
+                    <img src={s.profile_photo_url} alt={s.business_name} className="h-full w-full object-cover" loading="lazy" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center font-display text-2xl text-primary">{s.business_name?.charAt(0)}</div>
+                  )}
+                </div>
+                <p className="mt-2 line-clamp-1 text-xs font-semibold text-espresso">{s.business_name}</p>
+                <p className="line-clamp-1 text-[10px] text-muted-foreground">{s.city}</p>
+                {s.is_verified && <ShieldCheck className="mt-0.5 h-3 w-3 text-[#C9A84C]" />}
+              </Link>
+            ))}
+            {(!trending || trending.length === 0) && (
+              <p className="py-6 text-xs text-muted-foreground">No trending sellers yet.</p>
+            )}
+          </div>
+        </section>
+
+        {/* Category filter */}
+        <section className="mt-6">
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            <CatPill active={activeCat === null} onClick={() => { setActiveCat(null); setShown(PAGE_SIZE); }}>All</CatPill>
+            {(categories ?? []).map((c: any) => (
+              <CatPill key={c.id} active={activeCat === c.slug} onClick={() => { setActiveCat(c.slug); setShown(PAGE_SIZE); }}>
+                {c.name}
+              </CatPill>
+            ))}
+          </div>
+        </section>
+
+        {/* Products grid */}
+        <section className="mt-6">
+          {isLoading ? (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => <ProductSkeleton key={i} />)}
+            </div>
+          ) : visible.length === 0 ? (
+            <p className="py-16 text-center text-sm text-muted-foreground">
+              No products to show. Try a different filter.
+            </p>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {visible.map((p: any) => (
+                  <ProductCard
+                    key={p.id} id={p.id} name={p.name} price={Number(p.price ?? 0)}
+                    image_url={p.image_url} stock_status={p.stock_status}
+                    seller_id={p.seller_id}
+                    seller_name={p.sellers?.business_name}
+                    seller_city={p.sellers?.city}
+                    seller_slug={p.sellers?.slug}
+                    whatsapp_number={p.sellers?.whatsapp_number}
+                  />
+                ))}
+              </div>
+              {(products?.length ?? 0) > shown && (
+                <div className="mt-8 text-center">
+                  <Button
+                    onClick={() => setShown((n) => n + PAGE_SIZE)}
+                    variant="outline"
+                    className="min-h-[44px] rounded-full border-border-warm bg-card px-8"
+                  >
+                    Load more
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </section>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+function CatPill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button" onClick={onClick}
+      className={`min-h-[36px] shrink-0 rounded-full border px-4 text-xs font-semibold transition ${
+        active
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-border-warm bg-card text-espresso hover:border-primary"
+      }`}
+    >{children}</button>
+  );
+}

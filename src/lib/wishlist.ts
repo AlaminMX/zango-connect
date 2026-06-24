@@ -88,12 +88,13 @@ function subscribe(cb: () => void) {
 
 let lastRaw = "";
 let snapshotCache: WishlistItem[] = [];
+const EMPTY: WishlistItem[] = [];
 
 export function useWishlist(): WishlistItem[] {
   const items = useSyncExternalStore(
     subscribe,
     () => {
-      if (typeof window === "undefined") return snapshotCache;
+      if (typeof window === "undefined") return EMPTY;
       const raw = localStorage.getItem(KEY) ?? "[]";
       if (raw !== lastRaw) {
         lastRaw = raw;
@@ -106,7 +107,7 @@ export function useWishlist(): WishlistItem[] {
       }
       return snapshotCache;
     },
-    () => [] as WishlistItem[],
+    () => EMPTY,
   );
   return items;
 }

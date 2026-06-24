@@ -46,8 +46,8 @@ export function SellerProfileProvider({ children }: { children: ReactNode }) {
           .from("sellers")
           .select("id, slug, business_name, verification_status, is_verified, is_blocked, city, category, whatsapp_number, profile_photo_url, cover_photo_url, bio")
           .eq("user_id", user.id)
-          .maybeSingle()
-          .abortSignal(AbortSignal.timeout(8000));
+          .abortSignal(AbortSignal.timeout(8000))
+          .maybeSingle();
         if (cancelled) return;
         setSeller((data as SellerProfile) ?? null);
       } catch (err) {

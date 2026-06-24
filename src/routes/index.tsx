@@ -421,7 +421,7 @@ function Index() {
             ].join(", "),
           }}
         >
-          <div className="mx-auto flex max-w-3xl flex-col items-center px-5 py-16 text-center sm:py-20">
+          <div className="mx-auto flex max-w-3xl flex-col items-center px-5 py-16 text-center sm:py-20" style="margin-top:0px;">
             <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.22em] text-[#D97C5A]">
               For sellers · Masu kasuwanci
             </p>

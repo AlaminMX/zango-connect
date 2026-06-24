@@ -1,7 +1,7 @@
 /**
- * Homepage — Editorial Marketplace Bento.
- * Locked palette: terracotta + sage on warm bone. Type: DM Serif Display + Fira Sans.
- * Data hooks unchanged from prior version; only composition/visual layer rebuilt.
+ * Homepage — Sutura Market Connect
+ * Sections: Hero → Category Shortcuts → Trending Sellers → Featured Products → City Explorer → Open Your Store CTA
+ * Context-aware: approved/pending seller sees dashboard CTA; guest/buyer sees browse + register CTAs.
  */
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -9,32 +9,59 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
+import { BottomNav } from "@/components/BottomNav";
 import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductSkeleton } from "@/components/LoadingSpinner";
+import { SellerCard } from "@/components/SellerCard";
 import { WelcomeModal } from "@/components/WelcomeModal";
-import { Button } from "@/components/ui/button";
-import { Search, ArrowRight, ArrowUpRight, ShieldCheck, Sparkles, Store } from "lucide-react";
 import { ExploreCities } from "@/components/ExploreCities";
 import { useCity } from "@/lib/cityContext";
+import { useAuth } from "@/lib/authContext";
+import { useSellerProfile } from "@/lib/sellerProfile";
+import { iconFor, hausaFor } from "@/lib/categories";
+import { Search, ArrowRight, Store, LayoutGrid, ChevronRight } from "lucide-react";
 
 export const Route = createFileRoute("/")({ component: Index });
 
-const PLACEHOLDER_PRODUCTS = [
-  { name: "Hand-dyed Atampa",  price: 12500, seller: "Hajiya's Couture",   city: "Kano",     emoji: "🧵" },
-  { name: "Yaji Spice Blend",  price: 2800,  seller: "Borno Fragrances",   city: "Maiduguri", emoji: "🌶️" },
-  { name: "Traditional Rug",   price: 45000, seller: "Zaria Leatherworks", city: "Kaduna",   emoji: "🪵" },
-  { name: "Shea Body Butter",  price: 3000,  seller: "Fati Glow Beauty",   city: "Abuja",    emoji: "🌸" },
-];
+// ─── helpers ────────────────────────────────────────────────────────────────
 
 function useSection(sections: any[] | undefined, key: string) {
   return sections?.find((s: any) => s.key === key && s.is_visible !== false);
 }
 
+// Skeleton rows for sellers while loading
+function SellerSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-3xl border border-border-warm bg-card animate-pulse">
+      <div className="flex items-start gap-3 p-4">
+        <div className="h-14 w-14 shrink-0 rounded-full bg-muted" />
+        <div className="flex-1 space-y-2 pt-1">
+          <div className="h-4 w-3/4 rounded bg-muted" />
+          <div className="h-3 w-1/2 rounded bg-muted" />
+          <div className="h-3 w-2/3 rounded bg-muted" />
+        </div>
+      </div>
+      <div className="h-9 border-t border-border-warm bg-surface-warm/60" />
+    </div>
+  );
+}
+
+// ─── main component ──────────────────────────────────────────────────────────
+
 function Index() {
   const nav = useNavigate();
   const [q, setQ] = useState("");
-  const { selectedCity: city, setSelectedCity: _setCity } = useCity();
+  const { selectedCity: city } = useCity();
+  const { user, isReady } = useAuth();
+  const { seller, loading: sellerLoading } = useSellerProfile();
+
+  // Is the current user a seller (any status)?
+  const isSeller = isReady && !sellerLoading && !!seller;
+  // Only hide "Open your store" CTA when we know for sure the user is a seller
+  const showSellerCTA = isReady && !sellerLoading && !seller;
+
+  // ── data ──────────────────────────────────────────────────────────────────
 
   const { data: sections } = useQuery({
     queryKey: ["homepage-sections"],
@@ -59,31 +86,15 @@ function Index() {
     staleTime: 2 * 60 * 1000, gcTime: 5 * 60 * 1000, retry: 1,
   });
 
-  const { data: cityRows } = useQuery({
-    queryKey: ["home-cities"],
-    queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("cities_with_stats")
-        .select("id, name, state, slug, sellers_count, products_count, is_active, sort_order")
-        .eq("is_active", true).order("sort_order").limit(2);
-      if (error) {
-        const { data: fallback } = await supabase.from("cities_of_business")
-          .select("id, name, state, slug").eq("is_active", true).order("sort_order").limit(2);
-        return fallback ?? [];
-      }
-      return data ?? [];
-    },
-  });
-
-  const { data: topSellers } = useQuery({
-    queryKey: ["top-sellers-bento", city],
+  const { data: trendingSellers, isLoading: sellersLoading } = useQuery({
+    queryKey: ["trending-sellers-home", city],
     queryFn: async () => {
       let qb = supabase.from("sellers")
         .select("id, slug, business_name, category, city, profile_photo_url, is_verified, rating")
         .eq("is_blocked", false).eq("verification_status", "approved")
         .order("is_verified", { ascending: false })
         .order("rating", { ascending: false, nullsFirst: false })
-        .order("created_at", { ascending: false }).limit(4);
+        .order("created_at", { ascending: false }).limit(6);
       if (city !== "All") qb = qb.eq("city", city);
       const { data, error } = await qb.abortSignal(AbortSignal.timeout(8000));
       if (error) throw error;
@@ -104,7 +115,7 @@ function Index() {
   });
 
   const { data: featuredProducts, isLoading: productsLoading } = useQuery({
-    queryKey: ["featured-products-bento", city],
+    queryKey: ["featured-products-home", city],
     queryFn: async () => {
       const buildFeatured = () => {
         let qb = supabase.from("products")
@@ -131,7 +142,6 @@ function Index() {
     staleTime: 2 * 60 * 1000, gcTime: 5 * 60 * 1000, retry: 1,
   });
 
-  const heroSection = useSection(sections, "hero");
   const featuredSection = useSection(sections, "featured_products");
 
   const submitSearch = (e: React.FormEvent) => {
@@ -140,263 +150,205 @@ function Index() {
     nav({ to: "/search", search: { q: q.trim(), city: city !== "All" ? city : undefined } });
   };
 
+  const hasSellers  = (trendingSellers?.length ?? 0) > 0;
   const hasProducts = (featuredProducts?.length ?? 0) > 0;
-  const productsForBento = hasProducts ? featuredProducts!.slice(0, 2) : null;
-  const productGridRest = hasProducts ? featuredProducts!.slice(2) : [];
-  const topCats = (categories ?? []).slice(0, 4);
-  const cityTiles = cityRows ?? [];
+
+  // ── render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-background">
       <WelcomeModal />
       <TopBar />
 
-      {/* ── BENTO HERO ── */}
-      <section className="mx-auto max-w-6xl px-5 pt-8 pb-12 lg:pt-12">
-        <div className="grid auto-rows-[160px] grid-cols-1 gap-4 md:grid-cols-4 lg:grid-cols-12">
+      {/* ── HERO ─────────────────────────────────────────────────────────── */}
+      <section
+        className="relative overflow-hidden"
+        style={{
+          background: "#1A0B08",
+          // Warm radial glow from bottom-right
+          backgroundImage: [
+            "radial-gradient(ellipse 80% 60% at 75% 110%, rgba(168,68,42,0.38) 0%, transparent 60%)",
+            "radial-gradient(ellipse 50% 40% at 20% 0%,  rgba(120,60,20,0.22) 0%, transparent 55%)",
+            // Subtle geometric crosshatch pattern
+            "repeating-linear-gradient(45deg,  rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 28px)",
+            "repeating-linear-gradient(-45deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 28px)",
+          ].join(", "),
+        }}
+      >
+        <div className="mx-auto flex max-w-3xl flex-col items-center px-5 py-16 text-center sm:py-24">
+          {/* eyebrow */}
+          <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/8 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.22em] text-white/70">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#C9674A]" />
+            Arewa Market
+          </p>
 
-          {/* Hero search tile */}
-          <div className="relative overflow-hidden rounded-3xl bg-primary p-6 text-primary-foreground md:col-span-4 md:row-span-3 lg:col-span-8 lg:row-span-3 lg:p-10">
-            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#B04A2F] opacity-50 blur-3xl" />
-            <div className="absolute inset-0 opacity-[0.07]" style={{
-              backgroundImage:
-                "radial-gradient(circle at 1px 1px, #FCF9F5 1px, transparent 0)",
-              backgroundSize: "24px 24px",
-            }} />
-            <div className="relative z-10 flex h-full flex-col justify-end">
-              <div className="mb-4 inline-flex w-fit items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11px] font-medium backdrop-blur">
-                <Sparkles className="h-3 w-3" /> Arewa kasuwa · WhatsApp-first
-              </div>
-              <h1 className="font-display text-4xl leading-[1.02] sm:text-5xl lg:text-6xl">
-                {heroSection?.title ?? "Find the best of"} <br />
-                <span className="italic opacity-90">{heroSection?.subtitle ?? "Arewa markets."}</span>
-              </h1>
-              <p className="mt-3 max-w-md text-sm text-primary-foreground/80 lg:text-base">
-                {heroSection?.content ?? "Discover trusted local sellers — fashion, food, beauty, and craft from Northern Nigeria's best."}
-              </p>
-              <form
-                onSubmit={submitSearch}
-                className="relative mt-6 flex max-w-md items-center rounded-full border border-white/25 bg-white/10 p-1.5 backdrop-blur-md"
+          {/* headline */}
+          <h1 className="font-display text-4xl leading-tight text-white sm:text-5xl lg:text-6xl">
+            {isSeller
+              ? <>Welcome back,<br /><span className="text-[#D97C5A]">{seller!.business_name}</span></>
+              : <>Authentic goods from<br /><span className="text-[#D97C5A]">northern Nigeria</span></>
+            }
+          </h1>
+
+          <p className="mt-4 max-w-md text-sm leading-relaxed text-white/60">
+            {isSeller
+              ? "Manage your store, track your products, and connect with buyers."
+              : `Discover handcrafted fashion, food, beauty and more from ${sellerCount ? sellerCount.toLocaleString() : "verified"} trusted sellers.`
+            }
+          </p>
+
+          {/* search bar (buyers only) or dashboard link (sellers) */}
+          {isSeller ? (
+            <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
+              <Link
+                to="/dashboard"
+                className="inline-flex items-center gap-2 rounded-full bg-[#C9674A] px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-[#B85C41] active:scale-95"
               >
-                <Search className="ml-3 h-4 w-4 shrink-0 text-white/70" />
-                <input
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Search Atampa, Shadda, suya, zobo…"
-                  aria-label="Search products and sellers"
-                  className="w-full bg-transparent px-3 py-2 text-sm text-white outline-none placeholder:text-white/55"
-                />
-                <Button
+                <LayoutGrid className="h-4 w-4" /> Go to my dashboard
+              </Link>
+              <Link
+                to="/seller/products"
+                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/8 px-6 py-3 text-sm font-medium text-white/80 transition hover:bg-white/15"
+              >
+                My products <ChevronRight className="h-4 w-4" />
+              </Link>
+            </div>
+          ) : (
+            <>
+              <form onSubmit={submitSearch} className="mt-8 flex w-full max-w-lg gap-2">
+                <div className="relative flex-1">
+                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+                  <input
+                    type="search"
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Search products, sellers…"
+                    className="h-12 w-full rounded-full border border-white/15 bg-white/10 pl-10 pr-4 text-sm text-white placeholder:text-white/40 backdrop-blur-sm transition focus:border-white/30 focus:bg-white/15 focus:outline-none"
+                  />
+                </div>
+                <button
                   type="submit"
-                  className="h-9 shrink-0 rounded-full bg-sage px-5 text-xs font-medium text-white hover:bg-sage-deep"
+                  className="h-12 shrink-0 rounded-full bg-[#C9674A] px-5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#B85C41] active:scale-95"
                 >
                   Search
-                </Button>
+                </button>
               </form>
-            </div>
-          </div>
 
-          {/* Top Sellers tile */}
-          <div className="rounded-3xl border border-border-warm bg-card p-5 md:col-span-2 md:row-span-2 lg:col-span-4 lg:row-span-2">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-display text-xl text-espresso">Top sellers</h2>
-              <Link to="/sellers" className="text-[10px] font-bold uppercase tracking-widest text-sage-deep hover:text-primary">
-                View all
-              </Link>
-            </div>
-            <div className="space-y-3">
-              {(topSellers && topSellers.length > 0 ? topSellers : []).slice(0, 3).map((s, i) => (
+              <div className="mt-5 flex items-center gap-4">
                 <Link
-                  key={s.id}
-                  to="/store/$slug"
-                  params={{ slug: s.slug }}
-                  className="flex items-center gap-3 group"
+                  to="/explore"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-white/70 transition hover:text-white"
                 >
-                  <div
-                    className={`h-11 w-11 shrink-0 overflow-hidden rounded-full bg-surface-warm ring-2 ${
-                      s.is_verified ? "ring-sage" : i === 0 ? "ring-primary" : "ring-border-warm"
-                    }`}
-                  >
-                    {s.profile_photo_url ? (
-                      <img src={s.profile_photo_url} alt={s.business_name} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center font-display text-base text-primary">
-                        {s.business_name.charAt(0)}
-                      </div>
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold leading-tight text-espresso group-hover:text-primary">
-                      {s.business_name}
-                    </p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {s.city}{s.is_verified ? " · Verified" : ""}{typeof s.rating === "number" ? ` · ${Number(s.rating).toFixed(1)} ★` : ""}
-                    </p>
-                  </div>
+                  Browse all products <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
-              ))}
-              {(!topSellers || topSellers.length === 0) && (
-                <p className="py-6 text-center text-xs text-muted-foreground">No verified sellers yet in {city}.</p>
-              )}
-            </div>
-          </div>
-
-          {/* Categories tile (sage) */}
-          <div className="relative overflow-hidden rounded-3xl bg-sage p-5 text-white md:col-span-2 md:row-span-2 lg:col-span-4 lg:row-span-2">
-            <div className="absolute -bottom-10 -right-10 h-32 w-32 rounded-full bg-white/15 blur-2xl" />
-            <h2 className="relative z-10 mb-3 font-display text-2xl">Categories</h2>
-            <div className="relative z-10 grid grid-cols-2 gap-2">
-              {topCats.length > 0
-                ? topCats.map((c: any) => (
-                    <Link
-                      key={c.id}
-                      to="/category/$slug"
-                      params={{ slug: c.slug }}
-                      className="rounded-xl bg-white/10 p-3 text-center text-sm font-medium transition hover:bg-white/20"
-                    >
-                      {c.name}
-                    </Link>
-                  ))
-                : ["Textiles", "Food", "Beauty", "Craft"].map((n) => (
-                    <div key={n} className="rounded-xl bg-white/10 p-3 text-center text-sm font-medium">
-                      {n}
-                    </div>
-                  ))}
-            </div>
-          </div>
-
-          {/* City tile #1 */}
-          <Link
-            to={cityTiles[0]?.slug ? "/city/$slug" : "/"}
-            params={cityTiles[0]?.slug ? { slug: cityTiles[0].slug } : (undefined as any)}
-            className="group flex flex-col justify-between rounded-3xl border border-border-warm bg-surface-warm p-5 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-warm md:col-span-2 md:row-span-2 lg:col-span-3 lg:row-span-2"
-          >
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-sage-deep">Region</p>
-              <h3 className="mt-1 font-display text-3xl text-espresso">{cityTiles[0]?.name ?? "Kano City"}</h3>
-            </div>
-            <div className="flex items-end justify-between">
-              <p className="text-sm text-muted-foreground">
-                {cityTiles[0]?.state ?? "Explore the ancient hub of commerce and culture."}
-              </p>
-              <ArrowUpRight className="h-5 w-5 text-sage-deep transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-            </div>
-          </Link>
-
-          {/* Featured product tiles */}
-          {productsForBento && productsForBento[0] && (() => {
-            const p: any = productsForBento[0];
-            const seller = p.sellers;
-            return (
-              <Link
-                to="/store/$slug"
-                params={{ slug: seller?.slug ?? "" }}
-                className="group flex flex-col rounded-3xl border border-border-warm bg-card p-4 transition hover:-translate-y-0.5 hover:border-primary hover:shadow-warm-lg md:col-span-2 md:row-span-3 lg:col-span-3 lg:row-span-3"
-              >
-                <div className="aspect-square overflow-hidden rounded-2xl bg-surface-warm">
-                  {p.image_url ? (
-                    <img src={p.image_url} alt={p.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center italic text-primary/60">Product image</div>
-                  )}
-                </div>
-                <h4 className="mt-4 line-clamp-1 font-semibold text-espresso">{p.name}</h4>
-                <p className="mt-auto pt-2 font-display text-lg text-sage-deep">₦{Number(p.price).toLocaleString()}</p>
-                <div className="mt-3 rounded-xl bg-espresso py-2 text-center text-xs font-medium text-background">
-                  WhatsApp vendor
-                </div>
-              </Link>
-            );
-          })()}
-
-          {productsForBento && productsForBento[1] && (() => {
-            const p: any = productsForBento[1];
-            const seller = p.sellers;
-            return (
-              <Link
-                to="/store/$slug"
-                params={{ slug: seller?.slug ?? "" }}
-                className="group flex flex-col rounded-3xl border border-border-warm bg-card p-4 transition hover:-translate-y-0.5 hover:border-primary hover:shadow-warm-lg md:col-span-2 md:row-span-3 lg:col-span-3 lg:row-span-3"
-              >
-                <div className="aspect-square overflow-hidden rounded-2xl bg-surface-warm">
-                  {p.image_url ? (
-                    <img src={p.image_url} alt={p.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center italic text-sage">Product image</div>
-                  )}
-                </div>
-                <h4 className="mt-4 line-clamp-1 font-semibold text-espresso">{p.name}</h4>
-                <p className="mt-auto pt-2 font-display text-lg text-sage-deep">₦{Number(p.price).toLocaleString()}</p>
-                <div className="mt-3 rounded-xl bg-espresso py-2 text-center text-xs font-medium text-background">
-                  WhatsApp vendor
-                </div>
-              </Link>
-            );
-          })()}
-
-          {/* Placeholder bento product tiles when no real products */}
-          {!productsForBento && (
-            <>
-              <div className="flex flex-col rounded-3xl border border-border-warm bg-card p-4 md:col-span-2 md:row-span-3 lg:col-span-3 lg:row-span-3">
-                <div className="flex aspect-square items-center justify-center rounded-2xl bg-surface-warm text-5xl">🧵</div>
-                <h4 className="mt-4 font-semibold text-espresso">Hand-dyed Atampa</h4>
-                <p className="mt-auto pt-2 font-display text-lg text-sage-deep">₦12,500</p>
-              </div>
-              <div className="flex flex-col rounded-3xl border border-border-warm bg-card p-4 md:col-span-2 md:row-span-3 lg:col-span-3 lg:row-span-3">
-                <div className="flex aspect-square items-center justify-center rounded-2xl bg-surface-warm text-5xl">🌶️</div>
-                <h4 className="mt-4 font-semibold text-espresso">Yaji Spice Blend</h4>
-                <p className="mt-auto pt-2 font-display text-lg text-sage-deep">₦2,800</p>
+                <span className="text-white/20">·</span>
+                <Link
+                  to="/register"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-[#D97C5A] transition hover:text-[#E8906E]"
+                >
+                  <Store className="h-3.5 w-3.5" /> Sell on Sutura
+                </Link>
               </div>
             </>
-          )}
-
-          {/* Verified-sellers stat (espresso) */}
-          <div className="flex items-center justify-center rounded-3xl bg-espresso p-5 text-background md:col-span-2 md:row-span-1 lg:col-span-3 lg:row-span-1">
-            <div className="text-center">
-              <p className="flex items-center justify-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-background/60">
-                <ShieldCheck className="h-3 w-3" /> Verified sellers
-              </p>
-              <p className="mt-1 font-display text-3xl">{sellerCount ?? "—"}</p>
-            </div>
-          </div>
-
-          {/* City tile #2 */}
-          {cityTiles[1] ? (
-            <Link
-              to="/city/$slug"
-              params={{ slug: cityTiles[1].slug }}
-              className="group flex flex-col justify-between rounded-3xl border border-border-warm bg-surface-warm p-5 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-warm md:col-span-2 md:row-span-2 lg:col-span-3 lg:row-span-2"
-            >
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-sage-deep">{cityTiles[1].state ?? "Region"}</p>
-                <h3 className="mt-1 font-display text-2xl text-espresso">{cityTiles[1].name}</h3>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Discover artisanal goods from the heart of {cityTiles[1].name}.
-              </p>
-            </Link>
-          ) : (
-            <Link
-              to="/register"
-              className="group flex flex-col justify-between rounded-3xl border border-border-warm bg-surface-warm p-5 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-warm md:col-span-2 md:row-span-2 lg:col-span-3 lg:row-span-2"
-            >
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-sage-deep">For sellers</p>
-                <h3 className="mt-1 font-display text-2xl text-espresso">Open your store</h3>
-              </div>
-              <p className="flex items-center gap-1 text-sm text-primary">
-                <Store className="h-4 w-4" /> Fara kasuwanci →
-              </p>
-            </Link>
           )}
         </div>
       </section>
 
-      {/* ── Explore cities (full grid) ── */}
-      <ExploreCities />
+      {/* ── CATEGORY SHORTCUTS ───────────────────────────────────────────── */}
+      {(categories?.length ?? 0) > 0 && (
+        <section className="border-b border-border-warm bg-card">
+          <div className="mx-auto max-w-6xl px-5">
+            <div className="flex gap-3 overflow-x-auto py-4 scrollbar-hide">
+              {(categories ?? []).map((cat: any) => {
+                const icon = iconFor(cat.name);
+                return (
+                  <Link
+                    key={cat.id}
+                    to="/category/$slug"
+                    params={{ slug: cat.slug }}
+                    className="group flex shrink-0 flex-col items-center gap-1.5 rounded-2xl border border-border-warm bg-background px-4 py-3 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-warm active:scale-95"
+                  >
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${icon.containerClass}`}>
+                      <icon.Component size={24} />
+                    </div>
+                    <span className="whitespace-nowrap text-[11px] font-semibold text-espresso">{cat.name}</span>
+                    {hausaFor(cat.name) && (
+                      <span className="whitespace-nowrap text-[9px] font-medium uppercase tracking-wide text-sage-deep/70">
+                        {hausaFor(cat.name)}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
 
-      {/* ── Featured product grid (rest) ── */}
+              {/* All products shortcut */}
+              <Link
+                to="/explore"
+                className="group flex shrink-0 flex-col items-center gap-1.5 rounded-2xl border border-dashed border-border-warm bg-background px-4 py-3 transition hover:-translate-y-0.5 hover:border-primary/40"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-warm">
+                  <ArrowRight className="h-5 w-5 text-sage-deep" />
+                </div>
+                <span className="whitespace-nowrap text-[11px] font-semibold text-muted-foreground">All</span>
+                <span className="whitespace-nowrap text-[9px] font-medium uppercase tracking-wide text-sage-deep/70">Duka</span>
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── TRENDING SELLERS ─────────────────────────────────────────────── */}
       <section className="mx-auto max-w-6xl px-5 py-12">
+        <div className="mb-6 flex items-end justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-sage-deep">
+              {city !== "All" ? city : "This week"}
+            </p>
+            <h2 className="mt-1 font-display text-3xl text-espresso">Trending sellers</h2>
+          </div>
+          <Link
+            to="/sellers"
+            className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-sage-deep transition hover:text-primary"
+          >
+            View all <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
+
+        {sellersLoading ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => <SellerSkeleton key={i} />)}
+          </div>
+        ) : hasSellers ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {trendingSellers!.map((s: any) => (
+              <SellerCard
+                key={s.id}
+                slug={s.slug}
+                business_name={s.business_name}
+                category={s.category}
+                city={s.city}
+                profile_photo_url={s.profile_photo_url}
+                is_verified={s.is_verified}
+                rating={s.rating}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-3xl border border-dashed border-border-warm bg-card px-6 py-12 text-center">
+            <p className="font-display text-xl text-espresso">No sellers yet{city !== "All" ? ` in ${city}` : ""}</p>
+            <p className="mt-1 text-sm text-muted-foreground">Be the first to open a store.</p>
+            <Link
+              to="/register"
+              className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              <Store className="h-4 w-4" /> Open your store
+            </Link>
+          </div>
+        )}
+      </section>
+
+      {/* ── FEATURED PRODUCTS ────────────────────────────────────────────── */}
+      <section className="mx-auto max-w-6xl px-5 pb-12">
         <div className="mb-6 flex items-end justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-sage-deep">Just in</p>
@@ -404,7 +356,10 @@ function Index() {
               {featuredSection?.title ?? "Featured products"}
             </h2>
           </div>
-          <Link to="/products" className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-sage-deep hover:text-primary">
+          <Link
+            to="/explore"
+            className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-sage-deep transition hover:text-primary"
+          >
             View all <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
@@ -413,9 +368,9 @@ function Index() {
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => <ProductSkeleton key={i} />)}
           </div>
-        ) : productGridRest.length > 0 ? (
+        ) : hasProducts ? (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {productGridRest.map((p: any, i: number) => {
+            {featuredProducts!.map((p: any, i: number) => {
               const s = p.sellers;
               return (
                 <div key={p.id} className="card-enter" style={{ animationDelay: `${i * 0.05}s` }}>
@@ -431,42 +386,92 @@ function Index() {
             })}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {PLACEHOLDER_PRODUCTS.map((p, i) => (
-              <div
-                key={p.name}
-                className="card-enter overflow-hidden rounded-3xl border border-border-warm bg-card p-3"
-                style={{ animationDelay: `${i * 0.05}s` }}
-              >
-                <div className="flex aspect-square items-center justify-center rounded-2xl bg-surface-warm text-5xl">{p.emoji}</div>
-                <div className="px-1 pt-3">
-                  <h4 className="line-clamp-1 font-medium text-espresso">{p.name}</h4>
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{p.seller} · {p.city}</p>
-                  <p className="mt-2 font-display text-lg text-sage-deep">₦{p.price.toLocaleString()}</p>
-                  <div className="mt-3 rounded-full bg-muted px-3 py-2 text-center text-xs font-medium text-muted-foreground">
-                    Coming soon
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="rounded-3xl border border-dashed border-border-warm bg-card px-6 py-12 text-center">
+            <p className="font-display text-xl text-espresso">No products yet{city !== "All" ? ` in ${city}` : ""}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {city !== "All" ? `Try switching to "All states" above.` : "Check back soon — sellers are adding products."}
+            </p>
           </div>
         )}
 
-        <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-          <Link to="/products">
-            <Button variant="outline" className="rounded-full border-border-warm bg-card hover:bg-surface-warm">
-              Browse all products <ArrowRight className="ml-1.5 h-4 w-4" />
-            </Button>
-          </Link>
-          {productGridRest.length === 0 && !productsLoading && (
-            <Link to="/register" className="text-xs font-medium text-primary underline underline-offset-4">
-              Be the first to list real products.
+        {hasProducts && (
+          <div className="mt-8 text-center">
+            <Link to="/explore">
+              <button className="inline-flex items-center gap-2 rounded-full border border-border-warm bg-card px-6 py-3 text-sm font-medium text-espresso shadow-warm transition hover:bg-surface-warm hover:shadow-warm-lg active:scale-95">
+                Browse all products <ArrowRight className="h-4 w-4" />
+              </button>
             </Link>
-          )}
-        </div>
+          </div>
+        )}
       </section>
 
+      {/* ── CITY EXPLORER ────────────────────────────────────────────────── */}
+      <ExploreCities />
+
+      {/* ── OPEN YOUR STORE CTA ──────────────────────────────────────────── */}
+      {showSellerCTA && (
+        <section
+          className="relative overflow-hidden"
+          style={{
+            background: "#1A0B08",
+            backgroundImage: [
+              "radial-gradient(ellipse 70% 80% at 100% 50%, rgba(168,68,42,0.30) 0%, transparent 60%)",
+              "repeating-linear-gradient(45deg,  rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 32px)",
+              "repeating-linear-gradient(-45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 32px)",
+            ].join(", "),
+          }}
+        >
+          <div className="mx-auto flex max-w-3xl flex-col items-center px-5 py-16 text-center sm:py-20">
+            <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.22em] text-[#D97C5A]">
+              For sellers · Masu kasuwanci
+            </p>
+            <h2 className="font-display text-3xl text-white sm:text-4xl">
+              Ready to reach more customers?
+            </h2>
+            <p className="mt-3 max-w-md text-sm leading-relaxed text-white/60">
+              List your products, get discovered by thousands of buyers, and connect directly over WhatsApp — all for free.
+            </p>
+            {sellerCount && sellerCount > 0 && (
+              <p className="mt-2 text-xs text-white/40">
+                Join {sellerCount.toLocaleString()} verified sellers already on Sutura
+              </p>
+            )}
+            <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
+              <Link
+                to="/register"
+                className="inline-flex items-center gap-2 rounded-full bg-[#C9674A] px-7 py-3.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#B85C41] active:scale-95"
+              >
+                <Store className="h-4 w-4" /> Open your store — it's free
+              </Link>
+              {!user && (
+                <Link
+                  to="/auth"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/8 px-6 py-3.5 text-sm font-medium text-white/80 transition hover:bg-white/15"
+                >
+                  Already have an account? Sign in
+                </Link>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       <Footer />
+      <BottomNav />
+
+      {/* ── FLOATING "OPEN YOUR STORE" BUTTON (mobile, non-sellers only) ── */}
+      {showSellerCTA && (
+        <div className="fixed bottom-20 right-4 z-40 sm:hidden">
+          <Link
+            to="/register"
+            className="flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-warm-lg transition hover:bg-primary/90 active:scale-95"
+            aria-label="Open your store"
+          >
+            <Store className="h-4 w-4" />
+            <span>Sell here</span>
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

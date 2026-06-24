@@ -25,6 +25,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StoreSlugRouteImport } from './routes/store.$slug'
+import { Route as SellerProductsRouteImport } from './routes/seller.products'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as CitySlugRouteImport } from './routes/city.$slug'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
@@ -109,6 +110,11 @@ const StoreSlugRoute = StoreSlugRouteImport.update({
   path: '/store/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SellerProductsRoute = SellerProductsRouteImport.update({
+  id: '/seller/products',
+  path: '/seller/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProductIdRoute = ProductIdRouteImport.update({
   id: '/product/$id',
   path: '/product/$id',
@@ -144,6 +150,7 @@ export interface FileRoutesByFullPath {
   '/category/$slug': typeof CategorySlugRoute
   '/city/$slug': typeof CitySlugRoute
   '/product/$id': typeof ProductIdRoute
+  '/seller/products': typeof SellerProductsRoute
   '/store/$slug': typeof StoreSlugRoute
 }
 export interface FileRoutesByTo {
@@ -165,6 +172,7 @@ export interface FileRoutesByTo {
   '/category/$slug': typeof CategorySlugRoute
   '/city/$slug': typeof CitySlugRoute
   '/product/$id': typeof ProductIdRoute
+  '/seller/products': typeof SellerProductsRoute
   '/store/$slug': typeof StoreSlugRoute
 }
 export interface FileRoutesById {
@@ -187,6 +195,7 @@ export interface FileRoutesById {
   '/category/$slug': typeof CategorySlugRoute
   '/city/$slug': typeof CitySlugRoute
   '/product/$id': typeof ProductIdRoute
+  '/seller/products': typeof SellerProductsRoute
   '/store/$slug': typeof StoreSlugRoute
 }
 export interface FileRouteTypes {
@@ -210,6 +219,7 @@ export interface FileRouteTypes {
     | '/category/$slug'
     | '/city/$slug'
     | '/product/$id'
+    | '/seller/products'
     | '/store/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -231,6 +241,7 @@ export interface FileRouteTypes {
     | '/category/$slug'
     | '/city/$slug'
     | '/product/$id'
+    | '/seller/products'
     | '/store/$slug'
   id:
     | '__root__'
@@ -252,6 +263,7 @@ export interface FileRouteTypes {
     | '/category/$slug'
     | '/city/$slug'
     | '/product/$id'
+    | '/seller/products'
     | '/store/$slug'
   fileRoutesById: FileRoutesById
 }
@@ -274,6 +286,7 @@ export interface RootRouteChildren {
   CategorySlugRoute: typeof CategorySlugRoute
   CitySlugRoute: typeof CitySlugRoute
   ProductIdRoute: typeof ProductIdRoute
+  SellerProductsRoute: typeof SellerProductsRoute
   StoreSlugRoute: typeof StoreSlugRoute
 }
 
@@ -391,6 +404,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/seller/products': {
+      id: '/seller/products'
+      path: '/seller/products'
+      fullPath: '/seller/products'
+      preLoaderRoute: typeof SellerProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/product/$id': {
       id: '/product/$id'
       path: '/product/$id'
@@ -434,6 +454,7 @@ const rootRouteChildren: RootRouteChildren = {
   CategorySlugRoute: CategorySlugRoute,
   CitySlugRoute: CitySlugRoute,
   ProductIdRoute: ProductIdRoute,
+  SellerProductsRoute: SellerProductsRoute,
   StoreSlugRoute: StoreSlugRoute,
 }
 export const routeTree = rootRouteImport

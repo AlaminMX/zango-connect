@@ -34,9 +34,10 @@ import {
   BadgeCheck, Plus, Pencil, Trash2, ChevronUp, ChevronDown,
   Star, StarOff, Eye, EyeOff, Loader2, GripVertical,
   ShieldOff, ShieldCheck, Users, CheckCircle2, XCircle, Clock,
-  AlertCircle, RefreshCw, MapPin, Save,
+  AlertCircle, RefreshCw, MapPin, Save, CreditCard,
 } from "lucide-react";
 import { PageLoader } from "@/components/LoadingSpinner";
+import { ShareCardDialog } from "@/components/ShareCardDialog";
 
 export const Route = createFileRoute("/admin")({ component: AdminPage });
 
@@ -74,6 +75,7 @@ interface SellerRow {
   id: string; business_name: string; slug: string;
   category: string; city: string; is_verified: boolean; is_blocked: boolean;
   verification_status: string; rejection_reason?: string | null;
+  profile_photo_url?: string | null; whatsapp_number?: string;
 }
 interface Category   { id: string; name: string; slug: string; icon_emoji: string; image_url: string | null; sort_order: number; }
 interface ProductRow {
@@ -135,7 +137,11 @@ function AdminPage() {
   const [citiesState,     setCitiesState]     = useState<LoadState>("loading");
   const [statsState,      setStatsState]      = useState<LoadState>("loading");
 
-  const [activeTab, setActiveTab] = useState<"sellers"|"categories"|"products"|"vouches"|"homepage"|"cities">("sellers");
+  const [activeTab, setActiveTab] = useState<"sellers"|"categories"|"products"|"vouches"|"homepage"|"cities"|"cards">("sellers");
+
+  // Seller card viewer (admin)
+  const [cardSeller, setCardSeller] = useState<SellerRow | null>(null);
+  const [cardSearch, setCardSearch] = useState("");
 
   // Category editor state
   const [editingCat, setEditingCat] = useState<Category | null>(null);
@@ -183,7 +189,7 @@ function AdminPage() {
     try {
       const { data, error } = await supabase
         .from("sellers")
-        .select("id, business_name, slug, category, city, is_verified, is_blocked, verification_status, rejection_reason")
+        .select("id, business_name, slug, category, city, is_verified, is_blocked, verification_status, rejection_reason, profile_photo_url, whatsapp_number")
         .order("created_at", { ascending: false })
         .abortSignal(ABORT());
       if (error) throw error;
@@ -694,13 +700,14 @@ function AdminPage() {
 
         {/* Tab nav */}
         <div className="mt-8 flex flex-wrap gap-2">
-          {(["sellers","categories","products","vouches","homepage","cities"] as const).map((t) => (
+          {(["sellers","categories","products","vouches","homepage","cities","cards"] as const).map((t) => (
             <button key={t} onClick={() => setActiveTab(t)} className={tabCls(t)}>
               {t === "sellers"    ? `Sellers ${pendingSellers.length > 0 ? `(${pendingSellers.length} pending)` : ""}` :
                t === "categories" ? "Categories" :
                t === "products"   ? "Products" :
                t === "vouches"    ? "Vouches" :
-               t === "homepage"   ? "Homepage" : "Cities"}
+               t === "homepage"   ? "Homepage" :
+               t === "cities"     ? "Cities" : "Cards"}
             </button>
           ))}
         </div>
@@ -1074,10 +1081,73 @@ function AdminPage() {
           </section>
         )}
 
+        {/* ── Cards tab — view & download every seller's shareable card ── */}
+        {activeTab === "cards" && (
+          <section className="mt-6">
+            <h2 className="mb-1 font-serif text-xl">Seller Cards ({sellers.length})</h2>
+            <p className="mb-4 text-xs text-muted-foreground">
+              Preview and download the shareable identity card for any seller — handy for grabbing assets to post on Instagram.
+            </p>
+            <div className="relative mb-4">
+              <Users className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={cardSearch}
+                onChange={(e) => setCardSearch(e.target.value)}
+                placeholder="Search sellers by name…"
+                className="rounded-full pl-9"
+              />
+            </div>
+            {sellersState === "loading" && <SectionSkeleton />}
+            {sellersState === "error" && <SectionError label="sellers" onRetry={loadSellers} />}
+            {sellersState === "ok" && (
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {sellers
+                  .filter((s) => s.business_name.toLowerCase().includes(cardSearch.toLowerCase()))
+                  .map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => setCardSeller(s)}
+                      className="flex items-center gap-3 rounded-xl border bg-card p-3 text-left shadow-warm transition hover:border-primary/40"
+                    >
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-warm">
+                        {s.profile_photo_url ? (
+                          <img src={s.profile_photo_url} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <span className="font-display text-lg text-primary">{s.business_name.charAt(0)}</span>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{s.business_name}</p>
+                        <p className="truncate text-xs text-muted-foreground">{s.city}</p>
+                      </div>
+                      <CreditCard className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    </button>
+                  ))}
+                {sellers.length === 0 && <p className="text-sm text-muted-foreground">No sellers yet.</p>}
+              </div>
+            )}
+          </section>
+        )}
+
         <Button variant="ghost" onClick={async () => { await supabase.auth.signOut(); nav({ to: "/" }); }} className="mt-10">
           Sign out
         </Button>
       </div>
+
+      {cardSeller && (
+        <ShareCardDialog
+          seller={{
+            business_name: cardSeller.business_name,
+            slug: cardSeller.slug,
+            whatsapp_number: cardSeller.whatsapp_number ?? "",
+            profile_photo_url: cardSeller.profile_photo_url ?? null,
+            city: cardSeller.city,
+            category: cardSeller.category,
+          }}
+          open={!!cardSeller}
+          onOpenChange={(o) => !o && setCardSeller(null)}
+        />
+      )}
 
       {/* ── Category editor dialog ── */}
       <Dialog open={newCatOpen} onOpenChange={(o) => !o && setNewCatOpen(false)}>

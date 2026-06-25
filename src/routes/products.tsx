@@ -16,7 +16,6 @@ import { ProductSkeleton } from "@/components/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search } from "lucide-react";
-import { NIGERIAN_CITIES } from "@/lib/categories";
 import { useCity } from "@/lib/cityContext";
 import { z } from "zod";
 
@@ -35,7 +34,7 @@ export const Route = createFileRoute("/products")({
 function ProductsPage() {
   const { category: initCat, city: initCity } = Route.useSearch();
   const nav = useNavigate();
-  const { selectedCity: globalCity } = useCity();
+  const { selectedCity: globalCity, activeCities } = useCity();
 
   const [filterCat,  setFilterCat]  = useState(initCat  ?? "All");
   // Use URL city param first, then global context city, then "All"
@@ -132,8 +131,8 @@ function ProductsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="All">All cities</SelectItem>
-              {NIGERIAN_CITIES.filter((c) => c !== "Other").map((c) => (
-                <SelectItem key={c} value={c}>{c}</SelectItem>
+              {activeCities.map((c) => (
+                <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>

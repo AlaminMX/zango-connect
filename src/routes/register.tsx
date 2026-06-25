@@ -21,10 +21,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ImageUploader } from "@/components/ImageUploader";
 import { toast } from "sonner";
 import { slugify, validateNigerianPhone } from "@/lib/whatsapp";
-import { ChevronLeft, ChevronRight, Loader2, AlertCircle, Clock, Home, Check, Compass } from "lucide-react";
-import { NIGERIAN_CITIES } from "@/lib/categories";
+import { ChevronLeft, ChevronRight, Loader2, AlertCircle, Clock, Home, Check, Compass, MessageCircle } from "lucide-react";
 
 export const Route = createFileRoute("/register")({ component: Register });
+
+// ---------------------------------------------------------------------------
+// Nigeria — 6 Geopolitical Zones + FCT (state capitals / major cities)
+// ---------------------------------------------------------------------------
+export const NIGERIA_ZONE_CITIES: Record<string, string[]> = {
+  "FCT": ["Abuja"],
+  "North Central": ["Ilorin", "Lafia", "Lokoja", "Minna", "Jos"],
+  "North East": ["Bauchi", "Damaturu", "Gombe", "Jalingo", "Maiduguri", "Yola"],
+  "North West": ["Birnin Kebbi", "Dutse", "Gusau", "Kaduna", "Kano", "Katsina", "Sokoto"],
+  "South East": ["Abakaliki", "Awka", "Enugu", "Owerri", "Umuahia"],
+  "South South": ["Asaba", "Benin City", "Calabar", "Port Harcourt", "Uyo", "Yenagoa"],
+  "South West": ["Ado Ekiti", "Abeokuta", "Akure", "Ibadan", "Lagos", "Osogbo"],
+};
+
+// Flat sorted list for quick validation
+export const ALL_ZONE_CITIES: string[] = Object.values(NIGERIA_ZONE_CITIES).flat().sort((a, b) => a.localeCompare(b));
+
+// ---------------------------------------------------------------------------
 
 type Errors = Record<string, string>;
 
@@ -37,12 +54,10 @@ function FieldError({ msg }: { msg?: string }) {
   );
 }
 
-/** Required-field marker — visually distinct from the label text. */
 function Req() {
   return <span className="text-primary"> *</span>;
 }
 
-/** Small tracked-caps eyebrow above a form section heading. */
 function SectionEyebrow({ children }: { children: ReactNode }) {
   return (
     <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-sage-deep">
@@ -53,13 +68,13 @@ function SectionEyebrow({ children }: { children: ReactNode }) {
 
 function Register() {
   const [userId, setUserId] = useState<string | null>(null);
-  const [hasAccount, setHasAccount] = useState(false); // already signed in
+  const [hasAccount, setHasAccount] = useState(false);
   const [sellerId, setSellerId] = useState<string | null>(null);
   const [step, setStep] = useState(1);
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
 
-  // Step 1 — auth (only when not signed in)
+  // Step 1 — auth
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -68,7 +83,6 @@ function Register() {
   const [businessName, setBusinessName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [city, setCity] = useState("");
-  const [otherCity, setOtherCity] = useState("");
   const [category, setCategory] = useState("");
   const [bio, setBio] = useState("");
 
@@ -79,7 +93,6 @@ function Register() {
   const [categories, setCategories] = useState<{ name: string }[]>([]);
 
   useEffect(() => {
-    // Non-blocking: check if user already has a session/seller, but never redirect away.
     supabase.auth.getUser().then(async ({ data }) => {
       if (data.user) {
         setUserId(data.user.id);
@@ -111,7 +124,6 @@ function Register() {
     if (!whatsapp.trim()) e.whatsapp = "WhatsApp number is required";
     else { const c = validateNigerianPhone(whatsapp); if (!c.valid) e.whatsapp = c.error ?? "Invalid phone number"; }
     if (!city) e.city = "Please choose a city";
-    if (city === "Other" && !otherCity.trim()) e.otherCity = "Please type your city";
     if (!category) e.category = "Please choose a category";
     return e;
   };
@@ -124,14 +136,12 @@ function Register() {
 
     let uid = userId;
 
-    // Create the account inline if needed.
     if (!hasAccount) {
       const { data: signUp, error: signErr } = await supabase.auth.signUp({
         email: email.trim(),
         password,
       });
       if (signErr) {
-        // If the email is already registered, try signing in with the provided password.
         if (signErr.message.toLowerCase().includes("registered") || signErr.message.toLowerCase().includes("exists")) {
           const { data: signIn, error: inErr } = await supabase.auth.signInWithPassword({
             email: email.trim(),
@@ -160,7 +170,6 @@ function Register() {
       setUserId(uid);
       setHasAccount(true);
 
-      // If this email already has a seller, jump to the right step.
       const { data: existing } = await supabase
         .from("sellers")
         .select("id, profile_photo_url, cover_photo_url")
@@ -176,7 +185,6 @@ function Register() {
       }
     }
 
-    // Create the seller record.
     const baseSlug = slugify(businessName);
     let slug = baseSlug;
     for (let i = 0; i < 5; i++) {
@@ -184,12 +192,11 @@ function Register() {
       if (!clash) break;
       slug = `${baseSlug}-${Math.floor(Math.random() * 999)}`;
     }
-    const finalCity = city === "Other" ? otherCity.trim() : city;
     const { data: cityRow } = await supabase
-      .from("cities_of_business").select("id").ilike("name", finalCity).maybeSingle();
+      .from("cities_of_business").select("id").ilike("name", city).maybeSingle();
     const { data, error } = await supabase.from("sellers").insert({
       user_id: uid!, name, business_name: businessName.trim(), slug,
-      whatsapp_number: whatsapp, city: finalCity, city_id: cityRow?.id ?? null, category, bio,
+      whatsapp_number: whatsapp, city, city_id: cityRow?.id ?? null, category, bio,
       verification_status: "pending",
       is_blocked: false,
     }).select().single();
@@ -212,7 +219,6 @@ function Register() {
     setStep(3);
   };
 
-  // Step-indicator pill state: "done" | "current" | "upcoming"
   const stepState = (n: number): "done" | "current" | "upcoming" =>
     step > n ? "done" : step === n ? "current" : "upcoming";
 
@@ -317,22 +323,27 @@ function Register() {
                 <FieldError msg={errors.whatsapp} />
               </div>
 
+              {/* City — fixed list of Nigerian state capitals by geopolitical zone */}
               <div>
                 <Label>City<Req /></Label>
-                <Select value={city} onValueChange={(v) => { setCity(v); if (v !== "Other") setOtherCity(""); }}>
+                <Select value={city} onValueChange={setCity}>
                   <SelectTrigger className={errors.city ? "border-destructive" : ""}>
-                    <SelectValue placeholder="Choose city" />
+                    <SelectValue placeholder="Choose your city" />
                   </SelectTrigger>
                   <SelectContent>
-                    {NIGERIAN_CITIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    {Object.entries(NIGERIA_ZONE_CITIES).map(([zone, cities]) => (
+                      <div key={zone}>
+                        <div className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                          {zone}
+                        </div>
+                        {cities.map((c) => (
+                          <SelectItem key={c} value={c}>{c}</SelectItem>
+                        ))}
+                      </div>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FieldError msg={errors.city} />
-                {city === "Other" && (
-                  <Input autoFocus placeholder="Type your city" value={otherCity}
-                    onChange={(e) => setOtherCity(e.target.value)} className="mt-2" />
-                )}
-                <FieldError msg={errors.otherCity} />
               </div>
 
               <div>
@@ -407,18 +418,26 @@ function Register() {
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-amber-600">
                 <Clock className="h-8 w-8" />
               </div>
-              <h2 className="font-serif text-2xl">Your application has been submitted</h2>
+              <h2 className="font-serif text-2xl">Application submitted!</h2>
               <p className="text-sm text-muted-foreground">
-                Thank you! Your store is now <strong>under review</strong> by our admin team.
+                Thank you for registering. Your business is currently <strong>under review</strong>.
               </p>
+
+              {/* ── Updated message — WhatsApp notification, no in-app mention ── */}
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-left text-sm text-amber-900">
-                <p className="font-semibold">What happens next</p>
-                <ul className="mt-2 list-disc space-y-1 pl-5">
-                  <li>An admin will review your application (usually within 24–48 hours).</li>
-                  <li>You'll receive an in-app notice once a decision is made.</li>
-                  <li>Once approved, you'll be able to add products and your store will go live.</li>
-                </ul>
+                <div className="flex items-start gap-2.5">
+                  <MessageCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                  <div>
+                    <p className="font-semibold">What happens next?</p>
+                    <p className="mt-1 leading-relaxed">
+                      Once your registration has been fully reviewed and approved, you will receive a
+                      <strong> WhatsApp notification</strong> from the admin. Please ensure your
+                      WhatsApp number is active and reachable.
+                    </p>
+                  </div>
+                </div>
               </div>
+
               <Link to="/" className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3 font-medium text-primary-foreground hover:bg-primary/90">
                 <Home className="h-4 w-4" /> Return to homepage
               </Link>

@@ -8,7 +8,7 @@ import { SellerCard } from "@/components/SellerCard";
 import { ProductCard } from "@/components/ProductCard";
 import { BackButton } from "@/components/BackButton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { hausaFor, iconFor, NIGERIAN_CITIES } from "@/lib/categories";
+import { hausaFor, iconFor } from "@/lib/categories";
 import { useCity } from "@/lib/cityContext";
 
 function prettifySlug(slug: string) {
@@ -50,7 +50,7 @@ export const Route = createFileRoute("/category/$slug")({
 
 function CategoryPage() {
   const { slug } = Route.useParams();
-  const { selectedCity: globalCity } = useCity();
+  const { selectedCity: globalCity, activeCities } = useCity();
   const [city, setCity] = useState(globalCity !== "All" ? globalCity : "All cities");
 
   const { data: category } = useQuery({
@@ -133,7 +133,7 @@ function CategoryPage() {
             <SelectTrigger className="w-44 rounded-full"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="All cities">All cities</SelectItem>
-              {NIGERIAN_CITIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              {activeCities.map((c) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>

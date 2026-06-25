@@ -1,8 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { Bookmark, LogIn, MapPin } from "lucide-react";
+import { useState } from "react";
+import { Bookmark, LogIn, MapPin, Menu } from "lucide-react";
 import { useWishlistCount } from "@/lib/wishlist";
 import { useCity } from "@/lib/cityContext";
 import { useAuth } from "@/lib/authContext";
+import { useSellerProfile } from "@/lib/sellerProfile";
+import { NavSidebar } from "@/components/NavSidebar";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -10,8 +13,10 @@ import {
 export function TopBar() {
   const count = useWishlistCount();
   const { user, isReady } = useAuth();
+  const { seller } = useSellerProfile();
   const isSignedIn = isReady ? !!user : null;
   const { selectedCity, setSelectedCity, activeCities } = useCity();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-40 w-full bg-background/85 backdrop-blur-md">
@@ -62,24 +67,36 @@ export function TopBar() {
               <span>Sign in</span>
             </Link>
           )}
-          <Link
-            to="/wishlist"
-            aria-label={`Saved${count > 0 ? ` (${count})` : ""}`}
-            className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-border-warm bg-white shadow-sm transition hover:border-primary/40 hover:bg-surface-warm active:scale-95"
-          >
-            <Bookmark
-              className={`h-5 w-5 transition ${count > 0 ? "fill-primary text-primary" : "text-espresso/70"}`}
-              strokeWidth={2}
-            />
-            {count > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
-                {count > 99 ? "99+" : count}
-              </span>
-            )}
-          </Link>
+          {seller ? (
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open menu"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border-warm bg-white shadow-sm transition hover:border-primary/40 hover:bg-surface-warm active:scale-95"
+            >
+              <Menu className="h-5 w-5 text-espresso/70" strokeWidth={2} />
+            </button>
+          ) : (
+            <Link
+              to="/wishlist"
+              aria-label={`Saved${count > 0 ? ` (${count})` : ""}`}
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-border-warm bg-white shadow-sm transition hover:border-primary/40 hover:bg-surface-warm active:scale-95"
+            >
+              <Bookmark
+                className={`h-5 w-5 transition ${count > 0 ? "fill-primary text-primary" : "text-espresso/70"}`}
+                strokeWidth={2}
+              />
+              {count > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                  {count > 99 ? "99+" : count}
+                </span>
+              )}
+            </Link>
+          )}
         </div>
       </div>
       <div className="border-shift h-px w-full opacity-50" />
+      <NavSidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
     </header>
   );
 }

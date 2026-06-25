@@ -20,7 +20,7 @@ import { ProductSkeleton, SellerSkeleton } from "@/components/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, SlidersHorizontal } from "lucide-react";
-import { NIGERIAN_CITIES } from "@/lib/categories";
+import { useCity } from "@/lib/cityContext";
 import { z } from "zod";
 
 const schema = z.object({
@@ -39,6 +39,7 @@ function SearchPage() {
   const nav = useNavigate();
 
   const [localQ, setLocalQ]         = useState(q);
+  const { activeCities } = useCity();
   const [filterCity, setFilterCity] = useState(initialCity ?? "All cities");
   const [filterCat, setFilterCat]   = useState(initialCategory ?? "All categories");
   const [showFilters, setShowFilters] = useState(false);
@@ -141,8 +142,8 @@ function SearchPage() {
                 <SelectTrigger className="rounded-full"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="All cities">All cities</SelectItem>
-                  {NIGERIAN_CITIES.filter((c) => c !== "Other").map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  {activeCities.map((c) => (
+                    <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

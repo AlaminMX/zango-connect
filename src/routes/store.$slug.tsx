@@ -24,7 +24,7 @@ import { ImageUploader } from "@/components/ImageUploader";
 import { SectionLoader } from "@/components/LoadingSpinner";
 import {
   MapPin, Share2, Heart, Pencil, X, Check,
-  Plus, Trash2, MessageCircle, Loader2, ImageOff, LogOut,
+  Plus, Trash2, MessageCircle, Loader2, ImageOff, CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,8 +36,9 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { NIGERIA_ZONE_CITIES } from "@/routes/register";
+import { useCity } from "@/lib/cityContext";
 import { validateNigerianPhone } from "@/lib/whatsapp";
+import { ShareCardDialog } from "@/components/ShareCardDialog";
 
 function prettifySlug(slug: string) {
   return slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
@@ -99,12 +100,16 @@ function StorePage() {
   // Edit fields
   const [eBusiness, setEBusiness] = useState("");
   const [eCity, setECity]         = useState("");
+  const [eCityId, setECityId]     = useState<string | null>(null);
   const [eCategory, setECategory] = useState("");
   const [eBio, setEBio]           = useState("");
   const [eWhatsapp, setEWhatsapp] = useState("");
   const [eProfileUrl, setEProfileUrl] = useState<string | null>(null);
   const [eCoverUrl, setECoverUrl]     = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [shareCardOpen, setShareCardOpen] = useState(false);
+
+  const { activeCities, citiesLoading } = useCity();
 
   // Add product — now uses ImageUploader (url-based) + image is REQUIRED
   const [pName, setPName]     = useState("");
@@ -208,6 +213,7 @@ function StorePage() {
       if (owned) {
         setEBusiness(seller.business_name);
         setECity(seller.city);
+        setECityId(seller.city_id ?? null);
         setECategory(seller.category);
         setEBio(seller.bio ?? "");
         setEWhatsapp(seller.whatsapp_number);
@@ -274,6 +280,7 @@ function StorePage() {
     const updates: any = {
       business_name: eBusiness.trim(),
       city: eCity,
+      city_id: eCityId,
       category: eCategory,
       bio: eBio,
       whatsapp_number: eWhatsapp,
@@ -450,15 +457,17 @@ function StorePage() {
               <div><Label>Business name</Label><Input value={eBusiness} onChange={(e) => setEBusiness(e.target.value)} /></div>
               <div>
                 <Label>City</Label>
-                <Select value={eCity} onValueChange={setECity}>
+                <Select
+                  value={eCity}
+                  onValueChange={(v) => {
+                    setECity(v);
+                    setECityId(activeCities.find((c) => c.name === v)?.id ?? null);
+                  }}
+                  disabled={citiesLoading}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {Object.entries(NIGERIA_ZONE_CITIES).map(([zone, cities]) => (
-                      <div key={zone}>
-                        <div className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{zone}</div>
-                        {cities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                      </div>
-                    ))}
+                    {activeCities.map((c) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -514,11 +523,10 @@ function StorePage() {
                 </Button>
                 <Button
                   variant="outline"
-                  className="rounded-full border-border-warm text-muted-foreground hover:border-destructive/40 hover:text-destructive"
-                  onClick={async () => { await supabase.auth.signOut(); window.location.href = "/"; }}
-                  aria-label="Sign out"
+                  className="rounded-full border-border-warm text-sage-deep hover:border-sage/60 hover:bg-sage/10"
+                  onClick={() => setShareCardOpen(true)}
                 >
-                  <LogOut className="h-4 w-4" />
+                  <CreditCard className="mr-1.5 h-4 w-4" /> Generate card
                 </Button>
               </>
             ) : (
@@ -702,6 +710,10 @@ function StorePage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {isOwner && (
+        <ShareCardDialog seller={seller} open={shareCardOpen} onOpenChange={setShareCardOpen} />
+      )}
     </div>
   );
 }

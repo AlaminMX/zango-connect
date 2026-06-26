@@ -19,7 +19,7 @@
 import { useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, MessageCircle, Link2 } from "lucide-react";
+import { Download, Loader2, MessageCircle, Link2, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { normaliseNigerianPhone, slugify } from "@/lib/whatsapp";
 
@@ -71,13 +71,20 @@ export function ShareCardDialog({ seller, open, onOpenChange }: ShareCardDialogP
   const cardRef = useRef<HTMLDivElement>(null);
   const [theme, setTheme] = useState<ThemeKey>("terracotta");
   const [downloading, setDownloading] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   const t = THEMES[theme];
   const initial = seller.business_name.trim().charAt(0).toUpperCase() || "S";
   const displayPhone = normaliseNigerianPhone(seller.whatsapp_number);
   const phoneText = displayPhone ? `+${displayPhone}` : seller.whatsapp_number;
+  const fullStoreUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/store/${seller.slug}`
+      : `https://sutura-connect.lovable.app/store/${seller.slug}`;
   const storeUrl =
-    typeof window !== "undefined" ? `${window.location.host}/store/${seller.slug}` : `sutura-connect.lovable.app/store/${seller.slug}`;
+    typeof window !== "undefined"
+      ? `${window.location.host}/store/${seller.slug}`
+      : `sutura-connect.lovable.app/store/${seller.slug}`;
 
   const handleDownload = async () => {
     if (!cardRef.current) return;
@@ -98,6 +105,39 @@ export function ShareCardDialog({ seller, open, onOpenChange }: ShareCardDialogP
       toast.error("Couldn't generate the image — please try again.");
     } finally {
       setDownloading(false);
+    }
+  };
+
+  const handleShareWhatsApp = async () => {
+    if (!cardRef.current) return;
+    setSharing(true);
+    try {
+      const { toPng } = await import("html-to-image");
+      const dataUrl = await toPng(cardRef.current, { pixelRatio: 3, cacheBust: true });
+
+      // Convert data URL to File
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], `${slugify(seller.business_name)}-sutura-card.png`, { type: "image/png" });
+
+      const shareText = `Check out ${seller.business_name} on Sutura Market! ${fullStoreUrl}`;
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], text: shareText, url: fullStoreUrl });
+      } else {
+        const waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+        window.open(waUrl, "_blank", "noopener,noreferrer");
+      }
+    } catch (err: unknown) {
+      // User cancelled share — not an error worth surfacing
+      if (err instanceof Error && err.name === "AbortError") return;
+      console.error("[ShareCardDialog] share failed:", err);
+      // Fallback to WhatsApp link
+      const shareText = `Check out ${seller.business_name} on Sutura Market! ${fullStoreUrl}`;
+      const waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+      window.open(waUrl, "_blank", "noopener,noreferrer");
+    } finally {
+      setSharing(false);
     }
   };
 
@@ -132,6 +172,13 @@ export function ShareCardDialog({ seller, open, onOpenChange }: ShareCardDialogP
 
         {/* Card preview — this exact node is exported as the PNG */}
         <div className="flex justify-center py-1">
+          <a
+            href={fullStoreUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Visit ${seller.business_name}'s store`}
+            className="block rounded-[28px] transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
           <div
             ref={cardRef}
             className="relative flex w-[300px] flex-col overflow-hidden rounded-[28px] p-6"
@@ -199,12 +246,19 @@ export function ShareCardDialog({ seller, open, onOpenChange }: ShareCardDialogP
               </span>
             </div>
           </div>
+          </a>
         </div>
 
-        <Button onClick={handleDownload} disabled={downloading} className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
-          {downloading ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Download className="mr-1.5 h-4 w-4" />}
-          {downloading ? "Generating…" : "Download PNG"}
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleDownload} disabled={downloading || sharing} className="flex-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
+            {downloading ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Download className="mr-1.5 h-4 w-4" />}
+            {downloading ? "Generating…" : "Download"}
+          </Button>
+          <Button onClick={handleShareWhatsApp} disabled={downloading || sharing} variant="outline" className="flex-1 rounded-full border-[#25D366] text-[#25D366] hover:bg-[#25D366]/10">
+            {sharing ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Share2 className="mr-1.5 h-4 w-4" />}
+            {sharing ? "Sharing…" : "WhatsApp"}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

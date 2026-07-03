@@ -228,6 +228,7 @@ function Register() {
       user_id: uid!, name, business_name: businessName.trim(), slug,
       whatsapp_number: whatsapp, city, city_id: cityId, category, bio,
       verification_status: "pending",
+      onboarding_status: "step1_complete",
       is_blocked: false,
     }).select().single();
     setBusy(false);
@@ -242,7 +243,11 @@ function Register() {
     if (!sellerId) return;
     setBusy(true);
     const { error } = await supabase.from("sellers")
-      .update({ profile_photo_url: profileUrl, cover_photo_url: coverUrl })
+      .update({ 
+        profile_photo_url: profileUrl, 
+        cover_photo_url: coverUrl,
+        onboarding_status: "step2_complete"
+      })
       .eq("id", sellerId);
     setBusy(false);
     if (error) { toast.error(error.message); return; }

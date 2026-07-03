@@ -29,6 +29,8 @@ import { Route as SellerProductsRouteImport } from './routes/seller.products'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as CitySlugRouteImport } from './routes/city.$slug'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
+import { Route as AdminTrendingSellersRouteImport } from './routes/admin.trending-sellers'
+import { Route as AdminFeaturedProductsRouteImport } from './routes/admin.featured-products'
 
 const WishlistRoute = WishlistRouteImport.update({
   id: '/wishlist',
@@ -130,11 +132,21 @@ const CategorySlugRoute = CategorySlugRouteImport.update({
   path: '/category/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminTrendingSellersRoute = AdminTrendingSellersRouteImport.update({
+  id: '/trending-sellers',
+  path: '/trending-sellers',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminFeaturedProductsRoute = AdminFeaturedProductsRouteImport.update({
+  id: '/featured-products',
+  path: '/featured-products',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/explore': typeof ExploreRoute
@@ -147,6 +159,8 @@ export interface FileRoutesByFullPath {
   '/verified': typeof VerifiedRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wishlist': typeof WishlistRoute
+  '/admin/featured-products': typeof AdminFeaturedProductsRoute
+  '/admin/trending-sellers': typeof AdminTrendingSellersRoute
   '/category/$slug': typeof CategorySlugRoute
   '/city/$slug': typeof CitySlugRoute
   '/product/$id': typeof ProductIdRoute
@@ -156,7 +170,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/explore': typeof ExploreRoute
@@ -169,6 +183,8 @@ export interface FileRoutesByTo {
   '/verified': typeof VerifiedRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wishlist': typeof WishlistRoute
+  '/admin/featured-products': typeof AdminFeaturedProductsRoute
+  '/admin/trending-sellers': typeof AdminTrendingSellersRoute
   '/category/$slug': typeof CategorySlugRoute
   '/city/$slug': typeof CitySlugRoute
   '/product/$id': typeof ProductIdRoute
@@ -179,7 +195,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/explore': typeof ExploreRoute
@@ -192,6 +208,8 @@ export interface FileRoutesById {
   '/verified': typeof VerifiedRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wishlist': typeof WishlistRoute
+  '/admin/featured-products': typeof AdminFeaturedProductsRoute
+  '/admin/trending-sellers': typeof AdminTrendingSellersRoute
   '/category/$slug': typeof CategorySlugRoute
   '/city/$slug': typeof CitySlugRoute
   '/product/$id': typeof ProductIdRoute
@@ -216,6 +234,8 @@ export interface FileRouteTypes {
     | '/verified'
     | '/verify-email'
     | '/wishlist'
+    | '/admin/featured-products'
+    | '/admin/trending-sellers'
     | '/category/$slug'
     | '/city/$slug'
     | '/product/$id'
@@ -238,6 +258,8 @@ export interface FileRouteTypes {
     | '/verified'
     | '/verify-email'
     | '/wishlist'
+    | '/admin/featured-products'
+    | '/admin/trending-sellers'
     | '/category/$slug'
     | '/city/$slug'
     | '/product/$id'
@@ -260,6 +282,8 @@ export interface FileRouteTypes {
     | '/verified'
     | '/verify-email'
     | '/wishlist'
+    | '/admin/featured-products'
+    | '/admin/trending-sellers'
     | '/category/$slug'
     | '/city/$slug'
     | '/product/$id'
@@ -270,7 +294,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountRoute: typeof AccountRoute
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRoute
   ExploreRoute: typeof ExploreRoute
@@ -432,13 +456,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CategorySlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/trending-sellers': {
+      id: '/admin/trending-sellers'
+      path: '/trending-sellers'
+      fullPath: '/admin/trending-sellers'
+      preLoaderRoute: typeof AdminTrendingSellersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/featured-products': {
+      id: '/admin/featured-products'
+      path: '/featured-products'
+      fullPath: '/admin/featured-products'
+      preLoaderRoute: typeof AdminFeaturedProductsRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
+
+interface AdminRouteChildren {
+  AdminFeaturedProductsRoute: typeof AdminFeaturedProductsRoute
+  AdminTrendingSellersRoute: typeof AdminTrendingSellersRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminFeaturedProductsRoute: AdminFeaturedProductsRoute,
+  AdminTrendingSellersRoute: AdminTrendingSellersRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountRoute: AccountRoute,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRoute,
   ExploreRoute: ExploreRoute,

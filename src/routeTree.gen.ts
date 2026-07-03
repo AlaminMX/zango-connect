@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as VerifiedRouteImport } from './routes/verified'
+import { Route as VendorRejectedRouteImport } from './routes/vendor-rejected'
+import { Route as VendorApprovalPendingRouteImport } from './routes/vendor-approval-pending'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SellersRouteImport } from './routes/sellers'
 import { Route as SearchRouteImport } from './routes/search'
@@ -45,6 +47,16 @@ const VerifyEmailRoute = VerifyEmailRouteImport.update({
 const VerifiedRoute = VerifiedRouteImport.update({
   id: '/verified',
   path: '/verified',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendorRejectedRoute = VendorRejectedRouteImport.update({
+  id: '/vendor-rejected',
+  path: '/vendor-rejected',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendorApprovalPendingRoute = VendorApprovalPendingRouteImport.update({
+  id: '/vendor-approval-pending',
+  path: '/vendor-approval-pending',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -156,6 +168,8 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/sellers': typeof SellersRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/vendor-approval-pending': typeof VendorApprovalPendingRoute
+  '/vendor-rejected': typeof VendorRejectedRoute
   '/verified': typeof VerifiedRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wishlist': typeof WishlistRoute
@@ -180,6 +194,8 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/sellers': typeof SellersRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/vendor-approval-pending': typeof VendorApprovalPendingRoute
+  '/vendor-rejected': typeof VendorRejectedRoute
   '/verified': typeof VerifiedRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wishlist': typeof WishlistRoute
@@ -205,6 +221,8 @@ export interface FileRoutesById {
   '/search': typeof SearchRoute
   '/sellers': typeof SellersRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/vendor-approval-pending': typeof VendorApprovalPendingRoute
+  '/vendor-rejected': typeof VendorRejectedRoute
   '/verified': typeof VerifiedRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wishlist': typeof WishlistRoute
@@ -231,6 +249,8 @@ export interface FileRouteTypes {
     | '/search'
     | '/sellers'
     | '/sitemap.xml'
+    | '/vendor-approval-pending'
+    | '/vendor-rejected'
     | '/verified'
     | '/verify-email'
     | '/wishlist'
@@ -255,6 +275,8 @@ export interface FileRouteTypes {
     | '/search'
     | '/sellers'
     | '/sitemap.xml'
+    | '/vendor-approval-pending'
+    | '/vendor-rejected'
     | '/verified'
     | '/verify-email'
     | '/wishlist'
@@ -279,6 +301,8 @@ export interface FileRouteTypes {
     | '/search'
     | '/sellers'
     | '/sitemap.xml'
+    | '/vendor-approval-pending'
+    | '/vendor-rejected'
     | '/verified'
     | '/verify-email'
     | '/wishlist'
@@ -304,6 +328,8 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   SellersRoute: typeof SellersRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  VendorApprovalPendingRoute: typeof VendorApprovalPendingRoute
+  VendorRejectedRoute: typeof VendorRejectedRoute
   VerifiedRoute: typeof VerifiedRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   WishlistRoute: typeof WishlistRoute
@@ -335,6 +361,20 @@ declare module '@tanstack/react-router' {
       path: '/verified'
       fullPath: '/verified'
       preLoaderRoute: typeof VerifiedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendor-rejected': {
+      id: '/vendor-rejected'
+      path: '/vendor-rejected'
+      fullPath: '/vendor-rejected'
+      preLoaderRoute: typeof VendorRejectedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendor-approval-pending': {
+      id: '/vendor-approval-pending'
+      path: '/vendor-approval-pending'
+      fullPath: '/vendor-approval-pending'
+      preLoaderRoute: typeof VendorApprovalPendingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -498,6 +538,8 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   SellersRoute: SellersRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  VendorApprovalPendingRoute: VendorApprovalPendingRoute,
+  VendorRejectedRoute: VendorRejectedRoute,
   VerifiedRoute: VerifiedRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   WishlistRoute: WishlistRoute,

@@ -195,9 +195,30 @@ function SearchPage() {
           </div>
         )}
 
-        {/* Products */}
+        {/* Sellers — shown first for better discovery */}
         {q && (
           <section className="mt-8">
+            <h2 className="mb-3 font-serif text-xl">
+              Sellers
+              {!sellersLoading && <span className="ml-2 text-sm font-normal text-muted-foreground">({sellers?.length ?? 0})</span>}
+            </h2>
+            {sellersLoading ? (
+              <div className="flex flex-wrap gap-3">
+                {Array.from({ length: 3 }).map((_, i) => <SellerSkeleton key={i} />)}
+              </div>
+            ) : sellers && sellers.length > 0 ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {sellers.map((s) => <SellerCard key={s.id} {...s} />)}
+              </div>
+            ) : q ? (
+              <p className="text-sm text-muted-foreground">No sellers match.</p>
+            ) : null}
+          </section>
+        )}
+
+        {/* Products */}
+        {q && (
+          <section className="mt-10">
             <h2 className="mb-3 font-serif text-xl">
               Products
               {!productsLoading && <span className="ml-2 text-sm font-normal text-muted-foreground">({products?.length ?? 0})</span>}
@@ -222,27 +243,6 @@ function SearchPage() {
               </div>
             ) : q ? (
               <p className="text-sm text-muted-foreground">No products match.</p>
-            ) : null}
-          </section>
-        )}
-
-        {/* Sellers */}
-        {q && (
-          <section className="mt-10">
-            <h2 className="mb-3 font-serif text-xl">
-              Sellers
-              {!sellersLoading && <span className="ml-2 text-sm font-normal text-muted-foreground">({sellers?.length ?? 0})</span>}
-            </h2>
-            {sellersLoading ? (
-              <div className="flex flex-wrap gap-3">
-                {Array.from({ length: 3 }).map((_, i) => <SellerSkeleton key={i} />)}
-              </div>
-            ) : sellers && sellers.length > 0 ? (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {sellers.map((s) => <SellerCard key={s.id} {...s} />)}
-              </div>
-            ) : q ? (
-              <p className="text-sm text-muted-foreground">No sellers match.</p>
             ) : null}
           </section>
         )}

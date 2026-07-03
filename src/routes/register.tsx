@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ImageUploader } from "@/components/ImageUploader";
 import { toast } from "sonner";
 import { slugify, validateNigerianPhone } from "@/lib/whatsapp";
+import { humanizeError } from "@/lib/error-messages";
 import { ChevronLeft, ChevronRight, Loader2, AlertCircle, Clock, Home, Check, Compass, MessageCircle } from "lucide-react";
 
 export const Route = createFileRoute("/register")({ component: Register });
@@ -232,8 +233,9 @@ function Register() {
       is_blocked: false,
     }).select().single();
     setBusy(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(humanizeError(error.message)); return; }
     setSellerId(data.id);
+    toast.success("Business information saved.");
     setStep(2);
   };
 
@@ -250,7 +252,8 @@ function Register() {
       })
       .eq("id", sellerId);
     setBusy(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(humanizeError(error.message)); return; }
+    toast.success("Photos uploaded. Your store is now under review.");
     setStep(3);
   };
 
@@ -283,8 +286,17 @@ function Register() {
 
         {step < 3 && (
           <>
-            <h1 className="font-serif text-3xl">Fara Kasuwanci — Start Your Store</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Welcome to the community</p>
+            <div className="flex items-baseline justify-between gap-4 mb-6">
+              <div>
+                <h1 className="font-serif text-3xl">Fara Kasuwanci — Start Your Store</h1>
+                <p className="mt-1 text-sm text-muted-foreground">Welcome to the community</p>
+              </div>
+              {step === 1 && (
+                <Link to="/auth" className="text-xs font-semibold text-primary hover:underline whitespace-nowrap">
+                  Sign in
+                </Link>
+              )}
+            </div>
 
             <div className="mt-4 flex items-center gap-2">
               <div className={pillCls(1)}>

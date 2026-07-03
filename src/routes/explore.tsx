@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Search, ShieldCheck } from "lucide-react";
 import { useCity } from "@/lib/cityContext";
 import { getTrendingSellers } from "@/lib/homepage-cms";
+import { getCategoryIcon } from "@/lib/category-icons";
 
 export const Route = createFileRoute("/explore")({ component: Explore });
 
@@ -172,7 +173,7 @@ function Explore() {
           <div className="flex gap-2 overflow-x-auto pb-2">
             <CatPill active={activeCat === null} onClick={() => { setActiveCat(null); setShown(PAGE_SIZE); }}>All</CatPill>
             {(categories ?? []).map((c: any) => (
-              <CatPill key={c.id} active={activeCat === c.slug} onClick={() => { setActiveCat(c.slug); setShown(PAGE_SIZE); }}>
+              <CatPill key={c.id} active={activeCat === c.slug} onClick={() => { setActiveCat(c.slug); setShown(PAGE_SIZE); }} categoryName={c.name}>
                 {c.name}
               </CatPill>
             ))}
@@ -224,15 +225,20 @@ function Explore() {
   );
 }
 
-function CatPill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function CatPill({ active, onClick, children, categoryName }: { active: boolean; onClick: () => void; children: React.ReactNode; categoryName?: string }) {
+  const Icon = categoryName ? getCategoryIcon(categoryName) : null;
+  
   return (
     <button
       type="button" onClick={onClick}
-      className={`min-h-[36px] shrink-0 rounded-full border px-4 text-xs font-semibold transition ${
+      className={`min-h-[40px] shrink-0 rounded-full border px-3.5 py-1.5 flex items-center gap-2 text-xs font-semibold transition ${
         active
           ? "border-primary bg-primary text-primary-foreground"
           : "border-border-warm bg-card text-espresso hover:border-primary"
       }`}
-    >{children}</button>
+    >
+      {Icon && <Icon className="h-5 w-5 flex-shrink-0" />}
+      <span>{children}</span>
+    </button>
   );
 }

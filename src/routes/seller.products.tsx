@@ -194,10 +194,12 @@ function SellerProducts() {
       <ProductSheet
         open={addOpen} onOpenChange={setAddOpen}
         mode="add" sellerId={seller.id} sellerSlug={seller.slug}
+        sellerCategory={seller.category}
       />
       <ProductSheet
         open={!!editing} onOpenChange={(o) => !o && setEditing(null)}
         mode="edit" sellerId={seller.id} sellerSlug={seller.slug}
+        sellerCategory={seller.category}
         product={editing ?? undefined}
       />
 

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Link } from "@tanstack/react-router";
 import { MapPin, Star } from "lucide-react";
 
@@ -11,7 +12,7 @@ export interface SellerCardProps {
   rating?: number;
 }
 
-export function SellerCard(s: SellerCardProps) {
+function SellerCardContent(s: SellerCardProps) {
   return (
     <Link
       to="/store/$slug"
@@ -51,3 +52,5 @@ export function SellerCard(s: SellerCardProps) {
     </Link>
   );
 }
+
+export const SellerCard = memo(SellerCardContent);

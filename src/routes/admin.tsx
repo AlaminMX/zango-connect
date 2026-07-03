@@ -75,6 +75,7 @@ interface SellerRow {
   id: string; business_name: string; slug: string;
   category: string; city: string; is_verified: boolean; is_blocked: boolean;
   verification_status: string; rejection_reason?: string | null;
+  onboarding_status: string;
   profile_photo_url?: string | null; whatsapp_number?: string;
 }
 interface Category   { id: string; name: string; slug: string; icon_emoji: string; image_url: string | null; sort_order: number; }
@@ -189,7 +190,8 @@ function AdminPage() {
     try {
       const { data, error } = await supabase
         .from("sellers")
-        .select("id, business_name, slug, category, city, is_verified, is_blocked, verification_status, rejection_reason, profile_photo_url, whatsapp_number")
+        .select("id, business_name, slug, category, city, is_verified, is_blocked, verification_status, rejection_reason, onboarding_status, profile_photo_url, whatsapp_number")
+        .eq("onboarding_status", "step2_complete")
         .order("created_at", { ascending: false })
         .abortSignal(ABORT());
       if (error) throw error;

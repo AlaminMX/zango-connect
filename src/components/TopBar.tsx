@@ -22,7 +22,7 @@ export function TopBar() {
             alt="Sutura Market"
             width={56}
             height={56}
-            className="h-12 w-12 object-contain"
+            className="h-14 w-14 object-contain"
           />
           <div className="hidden flex-col leading-none sm:flex">
             <span className="font-display text-xl text-espresso">Sutura</span>

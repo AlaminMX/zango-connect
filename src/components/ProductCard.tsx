@@ -4,7 +4,7 @@
  * WhatsApp CTA lives on the product detail page and wishlist, not on the card.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { Heart, ShieldOff, ShieldCheck } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -27,7 +27,7 @@ export interface ProductCardProps {
   onBlockToggle?: (id: string, newStatus: "active" | "blocked") => void;
 }
 
-export function ProductCard(p: ProductCardProps) {
+function ProductCardContent(p: ProductCardProps) {
   const nav = useNavigate();
   const soldOut = p.stock_status === "sold_out";
   const low = p.stock_status === "low_stock";
@@ -38,6 +38,8 @@ export function ProductCard(p: ProductCardProps) {
   const [localStatus, setLocalStatus] = useState(p.status ?? "active");
 
   useEffect(() => { setLocalStatus(p.status ?? "active"); }, [p.status]);
+
+  // Note: memo prevents re-renders when parent re-renders without prop changes
 
   const handleSave = (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
@@ -145,3 +147,5 @@ export function ProductCard(p: ProductCardProps) {
     </div>
   );
 }
+
+export const ProductCard = memo(ProductCardContent);

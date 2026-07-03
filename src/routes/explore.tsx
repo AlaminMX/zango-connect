@@ -14,6 +14,8 @@ import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { Search, ShieldCheck } from "lucide-react";
 import { useCity } from "@/lib/cityContext";
+import { getTrendingSellers } from "@/lib/homepage-cms";
+import { getCategoryIcon } from "@/lib/category-icons";
 
 export const Route = createFileRoute("/explore")({ component: Explore });
 
@@ -24,6 +26,7 @@ function Explore() {
   const { selectedCity } = useCity();
   const [q, setQ] = useState("");
   const [activeCat, setActiveCat] = useState<string | null>(null);
+  const [activeState, setActiveState] = useState<string | null>(null);
   const [shown, setShown] = useState(PAGE_SIZE);
 
   const { data: categories } = useQuery({
@@ -36,50 +39,44 @@ function Explore() {
     staleTime: 5 * 60_000,
   });
 
-  const { data: trending } = useQuery({
-    queryKey: ["trending-sellers", selectedCity],
+  const { data: states } = useQuery({
+    queryKey: ["explore-states"],
     queryFn: async () => {
-      const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
-      const { data: clicks } = await supabase
-        .from("whatsapp_clicks")
-        .select("seller_id")
-        .gte("created_at", since)
+      const { data } = await supabase.from("cities_of_business").select("state").eq("is_active", true).order("state")
         .abortSignal(AbortSignal.timeout(8000));
-      const tally = new Map<string, number>();
-      (clicks ?? []).forEach((c: any) => tally.set(c.seller_id, (tally.get(c.seller_id) ?? 0) + 1));
-      const topIds = [...tally.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([id]) => id);
-      if (topIds.length === 0) {
-        let qb = supabase.from("sellers")
-          .select("id, slug, business_name, city, profile_photo_url, is_verified")
-          .eq("is_blocked", false).eq("verification_status", "approved")
-          .order("is_verified", { ascending: false })
-          .order("created_at", { ascending: false }).limit(6);
-        if (selectedCity !== "All") qb = qb.eq("city", selectedCity);
-        const { data } = await qb.abortSignal(AbortSignal.timeout(8000));
-        return data ?? [];
-      }
-      let qb = supabase.from("sellers")
-        .select("id, slug, business_name, city, profile_photo_url, is_verified")
-        .in("id", topIds).eq("is_blocked", false).eq("verification_status", "approved");
-      if (selectedCity !== "All") qb = qb.eq("city", selectedCity);
-      const { data } = await qb.abortSignal(AbortSignal.timeout(8000));
-      const order = new Map(topIds.map((id, i) => [id, i]));
-      return (data ?? []).slice().sort((a: any, b: any) => (order.get(a.id) ?? 99) - (order.get(b.id) ?? 99)).slice(0, 6);
+      // Get unique states
+      const unique = Array.from(new Set((data ?? []).map((c: any) => c.state)));
+      return unique.sort();
     },
-    staleTime: 60_000,
+    staleTime: 10 * 60_000,
+  });
+
+  const { data: trending } = useQuery({
+    queryKey: ["trending-sellers"],
+    queryFn: async () => {
+      // Fetch from CMS-managed trending sellers (shows first 3 on homepage)
+      return await getTrendingSellers(3);
+    },
+    staleTime: 5 * 60_000,
   });
 
   const { data: products, isLoading } = useQuery({
-    queryKey: ["explore-products", selectedCity, activeCat],
+    queryKey: ["explore-products", selectedCity, activeCat, activeState],
     queryFn: async () => {
       let qb = supabase.from("products")
-        .select("id, name, price, image_url, stock_status, is_featured, featured_order, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, is_blocked, verification_status, category)")
+        .select("id, name, price, image_url, stock_status, is_featured, featured_order, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, is_blocked, verification_status, category, state)")
         .eq("status", "active")
         .eq("sellers.is_blocked", false)
         .eq("sellers.verification_status", "approved")
         .limit(60);
       if (selectedCity !== "All") qb = qb.eq("sellers.city", selectedCity);
-      if (activeCat) qb = qb.eq("sellers.category", activeCat);
+      // Filter by state if selected
+      if (activeState) qb = qb.eq("sellers.state", activeState);
+      // Filter by category NAME (sellers.category is stored as name, not slug)
+      if (activeCat) {
+        const categoryName = (categories ?? []).find((c: any) => c.slug === activeCat)?.name;
+        if (categoryName) qb = qb.eq("sellers.category", categoryName);
+      }
       const { data, error } = await qb.abortSignal(AbortSignal.timeout(8000));
       if (error) throw error;
       const rows = (data ?? []) as any[];
@@ -126,45 +123,57 @@ function Explore() {
       <main className="mx-auto max-w-6xl px-5 py-6">
         <BackButton fallback="/" />
 
-        {/* Trending sellers */}
-        <section className="mt-4">
-          <div className="mb-3 flex items-baseline justify-between">
-            <div>
-              <h2 className="font-display text-2xl text-espresso">Trending sellers</h2>
-              <p className="text-[11px] text-muted-foreground">Shahararrun Masu Kasuwa</p>
+        {/* Trending sellers - CMS managed, displays max 3 horizontally */}
+        {trending && trending.length > 0 && (
+          <section className="mt-4">
+            <div className="mb-3 flex items-baseline justify-between">
+              <div>
+                <h2 className="font-display text-2xl text-espresso">Trending sellers</h2>
+                <p className="text-[11px] text-muted-foreground">Shahararrun Masu Kasuwa</p>
+              </div>
+              <Link to="/sellers" className="text-xs font-semibold text-primary hover:underline">See all</Link>
             </div>
-            <Link to="/sellers" className="text-xs font-semibold text-primary hover:underline">See all</Link>
-          </div>
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            {(trending ?? []).map((s: any) => (
-              <Link
-                key={s.id} to="/store/$slug" params={{ slug: s.slug }}
-                className="group flex w-24 shrink-0 flex-col items-center text-center"
-              >
-                <div className={`h-20 w-20 overflow-hidden rounded-full bg-surface-warm ring-2 transition group-hover:ring-primary ${s.is_verified ? "ring-[#C9A84C]" : "ring-border-warm"}`}>
-                  {s.profile_photo_url ? (
-                    <img src={s.profile_photo_url} alt={s.business_name} className="h-full w-full object-cover" loading="lazy" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center font-display text-2xl text-primary">{s.business_name?.charAt(0)}</div>
-                  )}
-                </div>
-                <p className="mt-2 line-clamp-1 text-xs font-semibold text-espresso">{s.business_name}</p>
-                <p className="line-clamp-1 text-[10px] text-muted-foreground">{s.city}</p>
-                {s.is_verified && <ShieldCheck className="mt-0.5 h-3 w-3 text-[#C9A84C]" />}
-              </Link>
+            <div className="grid grid-cols-3 gap-4 md:gap-6">
+              {(trending ?? []).map((s: any) => (
+                <Link
+                  key={s.id} to="/store/$slug" params={{ slug: s.slug }}
+                  className="group flex flex-col items-center text-center"
+                >
+                  <div className="h-20 w-20 overflow-hidden rounded-full bg-surface-warm ring-2 ring-border-warm transition group-hover:ring-primary">
+                    {s.profile_photo_url ? (
+                      <img src={s.profile_photo_url} alt={s.business_name} className="h-full w-full object-cover" loading="lazy" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center font-display text-2xl text-primary">{s.business_name?.charAt(0)}</div>
+                    )}
+                  </div>
+                  <p className="mt-2 line-clamp-2 text-xs font-semibold text-espresso">{s.business_name}</p>
+                  <p className="line-clamp-1 text-[10px] text-muted-foreground">{s.category}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* State filter */}
+        <section className="mt-6">
+          <p className="mb-2 text-xs font-semibold text-muted-foreground">Filter by state</p>
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            <CatPill active={activeState === null} onClick={() => { setActiveState(null); setShown(PAGE_SIZE); }}>All states</CatPill>
+            {(states ?? []).map((s: string) => (
+              <CatPill key={s} active={activeState === s} onClick={() => { setActiveState(s); setShown(PAGE_SIZE); }}>
+                {s}
+              </CatPill>
             ))}
-            {(!trending || trending.length === 0) && (
-              <p className="py-6 text-xs text-muted-foreground">No trending sellers yet.</p>
-            )}
           </div>
         </section>
 
         {/* Category filter */}
-        <section className="mt-6">
+        <section className="mt-4">
+          <p className="mb-2 text-xs font-semibold text-muted-foreground">Filter by category</p>
           <div className="flex gap-2 overflow-x-auto pb-2">
             <CatPill active={activeCat === null} onClick={() => { setActiveCat(null); setShown(PAGE_SIZE); }}>All</CatPill>
             {(categories ?? []).map((c: any) => (
-              <CatPill key={c.id} active={activeCat === c.slug} onClick={() => { setActiveCat(c.slug); setShown(PAGE_SIZE); }}>
+              <CatPill key={c.id} active={activeCat === c.slug} onClick={() => { setActiveCat(c.slug); setShown(PAGE_SIZE); }} categoryName={c.name}>
                 {c.name}
               </CatPill>
             ))}
@@ -216,15 +225,20 @@ function Explore() {
   );
 }
 
-function CatPill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function CatPill({ active, onClick, children, categoryName }: { active: boolean; onClick: () => void; children: React.ReactNode; categoryName?: string }) {
+  const Icon = categoryName ? getCategoryIcon(categoryName) : null;
+  
   return (
     <button
       type="button" onClick={onClick}
-      className={`min-h-[36px] shrink-0 rounded-full border px-4 text-xs font-semibold transition ${
+      className={`min-h-[40px] shrink-0 rounded-full border px-3.5 py-1.5 flex items-center gap-2 text-xs font-semibold transition ${
         active
           ? "border-primary bg-primary text-primary-foreground"
           : "border-border-warm bg-card text-espresso hover:border-primary"
       }`}
-    >{children}</button>
+    >
+      {Icon && <Icon className="h-5 w-5 flex-shrink-0" />}
+      <span>{children}</span>
+    </button>
   );
 }

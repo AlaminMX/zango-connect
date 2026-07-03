@@ -9,7 +9,7 @@
 
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
 import { Footer } from "@/components/Footer";
@@ -39,10 +39,19 @@ function SearchPage() {
   const nav = useNavigate();
 
   const [localQ, setLocalQ]         = useState(q);
+  const [debouncedQ, setDebouncedQ] = useState(q);
   const { activeCities } = useCity();
   const [filterCity, setFilterCity] = useState(initialCity ?? "All cities");
   const [filterCat, setFilterCat]   = useState(initialCategory ?? "All categories");
   const [showFilters, setShowFilters] = useState(false);
+
+  // Debounce search input (500ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQ(localQ);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [localQ]);
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
@@ -56,13 +65,13 @@ function SearchPage() {
   const activeCat  = filterCat  !== "All categories" ? filterCat : undefined;
 
   const { data: products, isLoading: productsLoading } = useQuery({
-    queryKey: ["search-products", q, activeCity, activeCat],
-    enabled: !!q,
+    queryKey: ["search-products", debouncedQ, activeCity, activeCat],
+    enabled: !!debouncedQ,
     queryFn: async () => {
       let qb = supabase
         .from("products")
         .select("id, name, price, image_url, stock_status, status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, category, is_blocked, verification_status)")
-        .or(`name.ilike.%${q}%,description.ilike.%${q}%`)
+        .or(`name.ilike.%${debouncedQ}%,description.ilike.%${debouncedQ}%`)
         .eq("status", "active")
         .eq("sellers.is_blocked", false)
         .eq("sellers.verification_status", "approved")
@@ -76,13 +85,13 @@ function SearchPage() {
   });
 
   const { data: sellers, isLoading: sellersLoading } = useQuery({
-    queryKey: ["search-sellers", q, activeCity, activeCat],
-    enabled: !!q,
+    queryKey: ["search-sellers", debouncedQ, activeCity, activeCat],
+    enabled: !!debouncedQ,
     queryFn: async () => {
       let qb = supabase
         .from("sellers")
         .select("id, slug, business_name, category, city, profile_photo_url, is_verified, rating")
-        .or(`business_name.ilike.%${q}%,name.ilike.%${q}%,bio.ilike.%${q}%,category.ilike.%${q}%,city.ilike.%${q}%`)
+        .or(`business_name.ilike.%${debouncedQ}%,name.ilike.%${debouncedQ}%,bio.ilike.%${debouncedQ}%,category.ilike.%${debouncedQ}%,city.ilike.%${debouncedQ}%`)
         .eq("is_blocked", false)
         .eq("verification_status", "approved")
         .limit(20);
@@ -186,9 +195,30 @@ function SearchPage() {
           </div>
         )}
 
-        {/* Products */}
+        {/* Sellers — shown first for better discovery */}
         {q && (
           <section className="mt-8">
+            <h2 className="mb-3 font-serif text-xl">
+              Sellers
+              {!sellersLoading && <span className="ml-2 text-sm font-normal text-muted-foreground">({sellers?.length ?? 0})</span>}
+            </h2>
+            {sellersLoading ? (
+              <div className="flex flex-wrap gap-3">
+                {Array.from({ length: 3 }).map((_, i) => <SellerSkeleton key={i} />)}
+              </div>
+            ) : sellers && sellers.length > 0 ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {sellers.map((s) => <SellerCard key={s.id} {...s} />)}
+              </div>
+            ) : q ? (
+              <p className="text-sm text-muted-foreground">No sellers match.</p>
+            ) : null}
+          </section>
+        )}
+
+        {/* Products */}
+        {q && (
+          <section className="mt-10">
             <h2 className="mb-3 font-serif text-xl">
               Products
               {!productsLoading && <span className="ml-2 text-sm font-normal text-muted-foreground">({products?.length ?? 0})</span>}
@@ -213,27 +243,6 @@ function SearchPage() {
               </div>
             ) : q ? (
               <p className="text-sm text-muted-foreground">No products match.</p>
-            ) : null}
-          </section>
-        )}
-
-        {/* Sellers */}
-        {q && (
-          <section className="mt-10">
-            <h2 className="mb-3 font-serif text-xl">
-              Sellers
-              {!sellersLoading && <span className="ml-2 text-sm font-normal text-muted-foreground">({sellers?.length ?? 0})</span>}
-            </h2>
-            {sellersLoading ? (
-              <div className="flex flex-wrap gap-3">
-                {Array.from({ length: 3 }).map((_, i) => <SellerSkeleton key={i} />)}
-              </div>
-            ) : sellers && sellers.length > 0 ? (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {sellers.map((s) => <SellerCard key={s.id} {...s} />)}
-              </div>
-            ) : q ? (
-              <p className="text-sm text-muted-foreground">No sellers match.</p>
             ) : null}
           </section>
         )}

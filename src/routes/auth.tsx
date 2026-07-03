@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { toast } from "sonner";
+import { humanizeError } from "@/lib/error-messages";
 
 export const Route = createFileRoute("/auth")({ component: AuthPage });
 
@@ -26,9 +27,33 @@ function AuthPage() {
   const routeAfterLogin = async (userId: string) => {
     const { data: role } = await supabase.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
     if (role) { nav({ to: "/admin" }); return; }
-    const { data: s } = await supabase.from("sellers").select("id").eq("user_id", userId).maybeSingle();
-    // Sellers → their dashboard. Buyers / new users → home (they can open a store from there).
-    nav({ to: s ? "/dashboard" : "/" });
+    const { data: s } = await supabase.from("sellers").select("id, onboarding_status, verification_status").eq("user_id", userId).maybeSingle();
+    
+    if (s) {
+      // Vendor found — check onboarding and approval status
+      const status = s.onboarding_status;
+      const verificationStatus = s.verification_status;
+      
+      if (status === "step1_complete" || status === "draft") {
+        // Incomplete onboarding — resume from step 2
+        nav({ to: "/register" });
+      } else if (verificationStatus === "approved") {
+        // Approved vendor — go to dashboard
+        nav({ to: "/dashboard" });
+      } else if (verificationStatus === "pending") {
+        // Pending approval — show waiting screen
+        nav({ to: "/vendor-approval-pending" });
+      } else if (verificationStatus === "rejected") {
+        // Rejected — show rejection notice
+        nav({ to: "/vendor-rejected" });
+      } else {
+        // Default to dashboard for vendor
+        nav({ to: "/dashboard" });
+      }
+    } else {
+      // No vendor found — go to home (buyer or new vendor)
+      nav({ to: "/" });
+    }
   };
 
   useEffect(() => {
@@ -64,7 +89,7 @@ function AuthPage() {
           password,
           options: { emailRedirectTo: `${window.location.origin}/verified` },
         });
-        if (error) { toast.error(error.message); return; }
+        if (error) { toast.error(humanizeError(error.message)); return; }
         if (data.user && !data.session) {
           nav({ to: "/verify-email", search: { email } });
           return;
@@ -100,7 +125,7 @@ function AuthPage() {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/reset-password`,
         });
-        if (error) { toast.error(error.message); return; }
+        if (error) { toast.error(humanizeError(error.message)); return; }
         setResetSent(true);
         return;
 
@@ -110,7 +135,7 @@ function AuthPage() {
           return;
         }
         const { error } = await supabase.auth.updateUser({ password: newPassword });
-        if (error) { toast.error(error.message); return; }
+        if (error) { toast.error(humanizeError(error.message)); return; }
         toast.success("Password updated! You're now signed in.");
         const { data } = await supabase.auth.getUser();
         if (data.user) await routeAfterLogin(data.user.id);

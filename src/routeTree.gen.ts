@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as VerifiedRouteImport } from './routes/verified'
+import { Route as VendorRejectedRouteImport } from './routes/vendor-rejected'
+import { Route as VendorApprovalPendingRouteImport } from './routes/vendor-approval-pending'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SellersRouteImport } from './routes/sellers'
 import { Route as SearchRouteImport } from './routes/search'
@@ -29,6 +31,8 @@ import { Route as SellerProductsRouteImport } from './routes/seller.products'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as CitySlugRouteImport } from './routes/city.$slug'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
+import { Route as AdminTrendingSellersRouteImport } from './routes/admin.trending-sellers'
+import { Route as AdminFeaturedProductsRouteImport } from './routes/admin.featured-products'
 
 const WishlistRoute = WishlistRouteImport.update({
   id: '/wishlist',
@@ -43,6 +47,16 @@ const VerifyEmailRoute = VerifyEmailRouteImport.update({
 const VerifiedRoute = VerifiedRouteImport.update({
   id: '/verified',
   path: '/verified',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendorRejectedRoute = VendorRejectedRouteImport.update({
+  id: '/vendor-rejected',
+  path: '/vendor-rejected',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendorApprovalPendingRoute = VendorApprovalPendingRouteImport.update({
+  id: '/vendor-approval-pending',
+  path: '/vendor-approval-pending',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -130,11 +144,21 @@ const CategorySlugRoute = CategorySlugRouteImport.update({
   path: '/category/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminTrendingSellersRoute = AdminTrendingSellersRouteImport.update({
+  id: '/trending-sellers',
+  path: '/trending-sellers',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminFeaturedProductsRoute = AdminFeaturedProductsRouteImport.update({
+  id: '/featured-products',
+  path: '/featured-products',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/explore': typeof ExploreRoute
@@ -144,9 +168,13 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/sellers': typeof SellersRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/vendor-approval-pending': typeof VendorApprovalPendingRoute
+  '/vendor-rejected': typeof VendorRejectedRoute
   '/verified': typeof VerifiedRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wishlist': typeof WishlistRoute
+  '/admin/featured-products': typeof AdminFeaturedProductsRoute
+  '/admin/trending-sellers': typeof AdminTrendingSellersRoute
   '/category/$slug': typeof CategorySlugRoute
   '/city/$slug': typeof CitySlugRoute
   '/product/$id': typeof ProductIdRoute
@@ -156,7 +184,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/explore': typeof ExploreRoute
@@ -166,9 +194,13 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/sellers': typeof SellersRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/vendor-approval-pending': typeof VendorApprovalPendingRoute
+  '/vendor-rejected': typeof VendorRejectedRoute
   '/verified': typeof VerifiedRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wishlist': typeof WishlistRoute
+  '/admin/featured-products': typeof AdminFeaturedProductsRoute
+  '/admin/trending-sellers': typeof AdminTrendingSellersRoute
   '/category/$slug': typeof CategorySlugRoute
   '/city/$slug': typeof CitySlugRoute
   '/product/$id': typeof ProductIdRoute
@@ -179,7 +211,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/explore': typeof ExploreRoute
@@ -189,9 +221,13 @@ export interface FileRoutesById {
   '/search': typeof SearchRoute
   '/sellers': typeof SellersRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/vendor-approval-pending': typeof VendorApprovalPendingRoute
+  '/vendor-rejected': typeof VendorRejectedRoute
   '/verified': typeof VerifiedRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wishlist': typeof WishlistRoute
+  '/admin/featured-products': typeof AdminFeaturedProductsRoute
+  '/admin/trending-sellers': typeof AdminTrendingSellersRoute
   '/category/$slug': typeof CategorySlugRoute
   '/city/$slug': typeof CitySlugRoute
   '/product/$id': typeof ProductIdRoute
@@ -213,9 +249,13 @@ export interface FileRouteTypes {
     | '/search'
     | '/sellers'
     | '/sitemap.xml'
+    | '/vendor-approval-pending'
+    | '/vendor-rejected'
     | '/verified'
     | '/verify-email'
     | '/wishlist'
+    | '/admin/featured-products'
+    | '/admin/trending-sellers'
     | '/category/$slug'
     | '/city/$slug'
     | '/product/$id'
@@ -235,9 +275,13 @@ export interface FileRouteTypes {
     | '/search'
     | '/sellers'
     | '/sitemap.xml'
+    | '/vendor-approval-pending'
+    | '/vendor-rejected'
     | '/verified'
     | '/verify-email'
     | '/wishlist'
+    | '/admin/featured-products'
+    | '/admin/trending-sellers'
     | '/category/$slug'
     | '/city/$slug'
     | '/product/$id'
@@ -257,9 +301,13 @@ export interface FileRouteTypes {
     | '/search'
     | '/sellers'
     | '/sitemap.xml'
+    | '/vendor-approval-pending'
+    | '/vendor-rejected'
     | '/verified'
     | '/verify-email'
     | '/wishlist'
+    | '/admin/featured-products'
+    | '/admin/trending-sellers'
     | '/category/$slug'
     | '/city/$slug'
     | '/product/$id'
@@ -270,7 +318,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountRoute: typeof AccountRoute
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRoute
   ExploreRoute: typeof ExploreRoute
@@ -280,6 +328,8 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   SellersRoute: typeof SellersRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  VendorApprovalPendingRoute: typeof VendorApprovalPendingRoute
+  VendorRejectedRoute: typeof VendorRejectedRoute
   VerifiedRoute: typeof VerifiedRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   WishlistRoute: typeof WishlistRoute
@@ -311,6 +361,20 @@ declare module '@tanstack/react-router' {
       path: '/verified'
       fullPath: '/verified'
       preLoaderRoute: typeof VerifiedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendor-rejected': {
+      id: '/vendor-rejected'
+      path: '/vendor-rejected'
+      fullPath: '/vendor-rejected'
+      preLoaderRoute: typeof VendorRejectedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendor-approval-pending': {
+      id: '/vendor-approval-pending'
+      path: '/vendor-approval-pending'
+      fullPath: '/vendor-approval-pending'
+      preLoaderRoute: typeof VendorApprovalPendingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -432,13 +496,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CategorySlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/trending-sellers': {
+      id: '/admin/trending-sellers'
+      path: '/trending-sellers'
+      fullPath: '/admin/trending-sellers'
+      preLoaderRoute: typeof AdminTrendingSellersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/featured-products': {
+      id: '/admin/featured-products'
+      path: '/featured-products'
+      fullPath: '/admin/featured-products'
+      preLoaderRoute: typeof AdminFeaturedProductsRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
+
+interface AdminRouteChildren {
+  AdminFeaturedProductsRoute: typeof AdminFeaturedProductsRoute
+  AdminTrendingSellersRoute: typeof AdminTrendingSellersRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminFeaturedProductsRoute: AdminFeaturedProductsRoute,
+  AdminTrendingSellersRoute: AdminTrendingSellersRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountRoute: AccountRoute,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRoute,
   ExploreRoute: ExploreRoute,
@@ -448,6 +538,8 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   SellersRoute: SellersRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  VendorApprovalPendingRoute: VendorApprovalPendingRoute,
+  VendorRejectedRoute: VendorRejectedRoute,
   VerifiedRoute: VerifiedRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   WishlistRoute: WishlistRoute,

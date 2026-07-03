@@ -24,6 +24,7 @@ function Explore() {
   const { selectedCity } = useCity();
   const [q, setQ] = useState("");
   const [activeCat, setActiveCat] = useState<string | null>(null);
+  const [activeState, setActiveState] = useState<string | null>(null);
   const [shown, setShown] = useState(PAGE_SIZE);
 
   const { data: categories } = useQuery({
@@ -34,6 +35,18 @@ function Explore() {
       return data ?? [];
     },
     staleTime: 5 * 60_000,
+  });
+
+  const { data: states } = useQuery({
+    queryKey: ["explore-states"],
+    queryFn: async () => {
+      const { data } = await supabase.from("cities_of_business").select("state").eq("is_active", true).order("state")
+        .abortSignal(AbortSignal.timeout(8000));
+      // Get unique states
+      const unique = Array.from(new Set((data ?? []).map((c: any) => c.state)));
+      return unique.sort();
+    },
+    staleTime: 10 * 60_000,
   });
 
   const { data: trending } = useQuery({
@@ -70,16 +83,22 @@ function Explore() {
   });
 
   const { data: products, isLoading } = useQuery({
-    queryKey: ["explore-products", selectedCity, activeCat],
+    queryKey: ["explore-products", selectedCity, activeCat, activeState],
     queryFn: async () => {
       let qb = supabase.from("products")
-        .select("id, name, price, image_url, stock_status, is_featured, featured_order, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, is_blocked, verification_status, category)")
+        .select("id, name, price, image_url, stock_status, is_featured, featured_order, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, is_blocked, verification_status, category, state)")
         .eq("status", "active")
         .eq("sellers.is_blocked", false)
         .eq("sellers.verification_status", "approved")
         .limit(60);
       if (selectedCity !== "All") qb = qb.eq("sellers.city", selectedCity);
-      if (activeCat) qb = qb.eq("sellers.category", activeCat);
+      // Filter by state if selected
+      if (activeState) qb = qb.eq("sellers.state", activeState);
+      // Filter by category NAME (sellers.category is stored as name, not slug)
+      if (activeCat) {
+        const categoryName = (categories ?? []).find((c: any) => c.slug === activeCat)?.name;
+        if (categoryName) qb = qb.eq("sellers.category", categoryName);
+      }
       const { data, error } = await qb.abortSignal(AbortSignal.timeout(8000));
       if (error) throw error;
       const rows = (data ?? []) as any[];
@@ -159,8 +178,22 @@ function Explore() {
           </div>
         </section>
 
-        {/* Category filter */}
+        {/* State filter */}
         <section className="mt-6">
+          <p className="mb-2 text-xs font-semibold text-muted-foreground">Filter by state</p>
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            <CatPill active={activeState === null} onClick={() => { setActiveState(null); setShown(PAGE_SIZE); }}>All states</CatPill>
+            {(states ?? []).map((s: string) => (
+              <CatPill key={s} active={activeState === s} onClick={() => { setActiveState(s); setShown(PAGE_SIZE); }}>
+                {s}
+              </CatPill>
+            ))}
+          </div>
+        </section>
+
+        {/* Category filter */}
+        <section className="mt-4">
+          <p className="mb-2 text-xs font-semibold text-muted-foreground">Filter by category</p>
           <div className="flex gap-2 overflow-x-auto pb-2">
             <CatPill active={activeCat === null} onClick={() => { setActiveCat(null); setShown(PAGE_SIZE); }}>All</CatPill>
             {(categories ?? []).map((c: any) => (

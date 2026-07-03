@@ -13,8 +13,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MultiImageUploader } from "@/components/MultiImageUploader";
+import { CategoryAttributesForm } from "@/components/CategoryAttributesForm";
 import { Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { generateProductMetadata } from "@/lib/search-metadata.functions";
 
 const PRICE_LOCK_DAYS = 7;
 const MS_PER_DAY = 86_400_000;
@@ -25,6 +27,7 @@ export interface ProductSheetProps {
   mode: "add" | "edit";
   sellerId: string;
   sellerSlug?: string;
+  sellerCategory?: string;
   product?: {
     id: string;
     name: string;
@@ -34,12 +37,13 @@ export interface ProductSheetProps {
     image_urls: string[] | null;
     stock_status: string;
     price_updated_at: string | null;
+    category?: string;
   };
   onSaved?: () => void;
 }
 
 export function ProductSheet({
-  open, onOpenChange, mode, sellerId, product, onSaved,
+  open, onOpenChange, mode, sellerId, sellerCategory, product, onSaved,
 }: ProductSheetProps) {
   const qc = useQueryClient();
   const [name, setName] = useState("");
@@ -47,6 +51,8 @@ export function ProductSheet({
   const [desc, setDesc] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [stock, setStock] = useState<"available" | "low_stock" | "sold_out">("available");
+  const [category, setCategory] = useState<string>(sellerCategory || "");
+  const [attributes, setAttributes] = useState<Record<string, any>>({});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -60,10 +66,14 @@ export function ProductSheet({
         : product.image_url ? [product.image_url] : [];
       setImages(existing);
       setStock((product.stock_status as any) ?? "available");
+      setCategory(product.category || sellerCategory || "");
+      setAttributes({});
     } else {
       setName(""); setPrice(""); setDesc(""); setImages([]); setStock("available");
+      setCategory(sellerCategory || "");
+      setAttributes({});
     }
-  }, [open, mode, product]);
+  }, [open, mode, product, sellerCategory]);
 
   // Price lock: only on edit, only when there was a previously set price
   const priceLock = (() => {
@@ -86,35 +96,57 @@ export function ProductSheet({
       toast.error("Enter a valid price or leave blank for 'Price on request'"); return;
     }
     setSaving(true);
-    const payload: any = {
-      name: name.trim(),
-      description: desc.trim() || null,
-      image_url: images[0] ?? null,
-      image_urls: images,
-      stock_status: stock,
-    };
-    // Only include price when not locked
-    if (mode === "add") {
-      payload.price = priceVal;
-      payload.seller_id = sellerId;
-      payload.status = "active";
-    } else if (!priceLock) {
-      payload.price = priceVal;
-    }
+    try {
+      const payload: any = {
+        name: name.trim(),
+        description: desc.trim() || null,
+        image_url: images[0] ?? null,
+        image_urls: images,
+        stock_status: stock,
+        category: category || null,
+      };
+      // Only include price when not locked
+      if (mode === "add") {
+        payload.price = priceVal;
+        payload.seller_id = sellerId;
+        payload.status = "active";
+      } else if (!priceLock) {
+        payload.price = priceVal;
+      }
 
-    const op = mode === "add"
-      ? supabase.from("products").insert(payload).select("id").single()
-      : supabase.from("products").update(payload).eq("id", product!.id).select("id").single();
-    const { error } = await op;
-    setSaving(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success(mode === "add" ? "Product added" : "Product updated");
-    qc.invalidateQueries({ queryKey: ["seller-products"] });
-    qc.invalidateQueries({ queryKey: ["featured-products-bento"] });
-    qc.invalidateQueries({ queryKey: ["store"] });
-    qc.invalidateQueries({ queryKey: ["product", product?.id] });
-    onSaved?.();
-    onOpenChange(false);
+      const op = mode === "add"
+        ? supabase.from("products").insert(payload).select("id").single()
+        : supabase.from("products").update(payload).eq("id", product!.id).select("id").single();
+      const { data, error } = await op;
+      
+      if (error) { toast.error(error.message); return; }
+
+      // Generate metadata for search optimization
+      if (data?.id) {
+        try {
+          await generateProductMetadata({
+            productId: data.id,
+            title: name.trim(),
+            description: desc.trim() || "",
+            category: category || "Other",
+            condition: "New",
+            attributes: attributes,
+          });
+        } catch (err) {
+          console.warn("[v0] Metadata generation warning:", err);
+        }
+      }
+
+      toast.success(mode === "add" ? "Product added" : "Product updated");
+      qc.invalidateQueries({ queryKey: ["seller-products"] });
+      qc.invalidateQueries({ queryKey: ["featured-products-bento"] });
+      qc.invalidateQueries({ queryKey: ["store"] });
+      qc.invalidateQueries({ queryKey: ["product", product?.id] });
+      onSaved?.();
+      onOpenChange(false);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -138,6 +170,20 @@ export function ProductSheet({
               id="prod-name" required maxLength={120}
               value={name} onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Hand-dyed Atampa"
+              className="mt-1 min-h-[44px] rounded-full"
+            />
+          </div>
+
+          {/* Category - optional but helps with search */}
+          <div>
+            <Label htmlFor="prod-category">
+              Category <span className="text-xs text-muted-foreground">— optional</span>
+            </Label>
+            <Input
+              id="prod-category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder={sellerCategory || "e.g. Fashion & Clothing"}
               className="mt-1 min-h-[44px] rounded-full"
             />
           </div>
@@ -188,6 +234,13 @@ export function ProductSheet({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Category-specific attributes */}
+          <CategoryAttributesForm
+            category={category || sellerCategory}
+            attributes={attributes}
+            onChange={setAttributes}
+          />
 
           <Button
             type="submit" disabled={saving}

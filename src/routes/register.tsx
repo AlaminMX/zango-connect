@@ -225,9 +225,18 @@ function Register() {
       if (!clash) break;
       slug = `${baseSlug}-${Math.floor(Math.random() * 999)}`;
     }
+    let resolvedCityId = cityId;
+    if (!resolvedCityId && city) {
+      const { data: cityRow } = await supabase
+        .from("cities_of_business")
+        .select("id")
+        .ilike("name", city)
+        .maybeSingle();
+      resolvedCityId = cityRow?.id ?? null;
+    }
     const { data, error } = await supabase.from("sellers").insert({
       user_id: uid!, name, business_name: businessName.trim(), slug,
-      whatsapp_number: whatsapp, city, city_id: cityId, category, bio,
+      whatsapp_number: whatsapp, city, city_id: resolvedCityId, category, bio,
       verification_status: "pending",
       onboarding_status: "step1_complete",
       is_blocked: false,

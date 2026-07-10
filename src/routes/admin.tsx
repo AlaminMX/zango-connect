@@ -303,8 +303,7 @@ function AdminPage() {
         .from("admin_settings")
         .select("value")
         .eq("key", "vouch_threshold")
-        .maybeSingle()
-        .abortSignal(ABORT());
+        .maybeSingle();
       const parsed = parseInt(data?.value ?? "3", 10);
       const val = isNaN(parsed) ? 3 : parsed;
       setVouchThreshold(val);

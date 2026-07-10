@@ -119,21 +119,8 @@ export function ProductSheet({
       
       if (error) { toast.error(error.message); return; }
 
-      // Generate metadata for search optimization
-      if (data?.id) {
-        try {
-          await generateProductMetadata({
-            productId: data.id,
-            title: name.trim(),
-            description: desc.trim() || "",
-            category: category || "Other",
-            condition: "New",
-            attributes: attributes,
-          });
-        } catch (err) {
-          console.warn("[v0] Metadata generation warning:", err);
-        }
-      }
+
+
 
       toast.success(mode === "add" ? "Product added" : "Product updated");
       qc.invalidateQueries({ queryKey: ["seller-products"] });

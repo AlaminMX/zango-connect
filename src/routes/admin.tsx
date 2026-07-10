@@ -191,7 +191,7 @@ function AdminPage() {
       const { data, error } = await supabase
         .from("sellers")
         .select("id, business_name, slug, category, city, is_verified, is_blocked, verification_status, rejection_reason, onboarding_status, profile_photo_url, whatsapp_number")
-        .eq("onboarding_status", "step2_complete")
+        .in("onboarding_status", ["step1_complete", "step2_complete"])
         .order("created_at", { ascending: false })
         .abortSignal(ABORT());
       if (error) throw error;

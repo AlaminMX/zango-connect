@@ -292,8 +292,11 @@ function Register() {
                 <p className="mt-1 text-sm text-muted-foreground">Welcome to the community</p>
               </div>
               {step === 1 && (
-                <Link to="/auth" className="text-xs font-semibold text-primary hover:underline whitespace-nowrap">
-                  Sign in
+                <Link
+                  to="/auth"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-4 text-xs font-semibold text-primary shadow-sm transition hover:bg-primary hover:text-primary-foreground whitespace-nowrap"
+                >
+                  Already have an account? Sign in
                 </Link>
               )}
             </div>

@@ -19,15 +19,15 @@ export function TopBar() {
         <Link to="/" className="flex shrink-0 items-center gap-2.5">
           <img
             src="/sutura-logo.png"
-            alt="Sutura Market"
+            alt="ZANGO"
             width={56}
             height={56}
             className="h-14 w-14 object-contain"
           />
           <div className="hidden flex-col leading-none sm:flex">
-            <span className="font-display text-xl text-espresso">Sutura</span>
+            <span className="font-display text-xl text-espresso">ZANGO</span>
             <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-sage-deep">
-              Arewa Market
+              Kasuwancin Arewa
             </span>
           </div>
         </Link>

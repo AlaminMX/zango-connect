@@ -227,7 +227,7 @@ function StorePage() {
     }
   }, [seller, userId]);
 
-  if (!authReady || isLoading) return <SectionLoader label="Loading store…" />;
+  if (isLoading) return <SectionLoader label="Loading store…" />;
   if (!seller) return (
     <div className="min-h-screen bg-background">
       <TopBar />

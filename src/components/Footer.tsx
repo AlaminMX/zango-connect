@@ -7,9 +7,12 @@ export function Footer() {
         <div className="grid gap-8 md:grid-cols-[1.4fr_1fr] md:items-end">
           <div>
             <p className="font-display text-3xl text-background">ZANGO</p>
-            <p className="mt-2 max-w-md text-sm text-background/70">
-              Kasuwancin Arewa — the WhatsApp-first marketplace built for northern Nigeria's
-              entrepreneurs. Discover, vouch, trade.
+            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.22em] text-background/70">
+              Kasuwancin Arewa
+            </p>
+            <p className="mt-3 max-w-md text-sm text-background/70">
+              The WhatsApp-first marketplace built for northern Nigeria's entrepreneurs.
+              Discover, vouch, trade.
             </p>
           </div>
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-background/80 md:justify-end">

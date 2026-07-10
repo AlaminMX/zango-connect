@@ -13,10 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MultiImageUploader } from "@/components/MultiImageUploader";
-import { CategoryAttributesForm } from "@/components/CategoryAttributesForm";
 import { Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
-import { generateProductMetadata } from "@/lib/search-metadata.functions";
 
 const PRICE_LOCK_DAYS = 7;
 const MS_PER_DAY = 86_400_000;

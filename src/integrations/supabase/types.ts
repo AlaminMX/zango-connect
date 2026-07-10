@@ -44,6 +44,24 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           icon_emoji: string
@@ -325,6 +343,7 @@ export type Database = {
           is_blocked: boolean
           is_verified: boolean
           name: string
+          onboarding_status: string
           profile_photo_url: string | null
           rating: number
           rejection_reason: string | null
@@ -352,6 +371,7 @@ export type Database = {
           is_blocked?: boolean
           is_verified?: boolean
           name: string
+          onboarding_status?: string
           profile_photo_url?: string | null
           rating?: number
           rejection_reason?: string | null
@@ -379,6 +399,7 @@ export type Database = {
           is_blocked?: boolean
           is_verified?: boolean
           name?: string
+          onboarding_status?: string
           profile_photo_url?: string | null
           rating?: number
           rejection_reason?: string | null

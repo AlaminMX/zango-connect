@@ -36,8 +36,8 @@ export function WelcomeModal() {
         </div>
         <div className="text-center mb-5">
           <img src="/sutura-logo.png" alt="" className="mx-auto h-16 w-16 object-contain mb-3" />
-          <h2 className="font-serif text-2xl leading-tight">Welcome to Sutura Market</h2>
-          <p className="mt-1.5 text-sm text-muted-foreground">Northern Nigeria's community marketplace.<br/>What brings you here today?</p>
+          <h2 className="font-serif text-2xl leading-tight">Welcome to ZANGO</h2>
+          <p className="mt-1.5 text-sm text-muted-foreground">Kasuwancin Arewa — Northern Nigeria's community marketplace.<br/>What brings you here today?</p>
         </div>
         <div className="grid grid-cols-2 gap-3">
           {([["buyer","I'm Shopping","Browse & discover",ShoppingBag],["seller","I'm Selling","Open your store",Store]] as const).map(([role, label, sub, Icon]) => (

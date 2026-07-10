@@ -2,13 +2,16 @@ import { Link } from "@tanstack/react-router";
 
 export function Footer() {
   return (
-    <footer className="bg-espresso text-background pt-12 pb-20">
+    <footer className="bg-espresso text-background pt-12 pb-8">
       <div className="mx-auto max-w-6xl px-5 py-12">
         <div className="grid gap-8 md:grid-cols-[1.4fr_1fr] md:items-end">
           <div>
-            <p className="font-display text-3xl text-background">Sutura Market</p>
-            <p className="mt-2 max-w-md text-sm text-background/70">
-              The WhatsApp-first marketplace built for northern Nigeria's women entrepreneurs.
+            <p className="font-display text-3xl text-background">ZANGO</p>
+            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.22em] text-background/70">
+              Kasuwancin Arewa
+            </p>
+            <p className="mt-3 max-w-md text-sm text-background/70">
+              The WhatsApp-first marketplace built for northern Nigeria's entrepreneurs.
               Discover, vouch, trade.
             </p>
           </div>
@@ -28,7 +31,7 @@ export function Footer() {
           </nav>
         </div>
         <div className="mt-10 flex flex-col items-start justify-between gap-2 border-t border-background/15 pt-6 text-xs text-background/55 sm:flex-row sm:items-center">
-          <span>© {new Date().getFullYear()} Sutura Market — Arewa kasuwa.</span>
+          <span>© {new Date().getFullYear()} ZANGO — Arewa kasuwa.</span>
           <span>Made with care in Northern Nigeria.</span>
         </div>
       </div>

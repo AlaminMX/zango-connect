@@ -227,7 +227,7 @@ function StorePage() {
     }
   }, [seller, userId]);
 
-  if (!authReady || isLoading) return <SectionLoader label="Loading store…" />;
+  if (isLoading) return <SectionLoader label="Loading store…" />;
   if (!seller) return (
     <div className="min-h-screen bg-background">
       <TopBar />
@@ -242,7 +242,7 @@ function StorePage() {
 
   const handleShare = async () => {
     try { await navigator.clipboard.writeText(shareUrl); toast.success("Link copied!"); } catch {}
-    window.open(`https://wa.me/?text=${encodeURIComponent(`Check out my store on Sutura Market 🛍️ ${shareUrl}`)}`, "_blank");
+    window.open(`https://wa.me/?text=${encodeURIComponent(`Check out my store on ZANGO 🛍️ ${shareUrl}`)}`, "_blank");
   };
 
   const handleVouch = async () => {

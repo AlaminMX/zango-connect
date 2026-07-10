@@ -42,7 +42,7 @@ export function BottomNav() {
   if (isAdmin) {
     return (
       <>
-        <div className="h-20" aria-hidden />
+        <div className="h-16" aria-hidden />
         <nav className="fixed bottom-0 inset-x-0 z-50 flex h-16 items-stretch border-t border-border-warm bg-card/95 backdrop-blur-md shadow-[0_-2px_12px_rgba(62,39,35,0.08)]">
           <Link to="/" className={cls("/")}><Home className="h-5 w-5" /> Home</Link>
           <Link to="/admin" className={cls("/admin")}><Shield className="h-5 w-5" /> Admin</Link>
@@ -59,7 +59,7 @@ export function BottomNav() {
     const storeHref = `/store/${seller.slug}`;
     return (
       <>
-        <div className="h-20" aria-hidden />
+        <div className="h-16" aria-hidden />
         <nav className="fixed bottom-0 inset-x-0 z-50 flex h-16 items-stretch border-t border-border-warm bg-card/95 backdrop-blur-md shadow-[0_-2px_12px_rgba(62,39,35,0.08)]">
           <Link to="/" className={cls("/")}><Home className="h-5 w-5" /> Home</Link>
           <Link to="/explore" className={cls("/explore")}><Compass className="h-5 w-5" /> Explore</Link>
@@ -103,7 +103,7 @@ export function BottomNav() {
   // ── BUYER ──
   return (
     <>
-      <div className="h-20" aria-hidden />
+      <div className="h-16" aria-hidden />
       <nav className="fixed bottom-0 inset-x-0 z-50 flex h-16 items-stretch border-t border-border-warm bg-card/95 backdrop-blur-md shadow-[0_-2px_12px_rgba(62,39,35,0.08)]">
         <Link to="/" className={cls("/")}><Home className="h-5 w-5" /> Home</Link>
         <Link to="/explore" className={cls("/explore")}><Compass className="h-5 w-5" /> Explore</Link>

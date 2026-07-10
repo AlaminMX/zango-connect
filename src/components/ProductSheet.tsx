@@ -13,10 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MultiImageUploader } from "@/components/MultiImageUploader";
-import { CategoryAttributesForm } from "@/components/CategoryAttributesForm";
 import { Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
-import { generateProductMetadata } from "@/lib/search-metadata.functions";
 
 const PRICE_LOCK_DAYS = 7;
 const MS_PER_DAY = 86_400_000;
@@ -121,21 +119,8 @@ export function ProductSheet({
       
       if (error) { toast.error(error.message); return; }
 
-      // Generate metadata for search optimization
-      if (data?.id) {
-        try {
-          await generateProductMetadata({
-            productId: data.id,
-            title: name.trim(),
-            description: desc.trim() || "",
-            category: category || "Other",
-            condition: "New",
-            attributes: attributes,
-          });
-        } catch (err) {
-          console.warn("[v0] Metadata generation warning:", err);
-        }
-      }
+
+
 
       toast.success(mode === "add" ? "Product added" : "Product updated");
       qc.invalidateQueries({ queryKey: ["seller-products"] });
@@ -235,12 +220,6 @@ export function ProductSheet({
             </Select>
           </div>
 
-          {/* Category-specific attributes */}
-          <CategoryAttributesForm
-            category={category || sellerCategory}
-            attributes={attributes}
-            onChange={setAttributes}
-          />
 
           <Button
             type="submit" disabled={saving}

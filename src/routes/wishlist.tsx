@@ -85,11 +85,9 @@ function WishlistPage() {
           <>
             <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-border-warm bg-card p-4">
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Total value</p>
-                <p className="font-display text-2xl text-sage-deep">
-                  {total > 0 ? naira(total) : "—"}
-                </p>
-                <p className="text-[11px] text-muted-foreground">{items.length} item{items.length === 1 ? "" : "s"}</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Saved items</p>
+                <p className="font-display text-2xl text-sage-deep">{items.length}</p>
+                <p className="text-[11px] text-muted-foreground">item{items.length === 1 ? "" : "s"} in your wishlist</p>
               </div>
               {hasMultipleSellers && (
                 <Button onClick={() => setOrderAllOpen(true)} className="min-h-[44px] rounded-full bg-primary text-primary-foreground hover:bg-primary/90">

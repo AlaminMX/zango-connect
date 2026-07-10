@@ -48,7 +48,7 @@ function WishlistPage() {
     return [...map.entries()];
   }, [items]);
 
-  const total = items.reduce((sum, i) => sum + (Number(i.price) > 0 ? Number(i.price) : 0), 0);
+  
   const hasMultipleSellers = groupedBySeller.length >= 2;
 
   return (

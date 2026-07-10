@@ -220,12 +220,6 @@ export function ProductSheet({
             </Select>
           </div>
 
-          {/* Category-specific attributes */}
-          <CategoryAttributesForm
-            category={category || sellerCategory}
-            attributes={attributes}
-            onChange={setAttributes}
-          />
 
           <Button
             type="submit" disabled={saving}

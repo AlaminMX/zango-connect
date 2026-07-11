@@ -91,6 +91,7 @@ function StorePage() {
   const [isAdmin, setIsAdmin]       = useState(false);
   const [editMode, setEditMode]     = useState(false);
   const [authReady, setAuthReady]   = useState(false);
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
 
   // Vouch state
   const [hasVouched, setHasVouched]     = useState(false);

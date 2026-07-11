@@ -421,7 +421,7 @@ function StorePage() {
         {/* Verification / status banners */}
         {isOwner && seller.verification_status && seller.verification_status !== "approved" && (
           <div className="pt-4">
-            <VerificationBanner status={seller.verification_status as any} reason={seller.rejection_reason} />
+            <VerificationBanner status={seller.verification_status as any} reason={rejectionReason} />
           </div>
         )}
         {isOwner && seller.verification_status === "approved" && (

@@ -91,6 +91,7 @@ function StorePage() {
   const [isAdmin, setIsAdmin]       = useState(false);
   const [editMode, setEditMode]     = useState(false);
   const [authReady, setAuthReady]   = useState(false);
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
 
   // Vouch state
   const [hasVouched, setHasVouched]     = useState(false);
@@ -162,7 +163,13 @@ function StorePage() {
   const { data: seller, isLoading } = useQuery({
     queryKey: ["seller", slug],
     queryFn: async () => {
-      const { data, error } = await supabase.from("sellers").select("*").eq("slug", slug).maybeSingle();
+      // Select explicit columns so anon (guest) reads don't touch columns
+      // that are restricted to authenticated/admin users.
+      const { data, error } = await supabase
+        .from("sellers")
+        .select("id, user_id, name, business_name, slug, whatsapp_number, city, city_id, category, bio, profile_photo_url, cover_photo_url, is_verified, rating, created_at, status, verification_status, is_blocked")
+        .eq("slug", slug)
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -211,6 +218,8 @@ function StorePage() {
       const owned = seller.user_id === userId;
       setIsOwner(owned);
       if (owned) {
+        supabase.from("sellers").select("rejection_reason").eq("id", seller.id).maybeSingle()
+          .then(({ data }) => setRejectionReason(data?.rejection_reason ?? null));
         setEBusiness(seller.business_name);
         setECity(seller.city);
         setECityId(seller.city_id ?? null);
@@ -414,7 +423,7 @@ function StorePage() {
         {/* Verification / status banners */}
         {isOwner && seller.verification_status && seller.verification_status !== "approved" && (
           <div className="pt-4">
-            <VerificationBanner status={seller.verification_status as any} reason={seller.rejection_reason} />
+            <VerificationBanner status={seller.verification_status as any} reason={rejectionReason} />
           </div>
         )}
         {isOwner && seller.verification_status === "approved" && (

@@ -162,7 +162,13 @@ function StorePage() {
   const { data: seller, isLoading } = useQuery({
     queryKey: ["seller", slug],
     queryFn: async () => {
-      const { data, error } = await supabase.from("sellers").select("*").eq("slug", slug).maybeSingle();
+      // Select explicit columns so anon (guest) reads don't touch columns
+      // that are restricted to authenticated/admin users.
+      const { data, error } = await supabase
+        .from("sellers")
+        .select("id, user_id, name, business_name, slug, whatsapp_number, city, city_id, category, bio, profile_photo_url, cover_photo_url, is_verified, rating, created_at, status, verification_status, is_blocked")
+        .eq("slug", slug)
+        .maybeSingle();
       if (error) throw error;
       return data;
     },

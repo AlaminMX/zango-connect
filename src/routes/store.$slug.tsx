@@ -218,6 +218,8 @@ function StorePage() {
       const owned = seller.user_id === userId;
       setIsOwner(owned);
       if (owned) {
+        supabase.from("sellers").select("rejection_reason").eq("id", seller.id).maybeSingle()
+          .then(({ data }) => setRejectionReason(data?.rejection_reason ?? null));
         setEBusiness(seller.business_name);
         setECity(seller.city);
         setECityId(seller.city_id ?? null);

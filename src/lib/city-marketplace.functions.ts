@@ -11,17 +11,19 @@ export async function getCityMarketplace({ data }: { data: { slug: string } }) {
 
   const { data: sellers } = await supabase
     .from("sellers")
-    .select("*, products(*)")
+    .select("id, business_name, slug, category, profile_photo_url, is_verified, rating, is_blocked, products!inner(id, name, price, image_url, stock_status, status)")
     .eq("city_id", city.id)
     .eq("status", "active")
-    .eq("verification_status", "approved");
+    .eq("verification_status", "approved")
+    .eq("is_blocked", false)
+    .eq("products.status", "active");
 
   const { data: categories } = await supabase
     .from("categories")
     .select("*");
 
   const products = (sellers || []).flatMap((s) => 
-    (s.products || []).map((p) => ({ ...p, sellers: { id: s.id, business_name: s.business_name, slug: s.slug } }))
+    (s.products || []).map((p: any) => ({ ...p, sellers: { id: s.id, business_name: s.business_name, slug: s.slug } }))
   );
 
   return {

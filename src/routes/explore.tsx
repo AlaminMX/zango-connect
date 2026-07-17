@@ -47,17 +47,31 @@ function Explore() {
     staleTime: 5 * 60_000,
   });
 
-  // ── States (for filter pill row) ────────────────────────────────────────────
+  // ── States (from actual seller data so filter only shows populated states) ──
   const { data: states = [] } = useQuery({
     queryKey: ["explore-states"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("cities_of_business")
+      // First try cities_with_stats view (has seller counts)
+      const { data: cityData } = await (supabase as any)
+        .from("cities_with_stats")
+        .select("state, sellers_count")
+        .eq("is_active", true);
+      if (cityData && cityData.length > 0) {
+        // Only include states that have at least one seller
+        const withSellers = cityData.filter((c: any) => (c.sellers_count ?? 0) > 0);
+        const stateSet = [...new Set(withSellers.map((c: any) => c.state as string))];
+        if (stateSet.length > 0) return stateSet.sort();
+      }
+      // Fallback: distinct states from sellers directly
+      const { data: sellerData } = await supabase
+        .from("sellers")
         .select("state")
-        .eq("is_active", true)
-        .order("state")
+        .eq("verification_status", "approved")
+        .eq("status", "active")
+        .eq("is_blocked", false)
+        .not("state", "is", null)
         .abortSignal(AbortSignal.timeout(8000));
-      return [...new Set((data ?? []).map((c: any) => c.state as string))].sort();
+      return [...new Set((sellerData ?? []).map((s: any) => s.state as string).filter(Boolean))].sort();
     },
     staleTime: 10 * 60_000,
   });

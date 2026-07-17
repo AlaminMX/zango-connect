@@ -21,6 +21,7 @@ import { useAuth } from "@/lib/authContext";
 import { useSellerProfile } from "@/lib/sellerProfile";
 import { iconFor, hausaFor } from "@/lib/categories";
 import { Search, ArrowRight, Store, LayoutGrid, ChevronRight } from "lucide-react";
+import { getTrendingSellers } from "@/lib/homepage-cms";
 
 export const Route = createFileRoute("/")({ component: Index });
 
@@ -89,6 +90,26 @@ function Index() {
   const { data: trendingSellers, isLoading: sellersLoading } = useQuery({
     queryKey: ["trending-sellers-home", city],
     queryFn: async () => {
+      // Use CMS-managed list first
+      const cms = await getTrendingSellers(6);
+      if (cms.length > 0) {
+        // Optionally filter by city if one is selected
+        if (city !== "All") {
+          const { data: filtered } = await supabase
+            .from("sellers")
+            .select("id, slug, business_name, category, city, profile_photo_url, is_verified, rating")
+            .in("id", cms.map((s) => s.seller_id))
+            .eq("city", city)
+            .abortSignal(AbortSignal.timeout(8000));
+          if (filtered && filtered.length > 0) return filtered;
+        }
+        return cms.map((s) => ({
+          id: s.seller_id, slug: s.slug, business_name: s.business_name,
+          category: s.category, city: "", profile_photo_url: s.profile_photo_url,
+          is_verified: false, rating: null,
+        }));
+      }
+      // Fallback: live query ordered by rating
       let qb = supabase.from("sellers")
         .select("id, slug, business_name, category, city, profile_photo_url, is_verified, rating")
         .eq("is_blocked", false).eq("verification_status", "approved")

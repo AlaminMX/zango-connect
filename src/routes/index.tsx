@@ -15,7 +15,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { ProductSkeleton } from "@/components/LoadingSpinner";
 import { SellerCard } from "@/components/SellerCard";
 import { WelcomeModal } from "@/components/WelcomeModal";
-import { ExploreCities } from "@/components/ExploreCities";
+import { ExploreByState } from "@/components/ExploreByState";
 import { useCity } from "@/lib/cityContext";
 import { useAuth } from "@/lib/authContext";
 import { useSellerProfile } from "@/lib/sellerProfile";
@@ -426,8 +426,8 @@ function Index() {
         )}
       </section>
 
-      {/* ── CITY EXPLORER ────────────────────────────────────────────────── */}
-      <ExploreCities />
+      {/* ── STATE EXPLORER ───────────────────────────────────────────────── */}
+      <ExploreByState />
 
       {/* ── OPEN YOUR STORE CTA ──────────────────────────────────────────── */}
       {showSellerCTA && (

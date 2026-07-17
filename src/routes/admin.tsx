@@ -138,7 +138,7 @@ function AdminPage() {
   const [citiesState,     setCitiesState]     = useState<LoadState>("loading");
   const [statsState,      setStatsState]      = useState<LoadState>("loading");
 
-  const [activeTab, setActiveTab] = useState<"sellers"|"categories"|"products"|"vouches"|"homepage"|"cities"|"cards">("sellers");
+  const [activeTab, setActiveTab] = useState<"sellers"|"categories"|"products"|"vouches"|"homepage"|"cities"|"cards"|"cms">("sellers");
 
   // Seller card viewer (admin)
   const [cardSeller, setCardSeller] = useState<SellerRow | null>(null);
@@ -180,6 +180,20 @@ function AdminPage() {
   const [citySlug,        setCitySlug]         = useState("");
   const [cityIsActive,    setCityIsActive]     = useState(true);
   const [citySaving,      setCitySaving]       = useState(false);
+
+  // CMS — Featured Products & Trending Sellers
+  type CmsFeaturedProduct = { id: string; product_id: string; display_order: number; name: string; price: number | null; image_url: string | null; seller_name: string; seller_slug: string; };
+  type CmsTrendingSeller  = { id: string; seller_id: string; display_order: number; business_name: string; category: string; profile_photo_url: string | null; slug: string; };
+  const [cmsProducts,       setCmsProducts]       = useState<CmsFeaturedProduct[]>([]);
+  const [cmsSellers,        setCmsSellers]        = useState<CmsTrendingSeller[]>([]);
+  const [cmsProductsState,  setCmsProductsState]  = useState<LoadState>("loading");
+  const [cmsSellersState,   setCmsSellersState]   = useState<LoadState>("loading");
+  const [cmsProductSearch,  setCmsProductSearch]  = useState("");
+  const [cmsSellerSearch,   setCmsSellerSearch]   = useState("");
+  const [cmsProductOptions, setCmsProductOptions] = useState<any[]>([]);
+  const [cmsSellerOptions,  setCmsSellerOptions]  = useState<any[]>([]);
+  const [cmsProductSearchLoading, setCmsProductSearchLoading] = useState(false);
+  const [cmsSellerSearchLoading,  setCmsSellerSearchLoading]  = useState(false);
 
   // ── Resilient per-section loaders. Each runs independently — one failure
   //    no longer blocks the rest of the dashboard.
@@ -330,6 +344,56 @@ function AdminPage() {
     }
   }, []);
 
+  const loadCmsFeaturedProducts = useCallback(async () => {
+    setCmsProductsState("loading");
+    try {
+      const { data, error } = await supabase
+        .from("featured_products_admin")
+        .select("id, product_id, display_order, products:product_id(name, price, image_url, sellers:seller_id(business_name, slug))")
+        .order("display_order")
+        .abortSignal(ABORT());
+      if (error) throw error;
+      setCmsProducts(
+        (data ?? []).map((r: any) => ({
+          id: r.id, product_id: r.product_id, display_order: r.display_order,
+          name: r.products?.name ?? "Unknown", price: r.products?.price ?? null,
+          image_url: r.products?.image_url ?? null,
+          seller_name: r.products?.sellers?.business_name ?? "",
+          seller_slug: r.products?.sellers?.slug ?? "",
+        }))
+      );
+      setCmsProductsState("ok");
+    } catch (err) {
+      console.warn("[admin] cms featured products failed:", err);
+      setCmsProductsState("error");
+    }
+  }, []);
+
+  const loadCmsTrendingSellers = useCallback(async () => {
+    setCmsSellersState("loading");
+    try {
+      const { data, error } = await supabase
+        .from("trending_sellers_admin")
+        .select("id, seller_id, display_order, sellers:seller_id(business_name, category, profile_photo_url, slug)")
+        .order("display_order")
+        .abortSignal(ABORT());
+      if (error) throw error;
+      setCmsSellers(
+        (data ?? []).map((r: any) => ({
+          id: r.id, seller_id: r.seller_id, display_order: r.display_order,
+          business_name: r.sellers?.business_name ?? "Unknown",
+          category: r.sellers?.category ?? "",
+          profile_photo_url: r.sellers?.profile_photo_url ?? null,
+          slug: r.sellers?.slug ?? "",
+        }))
+      );
+      setCmsSellersState("ok");
+    } catch (err) {
+      console.warn("[admin] cms trending sellers failed:", err);
+      setCmsSellersState("error");
+    }
+  }, []);
+
   // Fire all loaders independently once auth resolves.
   useEffect(() => {
     if (!allowed) return;
@@ -341,14 +405,17 @@ function AdminPage() {
     void loadVouches();
     void loadVouchThreshold();
     void loadCities();
-  }, [allowed, loadSellers, loadCategories, loadProducts, loadSections, loadStats, loadVouches, loadVouchThreshold, loadCities]);
+    void loadCmsFeaturedProducts();
+    void loadCmsTrendingSellers();
+  }, [allowed, loadSellers, loadCategories, loadProducts, loadSections, loadStats, loadVouches, loadVouchThreshold, loadCities, loadCmsFeaturedProducts, loadCmsTrendingSellers]);
 
   // Convenience: reload affected sections after mutations.
   const loadAll = useCallback(async () => {
     await Promise.allSettled([
       loadSellers(), loadCategories(), loadProducts(), loadSections(), loadStats(), loadVouches(), loadCities(),
+      loadCmsFeaturedProducts(), loadCmsTrendingSellers(),
     ]);
-  }, [loadSellers, loadCategories, loadProducts, loadSections, loadStats, loadVouches, loadCities]);
+  }, [loadSellers, loadCategories, loadProducts, loadSections, loadStats, loadVouches, loadCities, loadCmsFeaturedProducts, loadCmsTrendingSellers]);
 
 
   // ── Seller verification approval ──
@@ -652,6 +719,99 @@ function AdminPage() {
     ]);
   };
 
+  // ── CMS: Featured Products ──
+  const cmsSearchProducts = async (q: string) => {
+    if (!q.trim()) { setCmsProductOptions([]); return; }
+    setCmsProductSearchLoading(true);
+    const { data } = await supabase
+      .from("products")
+      .select("id, name, price, image_url, sellers:seller_id(business_name)")
+      .eq("status", "active")
+      .ilike("name", `%${q}%`)
+      .limit(10);
+    setCmsProductOptions(data ?? []);
+    setCmsProductSearchLoading(false);
+  };
+
+  const cmsAddFeaturedProduct = async (productId: string) => {
+    const maxOrder = Math.max(0, ...cmsProducts.map((p) => p.display_order));
+    const { error } = await supabase
+      .from("featured_products_admin")
+      .insert({ product_id: productId, display_order: maxOrder + 1, added_by: (await supabase.auth.getUser()).data.user!.id });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Product added to featured ⭐");
+    setCmsProductSearch(""); setCmsProductOptions([]);
+    await loadCmsFeaturedProducts();
+  };
+
+  const cmsRemoveFeaturedProduct = async (id: string) => {
+    const { error } = await supabase.from("featured_products_admin").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Removed from featured");
+    setCmsProducts((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const cmsMoveFeaturedProduct = async (id: string, dir: "up" | "down") => {
+    const idx = cmsProducts.findIndex((p) => p.id === id);
+    const swapIdx = dir === "up" ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= cmsProducts.length) return;
+    const updated = [...cmsProducts];
+    [updated[idx].display_order, updated[swapIdx].display_order] = [updated[swapIdx].display_order, updated[idx].display_order];
+    [updated[idx], updated[swapIdx]] = [updated[swapIdx], updated[idx]];
+    setCmsProducts([...updated]);
+    await Promise.all([
+      supabase.from("featured_products_admin").update({ display_order: updated[idx].display_order }).eq("id", updated[idx].id),
+      supabase.from("featured_products_admin").update({ display_order: updated[swapIdx].display_order }).eq("id", updated[swapIdx].id),
+    ]);
+  };
+
+  // ── CMS: Trending Sellers ──
+  const cmsSearchSellers = async (q: string) => {
+    if (!q.trim()) { setCmsSellerOptions([]); return; }
+    setCmsSellerSearchLoading(true);
+    const { data } = await supabase
+      .from("sellers")
+      .select("id, business_name, category, profile_photo_url, slug")
+      .eq("verification_status", "approved")
+      .eq("is_blocked", false)
+      .ilike("business_name", `%${q}%`)
+      .limit(10);
+    setCmsSellerOptions(data ?? []);
+    setCmsSellerSearchLoading(false);
+  };
+
+  const cmsAddTrendingSeller = async (sellerId: string) => {
+    const maxOrder = Math.max(0, ...cmsSellers.map((s) => s.display_order));
+    const { error } = await supabase
+      .from("trending_sellers_admin")
+      .insert({ seller_id: sellerId, display_order: maxOrder + 1, added_by: (await supabase.auth.getUser()).data.user!.id });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Seller added to trending 🔥");
+    setCmsSellerSearch(""); setCmsSellerOptions([]);
+    await loadCmsTrendingSellers();
+  };
+
+  const cmsRemoveTrendingSeller = async (id: string) => {
+    const { error } = await supabase.from("trending_sellers_admin").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Removed from trending");
+    setCmsSellers((prev) => prev.filter((s) => s.id !== id));
+  };
+
+  const cmsMoveTrendingSeller = async (id: string, dir: "up" | "down") => {
+    const idx = cmsSellers.findIndex((s) => s.id === id);
+    const swapIdx = dir === "up" ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= cmsSellers.length) return;
+    const updated = [...cmsSellers];
+    [updated[idx].display_order, updated[swapIdx].display_order] = [updated[swapIdx].display_order, updated[idx].display_order];
+    [updated[idx], updated[swapIdx]] = [updated[swapIdx], updated[idx]];
+    setCmsSellers([...updated]);
+    await Promise.all([
+      supabase.from("trending_sellers_admin").update({ display_order: updated[idx].display_order }).eq("id", updated[idx].id),
+      supabase.from("trending_sellers_admin").update({ display_order: updated[swapIdx].display_order }).eq("id", updated[swapIdx].id),
+    ]);
+  };
+
   // Auth gate.
   if (!isReady) return <PageLoader label="Loading admin…" />;
   if (!allowed) return <PageLoader label="Checking access…" />;
@@ -701,14 +861,15 @@ function AdminPage() {
 
         {/* Tab nav */}
         <div className="mt-8 flex flex-wrap gap-2">
-          {(["sellers","categories","products","vouches","homepage","cities","cards"] as const).map((t) => (
+          {(["sellers","categories","products","vouches","homepage","cities","cards","cms"] as const).map((t) => (
             <button key={t} onClick={() => setActiveTab(t)} className={tabCls(t)}>
               {t === "sellers"    ? `Sellers ${pendingSellers.length > 0 ? `(${pendingSellers.length} pending)` : ""}` :
                t === "categories" ? "Categories" :
                t === "products"   ? "Products" :
                t === "vouches"    ? "Vouches" :
                t === "homepage"   ? "Homepage" :
-               t === "cities"     ? "Cities" : "Cards"}
+               t === "cities"     ? "Cities" :
+               t === "cards"      ? "Cards" : "CMS ✦"}
             </button>
           ))}
         </div>
@@ -1127,6 +1288,162 @@ function AdminPage() {
                 {sellers.length === 0 && <p className="text-sm text-muted-foreground">No sellers yet.</p>}
               </div>
             )}
+          </section>
+        )}
+
+        {/* ── CMS tab: Featured Products & Trending Sellers ── */}
+        {activeTab === "cms" && (
+          <section className="mt-6 space-y-10">
+            <div>
+              <p className="text-xs text-muted-foreground mb-6">
+                Control which products appear as <strong>Featured</strong> on the homepage and explore page, and which sellers show in the <strong>Trending Sellers</strong> section. Changes are live immediately.
+              </p>
+
+              {/* ── Featured Products ── */}
+              <div>
+                <h2 className="font-serif text-xl mb-1 flex items-center gap-2">
+                  <Star className="h-5 w-5 text-amber-500" /> Featured Products ({cmsProducts.length})
+                </h2>
+                <p className="text-xs text-muted-foreground mb-4">These appear at the top of the explore page and the "Featured products" section on the homepage. Order them with the arrows.</p>
+
+                {/* Search to add */}
+                <div className="mb-4 flex items-center gap-2">
+                  <input
+                    value={cmsProductSearch}
+                    onChange={(e) => { setCmsProductSearch(e.target.value); cmsSearchProducts(e.target.value); }}
+                    placeholder="Search product name to add…"
+                    className="flex-1 rounded-xl border border-border bg-card px-3 py-2 text-sm outline-none"
+                  />
+                  {cmsProductSearchLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                </div>
+                {cmsProductOptions.length > 0 && (
+                  <div className="mb-4 rounded-xl border border-border bg-card divide-y">
+                    {cmsProductOptions.map((p: any) => (
+                      <div key={p.id} className="flex items-center justify-between gap-3 px-3 py-2">
+                        <div className="flex items-center gap-3 min-w-0">
+                          {p.image_url && <img src={p.image_url} alt="" className="h-8 w-8 rounded-lg object-cover shrink-0" />}
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{p.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">{p.sellers?.business_name}</p>
+                          </div>
+                        </div>
+                        <Button size="sm" onClick={() => cmsAddFeaturedProduct(p.id)} className="shrink-0 rounded-full">
+                          <Plus className="h-3 w-3 mr-1" /> Add
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {cmsProductsState === "loading" && <SectionSkeleton />}
+                {cmsProductsState === "error" && <SectionError label="featured products" onRetry={loadCmsFeaturedProducts} />}
+                {cmsProductsState === "ok" && (
+                  <div className="space-y-2">
+                    {cmsProducts.length === 0 && (
+                      <p className="text-sm text-muted-foreground py-4 text-center">No featured products yet. Search above to add some.</p>
+                    )}
+                    {cmsProducts.map((p, idx) => (
+                      <div key={p.id} className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2">
+                        <div className="flex flex-col gap-0.5">
+                          <button onClick={() => cmsMoveFeaturedProduct(p.id, "up")} disabled={idx === 0} className="disabled:opacity-30 hover:text-primary">
+                            <ChevronUp className="h-3.5 w-3.5" />
+                          </button>
+                          <button onClick={() => cmsMoveFeaturedProduct(p.id, "down")} disabled={idx === cmsProducts.length - 1} className="disabled:opacity-30 hover:text-primary">
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                        <span className="text-xs font-mono text-muted-foreground w-5">{idx + 1}</span>
+                        {p.image_url && <img src={p.image_url} alt="" className="h-10 w-10 rounded-lg object-cover shrink-0" />}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{p.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{p.seller_name} · {p.price != null ? `₦${Number(p.price).toLocaleString()}` : ""}</p>
+                        </div>
+                        <button onClick={() => cmsRemoveFeaturedProduct(p.id)} className="text-rose-500 hover:text-rose-600 shrink-0">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* ── Trending Sellers ── */}
+              <div className="mt-10">
+                <h2 className="font-serif text-xl mb-1 flex items-center gap-2">
+                  <BadgeCheck className="h-5 w-5 text-emerald-500" /> Trending Sellers ({cmsSellers.length})
+                </h2>
+                <p className="text-xs text-muted-foreground mb-4">These appear in the "Trending sellers" row on the homepage and explore page. The first 3 are shown on the homepage. Order them with the arrows.</p>
+
+                {/* Search to add */}
+                <div className="mb-4 flex items-center gap-2">
+                  <input
+                    value={cmsSellerSearch}
+                    onChange={(e) => { setCmsSellerSearch(e.target.value); cmsSearchSellers(e.target.value); }}
+                    placeholder="Search seller name to add…"
+                    className="flex-1 rounded-xl border border-border bg-card px-3 py-2 text-sm outline-none"
+                  />
+                  {cmsSellerSearchLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                </div>
+                {cmsSellerOptions.length > 0 && (
+                  <div className="mb-4 rounded-xl border border-border bg-card divide-y">
+                    {cmsSellerOptions.map((s: any) => (
+                      <div key={s.id} className="flex items-center justify-between gap-3 px-3 py-2">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center shrink-0 overflow-hidden">
+                            {s.profile_photo_url
+                              ? <img src={s.profile_photo_url} alt="" className="h-full w-full object-cover" />
+                              : <span className="text-sm font-bold text-primary">{s.business_name?.charAt(0)}</span>}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{s.business_name}</p>
+                            <p className="text-xs text-muted-foreground truncate">{s.category}</p>
+                          </div>
+                        </div>
+                        <Button size="sm" onClick={() => cmsAddTrendingSeller(s.id)} className="shrink-0 rounded-full">
+                          <Plus className="h-3 w-3 mr-1" /> Add
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {cmsSellersState === "loading" && <SectionSkeleton />}
+                {cmsSellersState === "error" && <SectionError label="trending sellers" onRetry={loadCmsTrendingSellers} />}
+                {cmsSellersState === "ok" && (
+                  <div className="space-y-2">
+                    {cmsSellers.length === 0 && (
+                      <p className="text-sm text-muted-foreground py-4 text-center">No trending sellers yet. Search above to add some.</p>
+                    )}
+                    {cmsSellers.map((s, idx) => (
+                      <div key={s.id} className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2">
+                        <div className="flex flex-col gap-0.5">
+                          <button onClick={() => cmsMoveTrendingSeller(s.id, "up")} disabled={idx === 0} className="disabled:opacity-30 hover:text-primary">
+                            <ChevronUp className="h-3.5 w-3.5" />
+                          </button>
+                          <button onClick={() => cmsMoveTrendingSeller(s.id, "down")} disabled={idx === cmsSellers.length - 1} className="disabled:opacity-30 hover:text-primary">
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                        <span className="text-xs font-mono text-muted-foreground w-5">{idx + 1}</span>
+                        {idx < 3 && <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full shrink-0">Shown</span>}
+                        <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center shrink-0 overflow-hidden">
+                          {s.profile_photo_url
+                            ? <img src={s.profile_photo_url} alt="" className="h-full w-full object-cover" />
+                            : <span className="text-sm font-bold text-primary">{s.business_name?.charAt(0)}</span>}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{s.business_name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{s.category}</p>
+                        </div>
+                        <button onClick={() => cmsRemoveTrendingSeller(s.id)} className="text-rose-500 hover:text-rose-600 shrink-0">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </section>
         )}
 

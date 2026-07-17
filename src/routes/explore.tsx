@@ -12,7 +12,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { ProductSkeleton } from "@/components/LoadingSpinner";
 import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
-import { Search, ShieldCheck } from "lucide-react";
+import { Search } from "lucide-react";
 import { useCity } from "@/lib/cityContext";
 import { getTrendingSellers } from "@/lib/homepage-cms";
 import { getCategoryIcon } from "@/lib/category-icons";
@@ -44,7 +44,6 @@ function Explore() {
     queryFn: async () => {
       const { data } = await supabase.from("cities_of_business").select("state").eq("is_active", true).order("state")
         .abortSignal(AbortSignal.timeout(8000));
-      // Get unique states
       const unique = Array.from(new Set((data ?? []).map((c: any) => c.state)));
       return unique.sort();
     },
@@ -54,10 +53,8 @@ function Explore() {
   const { data: trending } = useQuery({
     queryKey: ["trending-sellers"],
     queryFn: async () => {
-      // Fetch from CMS-managed trending sellers (up to 3 shown)
       const cms = await getTrendingSellers(3);
       if (cms.length > 0) return cms;
-      // Fallback: live query for approved sellers ordered by rating
       const { data } = await supabase
         .from("sellers")
         .select("id, slug, business_name, category, profile_photo_url, is_verified, rating")
@@ -79,23 +76,50 @@ function Explore() {
   const { data: products, isLoading } = useQuery({
     queryKey: ["explore-products", selectedCity, activeCat, activeState],
     queryFn: async () => {
-      let qb = supabase.from("products")
-        .select("id, name, price, image_url, stock_status, is_featured, featured_order, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, is_blocked, verification_status, category, state)")
-        .eq("status", "active")
-        .eq("sellers.is_blocked", false)
-        .eq("sellers.verification_status", "approved")
-        .limit(60);
-      // Only apply city filter when a specific city is chosen
-      if (selectedCity && selectedCity !== "All") qb = qb.eq("sellers.city", selectedCity);
-      if (activeState) qb = qb.eq("sellers.state", activeState);
+      // Step 1: get approved, unblocked seller IDs (with optional filters)
+      let sellersQb = supabase
+        .from("sellers")
+        .select("id, business_name, city, slug, whatsapp_number, category, state")
+        .eq("verification_status", "approved")
+        .eq("is_blocked", false)
+        .eq("status", "active");
+
+      if (selectedCity && selectedCity !== "All") sellersQb = sellersQb.eq("city", selectedCity);
+      if (activeState) sellersQb = sellersQb.eq("state", activeState);
       if (activeCat) {
         const categoryName = (categories ?? []).find((c: any) => c.slug === activeCat)?.name;
-        if (categoryName) qb = qb.eq("sellers.category", categoryName);
+        if (categoryName) sellersQb = sellersQb.eq("category", categoryName);
       }
-      const { data, error } = await qb.abortSignal(AbortSignal.timeout(8000));
-      if (error) throw error;
-      const rows = (data ?? []) as any[];
-      const featured = rows.filter((r) => r.is_featured).sort((a, b) => (a.featured_order ?? 0) - (b.featured_order ?? 0));
+
+      const { data: sellersData, error: sellersError } = await sellersQb
+        .limit(500)
+        .abortSignal(AbortSignal.timeout(8000));
+      if (sellersError) throw sellersError;
+
+      const sellerMap = new Map((sellersData ?? []).map((s: any) => [s.id, s]));
+      const sellerIds = [...sellerMap.keys()];
+      if (sellerIds.length === 0) return [];
+
+      // Step 2: get active products for those sellers
+      const { data: productsData, error: productsError } = await supabase
+        .from("products")
+        .select("id, name, price, image_url, stock_status, is_featured, featured_order, seller_id")
+        .eq("status", "active")
+        .in("seller_id", sellerIds)
+        .limit(200)
+        .abortSignal(AbortSignal.timeout(8000));
+      if (productsError) throw productsError;
+
+      // Attach seller info
+      const rows = (productsData ?? []).map((p: any) => ({
+        ...p,
+        sellers: sellerMap.get(p.seller_id) ?? null,
+      }));
+
+      // Featured first, then shuffle the rest
+      const featured = rows
+        .filter((r) => r.is_featured)
+        .sort((a, b) => (a.featured_order ?? 0) - (b.featured_order ?? 0));
       const rest = rows.filter((r) => !r.is_featured);
       for (let i = rest.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -137,7 +161,7 @@ function Explore() {
       <main className="mx-auto max-w-6xl px-5 py-6">
         <BackButton fallback="/" />
 
-        {/* Trending sellers - CMS managed, displays max 3 horizontally */}
+        {/* Trending sellers */}
         {trending && trending.length > 0 && (
           <section className="mt-4">
             <div className="mb-3 flex items-baseline justify-between">
@@ -202,7 +226,7 @@ function Explore() {
             </div>
           ) : visible.length === 0 ? (
             <div className="py-16 text-center">
-              <p className="text-sm text-muted-foreground">No products found for this filter.</p>
+              <p className="text-sm text-muted-foreground">No products found.</p>
               {(activeCat || activeState || (selectedCity && selectedCity !== "All")) && (
                 <button
                   type="button"
@@ -250,7 +274,6 @@ function Explore() {
 
 function CatPill({ active, onClick, children, categoryName }: { active: boolean; onClick: () => void; children: React.ReactNode; categoryName?: string }) {
   const Icon = categoryName ? getCategoryIcon(categoryName) : null;
-  
   return (
     <button
       type="button" onClick={onClick}

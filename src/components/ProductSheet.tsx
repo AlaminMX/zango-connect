@@ -101,8 +101,10 @@ export function ProductSheet({
         image_url: images[0] ?? null,
         image_urls: images,
         stock_status: stock,
-        category: category || null,
       };
+      // Only include category if the user provided one and the column exists
+      // (column added via migration 20260717010000)
+      if (category?.trim()) payload.category = category.trim();
       // Only include price when not locked
       if (mode === "add") {
         payload.price = priceVal;

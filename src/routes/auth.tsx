@@ -25,6 +25,13 @@ function AuthPage() {
   const [resetSent, setResetSent] = useState(false);
 
   const routeAfterLogin = async (userId: string) => {
+    // OAuth consent (and any other same-origin) return URL: honor it above role-based routing.
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get("next");
+    if (next && next.startsWith("/") && !next.startsWith("//")) {
+      window.location.href = next;
+      return;
+    }
     const { data: role } = await supabase.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
     if (role) { nav({ to: "/admin" }); return; }
     const { data: s } = await supabase.from("sellers").select("id, onboarding_status, verification_status").eq("user_id", userId).maybeSingle();

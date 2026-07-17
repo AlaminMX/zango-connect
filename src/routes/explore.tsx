@@ -54,8 +54,24 @@ function Explore() {
   const { data: trending } = useQuery({
     queryKey: ["trending-sellers"],
     queryFn: async () => {
-      // Fetch from CMS-managed trending sellers (shows first 3 on homepage)
-      return await getTrendingSellers(3);
+      // Fetch from CMS-managed trending sellers (up to 3 shown)
+      const cms = await getTrendingSellers(3);
+      if (cms.length > 0) return cms;
+      // Fallback: live query for approved sellers ordered by rating
+      const { data } = await supabase
+        .from("sellers")
+        .select("id, slug, business_name, category, profile_photo_url, is_verified, rating")
+        .eq("is_blocked", false)
+        .eq("verification_status", "approved")
+        .eq("status", "active")
+        .order("rating", { ascending: false, nullsFirst: false })
+        .limit(3)
+        .abortSignal(AbortSignal.timeout(8000));
+      return (data ?? []).map((s: any) => ({
+        id: s.id, seller_id: s.id, display_order: 0,
+        business_name: s.business_name, category: s.category,
+        profile_photo_url: s.profile_photo_url, slug: s.slug,
+      }));
     },
     staleTime: 5 * 60_000,
   });
@@ -69,10 +85,9 @@ function Explore() {
         .eq("sellers.is_blocked", false)
         .eq("sellers.verification_status", "approved")
         .limit(60);
-      if (selectedCity !== "All") qb = qb.eq("sellers.city", selectedCity);
-      // Filter by state if selected
+      // Only apply city filter when a specific city is chosen
+      if (selectedCity && selectedCity !== "All") qb = qb.eq("sellers.city", selectedCity);
       if (activeState) qb = qb.eq("sellers.state", activeState);
-      // Filter by category NAME (sellers.category is stored as name, not slug)
       if (activeCat) {
         const categoryName = (categories ?? []).find((c: any) => c.slug === activeCat)?.name;
         if (categoryName) qb = qb.eq("sellers.category", categoryName);
@@ -82,7 +97,6 @@ function Explore() {
       const rows = (data ?? []) as any[];
       const featured = rows.filter((r) => r.is_featured).sort((a, b) => (a.featured_order ?? 0) - (b.featured_order ?? 0));
       const rest = rows.filter((r) => !r.is_featured);
-      // pseudo-random shuffle (stable per render)
       for (let i = rest.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [rest[i], rest[j]] = [rest[j], rest[i]];
@@ -187,9 +201,18 @@ function Explore() {
               {Array.from({ length: 8 }).map((_, i) => <ProductSkeleton key={i} />)}
             </div>
           ) : visible.length === 0 ? (
-            <p className="py-16 text-center text-sm text-muted-foreground">
-              No products to show. Try a different filter.
-            </p>
+            <div className="py-16 text-center">
+              <p className="text-sm text-muted-foreground">No products found for this filter.</p>
+              {(activeCat || activeState || (selectedCity && selectedCity !== "All")) && (
+                <button
+                  type="button"
+                  onClick={() => { setActiveCat(null); setActiveState(null); setShown(PAGE_SIZE); }}
+                  className="mt-3 text-xs font-semibold text-primary hover:underline"
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
           ) : (
             <>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">

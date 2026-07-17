@@ -1,6 +1,10 @@
 /**
- * /explore — discovery hub. Sticky search, trending sellers (7d clicks),
- * category quick filter, randomized products grid with "Load more".
+ * /explore — discovery hub. Sticky search, trending sellers,
+ * category quick filter, product grid with "Load more".
+ *
+ * Query strategy: two separate flat queries (sellers then products),
+ * joined in JS. This avoids Supabase join-filter bugs that affect
+ * both anon and authenticated users.
  */
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -29,38 +33,47 @@ function Explore() {
   const [activeState, setActiveState] = useState<string | null>(null);
   const [shown, setShown] = useState(PAGE_SIZE);
 
-  const { data: categories } = useQuery({
+  // ── Categories ──────────────────────────────────────────────────────────────
+  const { data: categories = [] } = useQuery({
     queryKey: ["explore-categories"],
     queryFn: async () => {
-      const { data } = await supabase.from("categories").select("id, name, slug").order("sort_order")
+      const { data } = await supabase
+        .from("categories")
+        .select("id, name, slug")
+        .order("sort_order")
         .abortSignal(AbortSignal.timeout(8000));
       return data ?? [];
     },
     staleTime: 5 * 60_000,
   });
 
-  const { data: states } = useQuery({
+  // ── States (for filter pill row) ────────────────────────────────────────────
+  const { data: states = [] } = useQuery({
     queryKey: ["explore-states"],
     queryFn: async () => {
-      const { data } = await supabase.from("cities_of_business").select("state").eq("is_active", true).order("state")
+      const { data } = await supabase
+        .from("cities_of_business")
+        .select("state")
+        .eq("is_active", true)
+        .order("state")
         .abortSignal(AbortSignal.timeout(8000));
-      const unique = Array.from(new Set((data ?? []).map((c: any) => c.state)));
-      return unique.sort();
+      return [...new Set((data ?? []).map((c: any) => c.state as string))].sort();
     },
     staleTime: 10 * 60_000,
   });
 
-  const { data: trending } = useQuery({
+  // ── Trending sellers (CMS-managed with live fallback) ───────────────────────
+  const { data: trending = [] } = useQuery({
     queryKey: ["trending-sellers"],
     queryFn: async () => {
       const cms = await getTrendingSellers(3);
       if (cms.length > 0) return cms;
       const { data } = await supabase
         .from("sellers")
-        .select("id, slug, business_name, category, profile_photo_url, is_verified, rating")
-        .eq("is_blocked", false)
+        .select("id, slug, business_name, category, profile_photo_url")
         .eq("verification_status", "approved")
         .eq("status", "active")
+        .eq("is_blocked", false)
         .order("rating", { ascending: false, nullsFirst: false })
         .limit(3)
         .abortSignal(AbortSignal.timeout(8000));
@@ -73,50 +86,67 @@ function Explore() {
     staleTime: 5 * 60_000,
   });
 
-  const { data: products, isLoading } = useQuery({
+  // ── Main product feed ────────────────────────────────────────────────────────
+  // Step 1: fetch approved sellers matching current filters
+  // Step 2: fetch active products for those seller IDs
+  // Both are flat queries — no joins — to avoid Supabase anon join-filter bugs.
+  const { data: products = [], isLoading, error } = useQuery({
     queryKey: ["explore-products", selectedCity, activeCat, activeState],
     queryFn: async () => {
-      // Step 1: get approved, unblocked seller IDs (with optional filters)
-      let sellersQb = supabase
+      // ── 1. Sellers ──────────────────────────────────────────────────────
+      let sq = supabase
         .from("sellers")
-        .select("id, business_name, city, slug, whatsapp_number, category, state")
+        .select("id, business_name, city, state, slug, whatsapp_number, category")
         .eq("verification_status", "approved")
-        .eq("is_blocked", false)
-        .eq("status", "active");
+        .eq("status", "active")
+        .eq("is_blocked", false);
 
-      if (selectedCity && selectedCity !== "All") sellersQb = sellersQb.eq("city", selectedCity);
-      if (activeState) sellersQb = sellersQb.eq("state", activeState);
+      // City filter — only when a real city is chosen (not "All" / empty)
+      const cityFilter = selectedCity && selectedCity !== "All" ? selectedCity : null;
+      if (cityFilter) sq = sq.eq("city", cityFilter);
+
+      if (activeState) sq = sq.eq("state", activeState);
+
       if (activeCat) {
-        const categoryName = (categories ?? []).find((c: any) => c.slug === activeCat)?.name;
-        if (categoryName) sellersQb = sellersQb.eq("category", categoryName);
+        const cat = (categories as any[]).find((c) => c.slug === activeCat);
+        if (cat?.name) sq = sq.eq("category", cat.name);
       }
 
-      const { data: sellersData, error: sellersError } = await sellersQb
+      const { data: sellersData, error: sellersErr } = await sq
         .limit(500)
-        .abortSignal(AbortSignal.timeout(8000));
-      if (sellersError) throw sellersError;
+        .abortSignal(AbortSignal.timeout(10_000));
 
-      const sellerMap = new Map((sellersData ?? []).map((s: any) => [s.id, s]));
+      if (sellersErr) {
+        console.error("[explore] sellers query failed:", sellersErr);
+        throw sellersErr;
+      }
+
+      const sellers = sellersData ?? [];
+      if (sellers.length === 0) return [];
+
+      const sellerMap = new Map<string, any>(sellers.map((s) => [s.id, s]));
       const sellerIds = [...sellerMap.keys()];
-      if (sellerIds.length === 0) return [];
 
-      // Step 2: get active products for those sellers
-      const { data: productsData, error: productsError } = await supabase
+      // ── 2. Products ─────────────────────────────────────────────────────
+      const { data: productsData, error: productsErr } = await supabase
         .from("products")
         .select("id, name, price, image_url, stock_status, is_featured, featured_order, seller_id")
         .eq("status", "active")
         .in("seller_id", sellerIds)
         .limit(200)
-        .abortSignal(AbortSignal.timeout(8000));
-      if (productsError) throw productsError;
+        .abortSignal(AbortSignal.timeout(10_000));
 
-      // Attach seller info
+      if (productsErr) {
+        console.error("[explore] products query failed:", productsErr);
+        throw productsErr;
+      }
+
       const rows = (productsData ?? []).map((p: any) => ({
         ...p,
         sellers: sellerMap.get(p.seller_id) ?? null,
       }));
 
-      // Featured first, then shuffle the rest
+      // Featured products first (ordered by featured_order), then shuffle the rest
       const featured = rows
         .filter((r) => r.is_featured)
         .sort((a, b) => (a.featured_order ?? 0) - (b.featured_order ?? 0));
@@ -129,7 +159,15 @@ function Explore() {
     },
   });
 
-  const visible = useMemo(() => (products ?? []).slice(0, shown), [products, shown]);
+  const visible = useMemo(() => products.slice(0, shown), [products, shown]);
+
+  const clearFilters = () => {
+    setActiveCat(null);
+    setActiveState(null);
+    setShown(PAGE_SIZE);
+  };
+
+  const hasFilters = !!(activeCat || activeState || (selectedCity && selectedCity !== "All"));
 
   const submitSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,7 +179,7 @@ function Explore() {
     <div className="min-h-screen bg-background">
       <TopBar />
 
-      {/* Sticky search */}
+      {/* Sticky search bar */}
       <div className="sticky top-16 z-30 border-b border-border-warm bg-background/95 backdrop-blur">
         <div className="mx-auto max-w-6xl px-5 py-3">
           <form onSubmit={submitSearch} className="flex items-center gap-2 rounded-full border border-border-warm bg-card px-3 py-1.5 shadow-warm">
@@ -153,7 +191,9 @@ function Explore() {
               className="min-h-[36px] flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               aria-label="Search marketplace"
             />
-            <Button type="submit" size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90">Search</Button>
+            <Button type="submit" size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
+              Search
+            </Button>
           </form>
         </div>
       </div>
@@ -162,7 +202,7 @@ function Explore() {
         <BackButton fallback="/" />
 
         {/* Trending sellers */}
-        {trending && trending.length > 0 && (
+        {trending.length > 0 && (
           <section className="mt-4">
             <div className="mb-3 flex items-baseline justify-between">
               <div>
@@ -172,17 +212,12 @@ function Explore() {
               <Link to="/sellers" className="text-xs font-semibold text-primary hover:underline">See all</Link>
             </div>
             <div className="grid grid-cols-3 gap-4 md:gap-6">
-              {(trending ?? []).map((s: any) => (
-                <Link
-                  key={s.id} to="/store/$slug" params={{ slug: s.slug }}
-                  className="group flex flex-col items-center text-center"
-                >
+              {trending.map((s: any) => (
+                <Link key={s.seller_id ?? s.id} to="/store/$slug" params={{ slug: s.slug }} className="group flex flex-col items-center text-center">
                   <div className="h-20 w-20 overflow-hidden rounded-full bg-surface-warm ring-2 ring-border-warm transition group-hover:ring-primary">
-                    {s.profile_photo_url ? (
-                      <img src={s.profile_photo_url} alt={s.business_name} className="h-full w-full object-cover" loading="lazy" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center font-display text-2xl text-primary">{s.business_name?.charAt(0)}</div>
-                    )}
+                    {s.profile_photo_url
+                      ? <img src={s.profile_photo_url} alt={s.business_name} className="h-full w-full object-cover" loading="lazy" />
+                      : <div className="flex h-full w-full items-center justify-center font-display text-2xl text-primary">{s.business_name?.charAt(0)}</div>}
                   </div>
                   <p className="mt-2 line-clamp-2 text-xs font-semibold text-espresso">{s.business_name}</p>
                   <p className="line-clamp-1 text-[10px] text-muted-foreground">{s.category}</p>
@@ -192,31 +227,33 @@ function Explore() {
           </section>
         )}
 
-        {/* State filter */}
-        <section className="mt-6">
-          <p className="mb-2 text-xs font-semibold text-muted-foreground">Filter by state</p>
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            <CatPill active={activeState === null} onClick={() => { setActiveState(null); setShown(PAGE_SIZE); }}>All states</CatPill>
-            {(states ?? []).map((s: string) => (
-              <CatPill key={s} active={activeState === s} onClick={() => { setActiveState(s); setShown(PAGE_SIZE); }}>
-                {s}
-              </CatPill>
-            ))}
-          </div>
-        </section>
+        {/* State filter pills */}
+        {states.length > 0 && (
+          <section className="mt-6">
+            <p className="mb-2 text-xs font-semibold text-muted-foreground">Filter by state</p>
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              <CatPill active={activeState === null} onClick={() => { setActiveState(null); setShown(PAGE_SIZE); }}>All states</CatPill>
+              {states.map((s) => (
+                <CatPill key={s} active={activeState === s} onClick={() => { setActiveState(s); setShown(PAGE_SIZE); }}>{s}</CatPill>
+              ))}
+            </div>
+          </section>
+        )}
 
-        {/* Category filter */}
-        <section className="mt-4">
-          <p className="mb-2 text-xs font-semibold text-muted-foreground">Filter by category</p>
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            <CatPill active={activeCat === null} onClick={() => { setActiveCat(null); setShown(PAGE_SIZE); }}>All</CatPill>
-            {(categories ?? []).map((c: any) => (
-              <CatPill key={c.id} active={activeCat === c.slug} onClick={() => { setActiveCat(c.slug); setShown(PAGE_SIZE); }} categoryName={c.name}>
-                {c.name}
-              </CatPill>
-            ))}
-          </div>
-        </section>
+        {/* Category filter pills */}
+        {(categories as any[]).length > 0 && (
+          <section className="mt-4">
+            <p className="mb-2 text-xs font-semibold text-muted-foreground">Filter by category</p>
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              <CatPill active={activeCat === null} onClick={() => { setActiveCat(null); setShown(PAGE_SIZE); }}>All</CatPill>
+              {(categories as any[]).map((c) => (
+                <CatPill key={c.id} active={activeCat === c.slug} onClick={() => { setActiveCat(c.slug); setShown(PAGE_SIZE); }} categoryName={c.name}>
+                  {c.name}
+                </CatPill>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Products grid */}
         <section className="mt-6">
@@ -224,26 +261,32 @@ function Explore() {
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {Array.from({ length: 8 }).map((_, i) => <ProductSkeleton key={i} />)}
             </div>
+          ) : error ? (
+            <div className="py-16 text-center">
+              <p className="text-sm text-muted-foreground">Something went wrong loading products.</p>
+              <button type="button" onClick={clearFilters} className="mt-3 text-xs font-semibold text-primary hover:underline">Try clearing filters</button>
+            </div>
           ) : visible.length === 0 ? (
             <div className="py-16 text-center">
-              <p className="text-sm text-muted-foreground">No products found.</p>
-              {(activeCat || activeState || (selectedCity && selectedCity !== "All")) && (
-                <button
-                  type="button"
-                  onClick={() => { setActiveCat(null); setActiveState(null); setShown(PAGE_SIZE); }}
-                  className="mt-3 text-xs font-semibold text-primary hover:underline"
-                >
+              <p className="text-sm text-muted-foreground">No products found{hasFilters ? " for this filter" : ""}.</p>
+              {hasFilters && (
+                <button type="button" onClick={clearFilters} className="mt-3 text-xs font-semibold text-primary hover:underline">
                   Clear filters
                 </button>
               )}
             </div>
           ) : (
             <>
+              <p className="mb-3 text-xs text-muted-foreground">{products.length} product{products.length !== 1 ? "s" : ""}</p>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {visible.map((p: any) => (
                   <ProductCard
-                    key={p.id} id={p.id} name={p.name} price={Number(p.price ?? 0)}
-                    image_url={p.image_url} stock_status={p.stock_status}
+                    key={p.id}
+                    id={p.id}
+                    name={p.name}
+                    price={Number(p.price ?? 0)}
+                    image_url={p.image_url}
+                    stock_status={p.stock_status}
                     seller_id={p.seller_id}
                     seller_name={p.sellers?.business_name}
                     seller_city={p.sellers?.city}
@@ -252,13 +295,9 @@ function Explore() {
                   />
                 ))}
               </div>
-              {(products?.length ?? 0) > shown && (
+              {products.length > shown && (
                 <div className="mt-8 text-center">
-                  <Button
-                    onClick={() => setShown((n) => n + PAGE_SIZE)}
-                    variant="outline"
-                    className="min-h-[44px] rounded-full border-border-warm bg-card px-8"
-                  >
+                  <Button onClick={() => setShown((n) => n + PAGE_SIZE)} variant="outline" className="min-h-[44px] rounded-full border-border-warm bg-card px-8">
                     Load more
                   </Button>
                 </div>
@@ -267,16 +306,22 @@ function Explore() {
           )}
         </section>
       </main>
+
       <Footer />
     </div>
   );
 }
 
-function CatPill({ active, onClick, children, categoryName }: { active: boolean; onClick: () => void; children: React.ReactNode; categoryName?: string }) {
+function CatPill({
+  active, onClick, children, categoryName,
+}: {
+  active: boolean; onClick: () => void; children: React.ReactNode; categoryName?: string;
+}) {
   const Icon = categoryName ? getCategoryIcon(categoryName) : null;
   return (
     <button
-      type="button" onClick={onClick}
+      type="button"
+      onClick={onClick}
       className={`min-h-[40px] shrink-0 rounded-full border px-3.5 py-1.5 flex items-center gap-2 text-xs font-semibold transition ${
         active
           ? "border-primary bg-primary text-primary-foreground"

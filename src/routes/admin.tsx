@@ -705,6 +705,19 @@ function AdminPage() {
     toast.success(!current ? "City activated" : "City deactivated");
   };
 
+  const toggleCityFeatured = async (id: string, current: boolean) => {
+    if (!current) {
+      const currentlyFeatured = cities.filter((c) => c.is_featured_home).length;
+      if (currentlyFeatured >= 5) {
+        toast.error("Maximum 5 cities can be featured on the homepage. Unfeature one first.");
+        return;
+      }
+    }
+    const { error } = await supabase.from("cities_of_business").update({ is_featured_home: !current }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    setCities((prev) => prev.map((c) => c.id === id ? { ...c, is_featured_home: !current } : c));
+    toast.success(!current ? "Added to homepage" : "Removed from homepage");
+
   const moveCity = async (id: string, dir: "up" | "down") => {
     const idx = cities.findIndex((c) => c.id === id);
     const swapIdx = dir === "up" ? idx - 1 : idx + 1;

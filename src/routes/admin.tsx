@@ -332,7 +332,7 @@ function AdminPage() {
     try {
       const { data, error } = await supabase
         .from("cities_of_business")
-        .select("id, name, state, slug, is_active, sort_order")
+        .select("id, name, state, slug, is_active, sort_order, is_featured_home")
         .order("sort_order")
         .abortSignal(ABORT());
       if (error) throw error;

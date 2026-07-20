@@ -48,7 +48,7 @@ function Explore() {
   });
 
   // ── States (from actual seller data so filter only shows populated states) ──
-  const { data: states = [] } = useQuery({
+  const { data: states = [] } = useQuery<string[]>({
     queryKey: ["explore-states"],
     queryFn: async () => {
       // First try cities_with_stats view (has seller counts)

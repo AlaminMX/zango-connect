@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as CitiesRouteImport } from './routes/cities'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as McpRouteImport } from './routes/mcp'
@@ -55,6 +56,11 @@ const AdminRoute = AdminRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CitiesRoute = CitiesRouteImport.update({
+  id: '/cities',
+  path: '/cities',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -181,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
+  '/cities': typeof CitiesRoute
   '/dashboard': typeof DashboardRoute
   '/explore': typeof ExploreRoute
   '/mcp': typeof McpRoute
@@ -210,6 +217,7 @@ export interface FileRoutesByTo {
   '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
+  '/cities': typeof CitiesRoute
   '/dashboard': typeof DashboardRoute
   '/explore': typeof ExploreRoute
   '/mcp': typeof McpRoute
@@ -240,6 +248,7 @@ export interface FileRoutesById {
   '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
+  '/cities': typeof CitiesRoute
   '/dashboard': typeof DashboardRoute
   '/explore': typeof ExploreRoute
   '/mcp': typeof McpRoute
@@ -271,6 +280,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/admin'
     | '/auth'
+    | '/cities'
     | '/dashboard'
     | '/explore'
     | '/mcp'
@@ -300,6 +310,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/admin'
     | '/auth'
+    | '/cities'
     | '/dashboard'
     | '/explore'
     | '/mcp'
@@ -329,6 +340,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/admin'
     | '/auth'
+    | '/cities'
     | '/dashboard'
     | '/explore'
     | '/mcp'
@@ -359,6 +371,7 @@ export interface RootRouteChildren {
   AccountRoute: typeof AccountRoute
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
+  CitiesRoute: typeof CitiesRoute
   DashboardRoute: typeof DashboardRoute
   ExploreRoute: typeof ExploreRoute
   McpRoute: typeof McpRoute
@@ -412,6 +425,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cities': {
+      id: '/cities'
+      path: '/cities'
+      fullPath: '/cities'
+      preLoaderRoute: typeof CitiesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -583,6 +603,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountRoute: AccountRoute,
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
+  CitiesRoute: CitiesRoute,
   DashboardRoute: DashboardRoute,
   ExploreRoute: ExploreRoute,
   McpRoute: McpRoute,

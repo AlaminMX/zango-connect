@@ -87,7 +87,7 @@ interface ProductRow {
 interface Section    { id: string; key: string; title: string; subtitle: string | null; content: string | null; sort_order: number; is_visible: boolean; }
 interface VouchRow   { seller_id: string; seller_name: string; vouch_count: number; }
 interface VoucherDetail { voucher_seller_id: string; business_name: string; created_at: string; }
-interface CityRow    { id: string; name: string; state: string; slug: string; is_active: boolean; sort_order: number; is_featured_home: boolean; }
+interface CityRow    { id: string; name: string; state: string; slug: string; is_active: boolean; sort_order: number; }
 
 function slugify(s: string) {
   return s.toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
@@ -332,7 +332,7 @@ function AdminPage() {
     try {
       const { data, error } = await supabase
         .from("cities_of_business")
-        .select("id, name, state, slug, is_active, sort_order, is_featured_home")
+        .select("id, name, state, slug, is_active, sort_order")
         .order("sort_order")
         .abortSignal(ABORT());
       if (error) throw error;
@@ -489,9 +489,29 @@ function AdminPage() {
 
   // ── Seller delete ──
   const deleteSeller = async (id: string, name: string) => {
-    if (!confirm(`PERMANENTLY DELETE seller "${name}"?\n\nThis will remove their profile, all products, and all related data. This cannot be undone.`)) return;
+    if (!confirm(`PERMANENTLY DELETE seller "${name}"?\n\nThis will remove their profile, all products, and their login account. This cannot be undone.`)) return;
+
+    // Get the seller's user_id before deleting
+    const { data: sellerRow } = await supabase
+      .from("sellers")
+      .select("user_id")
+      .eq("id", id)
+      .single();
+
+    // Delete the seller row (cascades to products etc.)
     const { error } = await supabase.from("sellers").delete().eq("id", id);
     if (error) { toast.error(error.message); return; }
+
+    // Also hard-delete the auth user so the email can be reused
+    if (sellerRow?.user_id) {
+      try {
+        await supabase.rpc("admin_delete_user", { target_user_id: sellerRow.user_id });
+      } catch (e) {
+        console.warn("[admin] auth user deletion failed:", e);
+        toast.warning("Seller data deleted, but auth account may still exist. Run the SQL cleanup if needed.");
+      }
+    }
+
     setSellers((prev) => prev.filter((s) => s.id !== id));
     toast.success("Seller permanently deleted");
   };
@@ -704,22 +724,6 @@ function AdminPage() {
     setCities((prev) => prev.map((c) => c.id === id ? { ...c, is_active: !current } : c));
     toast.success(!current ? "City activated" : "City deactivated");
   };
-
-  const toggleCityFeatured = async (id: string, current: boolean) => {
-    if (!current) {
-      const currentlyFeatured = cities.filter((c) => c.is_featured_home).length;
-      if (currentlyFeatured >= 5) {
-        toast.error("Maximum 5 cities can be featured on the homepage. Unfeature one first.");
-        return;
-      }
-    }
-    const { error } = await supabase.from("cities_of_business").update({ is_featured_home: !current }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    setCities((prev) => prev.map((c) => c.id === id ? { ...c, is_featured_home: !current } : c));
-    toast.success(!current ? "Added to homepage" : "Removed from homepage");
-  };
-
-
 
   const moveCity = async (id: string, dir: "up" | "down") => {
     const idx = cities.findIndex((c) => c.id === id);
@@ -1225,30 +1229,17 @@ function AdminPage() {
                       <MapPin className="h-4 w-4 text-sage-deep" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex items-center gap-2">
                         <p className="font-medium">{c.name}</p>
                         {!c.is_active && (
                           <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                             Inactive
                           </span>
                         )}
-                        {c.is_featured_home && (
-                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
-                            Homepage
-                          </span>
-                        )}
                       </div>
                       <p className="text-xs text-muted-foreground">{c.state} · /{c.slug}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => toggleCityFeatured(c.id, c.is_featured_home)}
-                        title={c.is_featured_home ? "Remove from homepage" : "Feature on homepage (max 5)"}
-                        className={`rounded-full p-1.5 transition ${c.is_featured_home ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted"}`}
-                      >
-                        {c.is_featured_home ? <Star className="h-4 w-4 fill-current" /> : <StarOff className="h-4 w-4" />}
-                      </button>
                       <Switch
                         checked={c.is_active}
                         onCheckedChange={() => toggleCityActive(c.id, c.is_active)}

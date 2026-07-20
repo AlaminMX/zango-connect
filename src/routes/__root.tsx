@@ -51,7 +51,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "ZANGO — Your Business, Discovered." },
       { name: "description", content: "The marketplace built for northern Nigeria's entrepreneurs. Discover sellers, order on WhatsApp." },
-      { property: "og:site_name", content: "Sutura Market" },
+      { property: "og:site_name", content: "ZANGO" },
       { property: "og:title", content: "ZANGO — Your Business, Discovered." },
       { property: "og:description", content: "The marketplace built for northern Nigeria's entrepreneurs. Discover sellers, order on WhatsApp." },
       { property: "og:type", content: "website" },
@@ -67,7 +67,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Fira+Sans:wght@300;400;500;600;700&display=swap" },
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
+      { rel: "icon", type: "image/png", href: "/zango-logo.png" },
     ],
     scripts: [
       {
@@ -75,7 +75,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "WebSite",
-          name: "Sutura Market",
+          name: "ZANGO",
           url: "https://sutura-connect.lovable.app/",
           description: "The marketplace built for northern Nigeria's women entrepreneurs.",
           potentialAction: {
@@ -90,7 +90,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "Organization",
-          name: "Sutura Market",
+          name: "ZANGO",
           url: "https://sutura-connect.lovable.app/",
           description: "WhatsApp-first marketplace for northern Nigeria's women entrepreneurs.",
         }),

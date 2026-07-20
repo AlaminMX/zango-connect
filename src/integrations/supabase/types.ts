@@ -122,6 +122,38 @@ export type Database = {
         }
         Relationships: []
       }
+      featured_products_admin: {
+        Row: {
+          added_at: string | null
+          added_by: string
+          display_order: number
+          id: string
+          product_id: string
+        }
+        Insert: {
+          added_at?: string | null
+          added_by: string
+          display_order?: number
+          id?: string
+          product_id: string
+        }
+        Update: {
+          added_at?: string | null
+          added_by?: string
+          display_order?: number
+          id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "featured_products_admin_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       homepage_sections: {
         Row: {
           body_en: string | null
@@ -180,6 +212,7 @@ export type Database = {
         Row: {
           blocked_at: string | null
           blocked_reason: string | null
+          category: string | null
           created_at: string
           description: string | null
           featured_order: number
@@ -197,6 +230,7 @@ export type Database = {
         Insert: {
           blocked_at?: string | null
           blocked_reason?: string | null
+          category?: string | null
           created_at?: string
           description?: string | null
           featured_order?: number
@@ -214,6 +248,7 @@ export type Database = {
         Update: {
           blocked_at?: string | null
           blocked_reason?: string | null
+          category?: string | null
           created_at?: string
           description?: string | null
           featured_order?: number
@@ -348,6 +383,7 @@ export type Database = {
           rating: number
           rejection_reason: string | null
           slug: string
+          state: string | null
           status: string
           subscription_expires_at: string | null
           user_id: string
@@ -376,6 +412,7 @@ export type Database = {
           rating?: number
           rejection_reason?: string | null
           slug: string
+          state?: string | null
           status?: string
           subscription_expires_at?: string | null
           user_id: string
@@ -404,6 +441,7 @@ export type Database = {
           rating?: number
           rejection_reason?: string | null
           slug?: string
+          state?: string | null
           status?: string
           subscription_expires_at?: string | null
           user_id?: string
@@ -426,6 +464,38 @@ export type Database = {
             columns: ["city_id"]
             isOneToOne: false
             referencedRelation: "cities_with_stats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trending_sellers_admin: {
+        Row: {
+          added_at: string | null
+          added_by: string
+          display_order: number
+          id: string
+          seller_id: string
+        }
+        Insert: {
+          added_at?: string | null
+          added_by: string
+          display_order?: number
+          id?: string
+          seller_id: string
+        }
+        Update: {
+          added_at?: string | null
+          added_by?: string
+          display_order?: number
+          id?: string
+          seller_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trending_sellers_admin_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: true
+            referencedRelation: "sellers"
             referencedColumns: ["id"]
           },
         ]

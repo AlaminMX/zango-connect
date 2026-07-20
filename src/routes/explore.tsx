@@ -48,9 +48,9 @@ function Explore() {
   });
 
   // ── States (from actual seller data so filter only shows populated states) ──
-  const { data: states = [] } = useQuery({
+  const { data: states = [] } = useQuery<string[]>({
     queryKey: ["explore-states"],
-    queryFn: async () => {
+    queryFn: async (): Promise<string[]> => {
       // First try cities_with_stats view (has seller counts)
       const { data: cityData } = await (supabase as any)
         .from("cities_with_stats")
@@ -59,7 +59,7 @@ function Explore() {
       if (cityData && cityData.length > 0) {
         // Only include states that have at least one seller
         const withSellers = cityData.filter((c: any) => (c.sellers_count ?? 0) > 0);
-        const stateSet = [...new Set(withSellers.map((c: any) => c.state as string))];
+        const stateSet: string[] = [...new Set<string>(withSellers.map((c: any) => c.state as string))];
         if (stateSet.length > 0) return stateSet.sort();
       }
       // Fallback: distinct states from sellers directly
@@ -71,7 +71,10 @@ function Explore() {
         .eq("is_blocked", false)
         .not("state", "is", null)
         .abortSignal(AbortSignal.timeout(8000));
-      return [...new Set((sellerData ?? []).map((s: any) => s.state as string).filter(Boolean))].sort();
+      const statesFromSellers: string[] = (sellerData ?? [])
+        .map((s: any) => s.state as string)
+        .filter((s: string) => Boolean(s));
+      return [...new Set(statesFromSellers)].sort();
     },
     staleTime: 10 * 60_000,
   });

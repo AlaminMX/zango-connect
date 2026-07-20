@@ -87,7 +87,7 @@ interface ProductRow {
 interface Section    { id: string; key: string; title: string; subtitle: string | null; content: string | null; sort_order: number; is_visible: boolean; }
 interface VouchRow   { seller_id: string; seller_name: string; vouch_count: number; }
 interface VoucherDetail { voucher_seller_id: string; business_name: string; created_at: string; }
-interface CityRow    { id: string; name: string; state: string; slug: string; is_active: boolean; sort_order: number; }
+interface CityRow    { id: string; name: string; state: string; slug: string; is_active: boolean; sort_order: number; is_featured_home: boolean; }
 
 function slugify(s: string) {
   return s.toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");

@@ -59,7 +59,7 @@ function Explore() {
       if (cityData && cityData.length > 0) {
         // Only include states that have at least one seller
         const withSellers = cityData.filter((c: any) => (c.sellers_count ?? 0) > 0);
-        const stateSet: string[] = [...new Set(withSellers.map((c: any) => c.state as string))];
+        const stateSet: string[] = [...new Set<string>(withSellers.map((c: any) => c.state as string))];
         if (stateSet.length > 0) return stateSet.sort();
       }
       // Fallback: distinct states from sellers directly

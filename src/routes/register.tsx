@@ -384,7 +384,7 @@ function Register() {
 
               {/* State → City two-level selector */}
               <div>
-                <Label>State<Req /></Label>
+                <Label>State of Business<Req /></Label>
                 <Select
                   value={selectedState}
                   onValueChange={(v) => {
@@ -406,7 +406,7 @@ function Register() {
 
               {selectedState && (
                 <div>
-                  <Label>City<Req /></Label>
+                  <Label>City of Business<Req /></Label>
                   <Select
                     value={city}
                     onValueChange={(v) => {

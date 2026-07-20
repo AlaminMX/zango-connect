@@ -38,7 +38,7 @@ import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCity } from "@/lib/cityContext";
 import { validateNigerianPhone } from "@/lib/whatsapp";
-import { ShareCardDialog } from "@/components/ShareCardDialog";
+import { VendorShareCardDialog } from "@/components/VendorShareCardDialog";
 
 function prettifySlug(slug: string) {
   return slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
@@ -535,7 +535,7 @@ function StorePage() {
                   className="rounded-full border-border-warm text-sage-deep hover:border-sage/60 hover:bg-sage/10"
                   onClick={() => setShareCardOpen(true)}
                 >
-                  <CreditCard className="mr-1.5 h-4 w-4" /> Generate card
+                  <CreditCard className="mr-1.5 h-4 w-4" /> Generate Share Card
                 </Button>
               </>
             ) : (
@@ -721,7 +721,12 @@ function StorePage() {
       </Dialog>
 
       {isOwner && (
-        <ShareCardDialog seller={seller} open={shareCardOpen} onOpenChange={setShareCardOpen} />
+        <VendorShareCardDialog
+          seller={seller}
+          productCount={activeProducts.length}
+          open={shareCardOpen}
+          onOpenChange={setShareCardOpen}
+        />
       )}
     </div>
   );

@@ -240,7 +240,7 @@ export function ShareCardDialog({ seller, open, onOpenChange }: ShareCardDialogP
 
             {/* Branding watermark */}
             <div className="relative z-10 mt-4 flex items-center justify-center gap-1.5 border-t pt-3" style={{ borderColor: "rgba(255,255,255,0.25)" }}>
-              <img src="/sutura-logo.png" alt="" className="h-5 w-5 object-contain" />
+              <img src="/zango-logo.png" alt="" className="h-5 w-5 object-contain" />
               <span className="text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: t.text, opacity: 0.85 }}>
                 Sutura Market
               </span>

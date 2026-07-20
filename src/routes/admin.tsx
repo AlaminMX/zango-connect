@@ -1225,17 +1225,30 @@ function AdminPage() {
                       <MapPin className="h-4 w-4 text-sage-deep" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <p className="font-medium">{c.name}</p>
                         {!c.is_active && (
                           <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                             Inactive
                           </span>
                         )}
+                        {c.is_featured_home && (
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                            Homepage
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground">{c.state} · /{c.slug}</p>
                     </div>
                     <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleCityFeatured(c.id, c.is_featured_home)}
+                        title={c.is_featured_home ? "Remove from homepage" : "Feature on homepage (max 5)"}
+                        className={`rounded-full p-1.5 transition ${c.is_featured_home ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted"}`}
+                      >
+                        {c.is_featured_home ? <Star className="h-4 w-4 fill-current" /> : <StarOff className="h-4 w-4" />}
+                      </button>
                       <Switch
                         checked={c.is_active}
                         onCheckedChange={() => toggleCityActive(c.id, c.is_active)}

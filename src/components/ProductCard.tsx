@@ -117,8 +117,8 @@ function ProductCardContent(p: ProductCardProps) {
             ) : p.seller_name}
             {p.seller_name && p.seller_city ? " · " : ""}
             {p.seller_city && (
-              <span className="inline-flex items-center rounded-full bg-sage/15 px-1.5 text-[10px] font-medium text-sage-deep">
-                {p.seller_city}
+              <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                📍 {p.seller_city}
               </span>
             )}
           </p>

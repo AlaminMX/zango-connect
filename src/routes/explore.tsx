@@ -50,7 +50,7 @@ function Explore() {
   // ── States (from actual seller data so filter only shows populated states) ──
   const { data: states = [] } = useQuery<string[]>({
     queryKey: ["explore-states"],
-    queryFn: async () => {
+    queryFn: async (): Promise<string[]> => {
       // First try cities_with_stats view (has seller counts)
       const { data: cityData } = await (supabase as any)
         .from("cities_with_stats")

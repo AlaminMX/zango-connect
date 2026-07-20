@@ -18,7 +18,7 @@ export function TopBar() {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-5">
         <Link to="/" className="flex shrink-0 items-center gap-2.5">
           <img
-            src="/sutura-logo.png"
+            src="/zango-logo.png"
             alt="ZANGO"
             width={56}
             height={56}

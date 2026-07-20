@@ -35,7 +35,7 @@ export function WelcomeModal() {
           <button onClick={dismiss} className="rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition"><X className="h-4 w-4" /></button>
         </div>
         <div className="text-center mb-5">
-          <img src="/sutura-logo.png" alt="" className="mx-auto h-16 w-16 object-contain mb-3" />
+          <img src="/zango-logo.png" alt="" className="mx-auto h-16 w-16 object-contain mb-3" />
           <h2 className="font-serif text-2xl leading-tight">Welcome to ZANGO</h2>
           <p className="mt-1.5 text-sm text-muted-foreground">Kasuwancin Arewa — Northern Nigeria's community marketplace.<br/>What brings you here today?</p>
         </div>

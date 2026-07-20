@@ -717,6 +717,9 @@ function AdminPage() {
     if (error) { toast.error(error.message); return; }
     setCities((prev) => prev.map((c) => c.id === id ? { ...c, is_featured_home: !current } : c));
     toast.success(!current ? "Added to homepage" : "Removed from homepage");
+  };
+
+
 
   const moveCity = async (id: string, dir: "up" | "down") => {
     const idx = cities.findIndex((c) => c.id === id);

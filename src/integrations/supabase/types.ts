@@ -94,6 +94,7 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          is_featured_home: boolean
           name: string
           slug: string
           sort_order: number
@@ -104,6 +105,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          is_featured_home?: boolean
           name: string
           slug: string
           sort_order?: number
@@ -114,6 +116,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          is_featured_home?: boolean
           name?: string
           slug?: string
           sort_order?: number
@@ -615,6 +618,7 @@ export type Database = {
           created_at: string | null
           id: string | null
           is_active: boolean | null
+          is_featured_home: boolean | null
           name: string | null
           products_added_30d: number | null
           products_count: number | null
@@ -629,6 +633,7 @@ export type Database = {
       }
     }
     Functions: {
+      ensure_city: { Args: { _name: string; _state: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -636,6 +641,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      slugify: { Args: { v: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "user"

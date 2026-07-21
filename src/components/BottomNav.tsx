@@ -1,170 +1,104 @@
 /**
- * BottomNav — context-aware bottom navigation.
- *   • Buyer (no seller profile): Home / Explore / Wishlist
- *   • Seller (approved or pending): Home / Explore / + (floating) / My Products / My Store
- *   • Admin: Home / Admin / Sign Out
+ * NavSidebar — left-side navigation drawer for sellers.
+ * Replaces the wishlist bookmark icon in TopBar (for sellers only) so sellers
+ * get one tap to everything: home, explore, their store, products, wishlist,
+ * and sign out. Buyers never see this — they keep the bookmark icon as-is.
  *
- * Pulls seller state from useSellerProfile (shared query) — never fires its own
- * supabase call, so the nav never flashes the wrong shape on auth transitions.
+ * NOTE: "My store" wasn't explicitly on the requested list (Home / Explore /
+ * Products / Wishlist / Sign out) — added it because without it there's no
+ * quick way back to your own store from anywhere except the bottom nav's
+ * "My store" tab, which felt like a gap. Trivial to remove if unwanted.
  */
-import { useState } from "react";
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Home, Compass, Bookmark, Plus, Store, LayoutGrid, Shield, LogOut } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Home, Compass, Store, LayoutGrid, Bookmark, LogOut } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/lib/authContext";
 import { useSellerProfile } from "@/lib/sellerProfile";
 import { useWishlistCount } from "@/lib/wishlist";
 import { canBypassLaunchGate } from "@/lib/launchGate";
-import { ProductSheet } from "@/components/ProductSheet";
 import { toast } from "sonner";
 
-const tabBase =
-  "flex flex-1 min-h-[44px] flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors duration-100";
+interface NavSidebarProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
 
-export function BottomNav() {
-  const { isReady, isAdmin, signOut } = useAuth();
+export function NavSidebar({ open, onOpenChange }: NavSidebarProps) {
+  const { isAdmin, signOut } = useAuth();
   const { seller } = useSellerProfile();
   const wishCount = useWishlistCount();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const nav = useNavigate();
-  const [sheetOpen, setSheetOpen] = useState(false);
   const bypass = canBypassLaunchGate(isAdmin, seller?.business_name);
-  const gateClosed = !bypass;
 
-  // Hide entirely on the pre-launch page itself
-  if (pathname === "/coming-soon") return null;
-
-  if (!isReady) return <div className="h-16" aria-hidden />;
-
-  const active = (path: string) => pathname === path || pathname.startsWith(path + "/");
-  const cls = (path: string) =>
-    `${tabBase} ${active(path) ? "text-primary" : "text-muted-foreground hover:text-foreground"}`;
+  const close = () => onOpenChange(false);
 
   const handleSignOut = async () => {
     try {
       await signOut();
       toast.success("Signed out");
+      close();
       nav({ to: "/", replace: true });
     } catch (e: any) {
       toast.error(e?.message ?? "Sign out failed");
     }
   };
 
-  // ── ADMIN ──
-  if (isAdmin) {
-    return (
-      <>
-        <div className="h-16" aria-hidden />
-        <nav className="fixed bottom-0 inset-x-0 z-50 flex h-16 items-stretch border-t border-border-warm bg-card/95 backdrop-blur-md shadow-[0_-2px_12px_rgba(62,39,35,0.08)]">
-          <Link to="/" className={cls("/")}>
-            <Home className="h-5 w-5" /> Home
-          </Link>
-          <Link to="/admin" className={cls("/admin")}>
-            <Shield className="h-5 w-5" /> Admin
-          </Link>
-          <button
-            type="button"
-            onClick={handleSignOut}
-            className={`${tabBase} text-muted-foreground hover:text-destructive`}
-          >
-            <LogOut className="h-5 w-5" /> Sign out
-          </button>
-        </nav>
-      </>
-    );
-  }
+  const itemCls =
+    "flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium text-espresso transition hover:bg-surface-warm active:scale-[0.98]";
 
-  // ── SELLER ──
-  if (seller) {
-    const storeHref = `/store/${seller.slug}`;
-    if (gateClosed) {
-      return (
-        <>
-          <div className="h-16" aria-hidden />
-          <nav className="fixed bottom-0 inset-x-0 z-50 flex h-16 items-stretch border-t border-border-warm bg-card/95 backdrop-blur-md shadow-[0_-2px_12px_rgba(62,39,35,0.08)]">
-            <Link to="/dashboard" className={cls("/dashboard")}>
-              <Home className="h-5 w-5" /> Dashboard
-            </Link>
-            <Link to="/seller/products" className={cls("/seller/products")}>
-              <LayoutGrid className="h-5 w-5" /> Products
-            </Link>
-            <Link to="/account" className={cls("/account")}>
-              <Store className="h-5 w-5" /> Account
-            </Link>
-          </nav>
-        </>
-      );
-    }
-    return (
-      <>
-        <div className="h-16" aria-hidden />
-        <nav className="fixed bottom-0 inset-x-0 z-50 flex h-16 items-stretch border-t border-border-warm bg-card/95 backdrop-blur-md shadow-[0_-2px_12px_rgba(62,39,35,0.08)]">
-          <Link to="/" className={cls("/")}>
-            <Home className="h-5 w-5" /> Home
-          </Link>
-          <Link to="/explore" className={cls("/explore")}>
-            <Compass className="h-5 w-5" /> Explore
-          </Link>
-
-          <div className="flex flex-1 items-center justify-center">
-            <button
-              type="button"
-              onClick={() => {
-                if (seller.verification_status !== "approved") {
-                  toast.info("Your store is under review. You can add products once approved.");
-                  return;
-                }
-                setSheetOpen(true);
-              }}
-              aria-label="Add product"
-              className="relative -top-5 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-warm-lg transition active:scale-95 hover:bg-primary/90"
-            >
-              <Plus className="h-7 w-7" />
-            </button>
-          </div>
-
-          <Link to="/seller/products" className={cls("/seller/products")}>
-            <LayoutGrid className="h-5 w-5" /> Products
-          </Link>
-          <Link to={storeHref} className={cls(storeHref)}>
-            <Store className="h-5 w-5" /> My store
-          </Link>
-        </nav>
-
-        <ProductSheet
-          open={sheetOpen}
-          onOpenChange={setSheetOpen}
-          mode="add"
-          sellerId={seller.id}
-          sellerSlug={seller.slug}
-        />
-      </>
-    );
-  }
-
-  // ── BUYER ──
-  if (gateClosed) return null;
   return (
-    <>
-      <div className="h-16" aria-hidden />
-      <nav className="fixed bottom-0 inset-x-0 z-50 flex h-16 items-stretch border-t border-border-warm bg-card/95 backdrop-blur-md shadow-[0_-2px_12px_rgba(62,39,35,0.08)]">
-        <Link to="/" className={cls("/")}>
-          <Home className="h-5 w-5" /> Home
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="left" className="flex w-72 flex-col gap-1 p-4">
+        <SheetHeader className="mb-2 text-left">
+          <SheetTitle className="font-display text-xl text-espresso">Menu</SheetTitle>
+        </SheetHeader>
+
+        {bypass && (
+          <>
+            <Link to="/" onClick={close} className={itemCls}>
+              <Home className="h-5 w-5 text-primary" /> Home
+            </Link>
+            <Link to="/explore" onClick={close} className={itemCls}>
+              <Compass className="h-5 w-5 text-primary" /> Explore
+            </Link>
+          </>
+        )}
+        {seller && bypass && (
+          <Link
+            to="/store/$slug"
+            params={{ slug: seller.slug }}
+            onClick={close}
+            className={itemCls}
+          >
+            <Store className="h-5 w-5 text-primary" /> My store
+          </Link>
+        )}
+        <Link to="/seller/products" onClick={close} className={itemCls}>
+          <LayoutGrid className="h-5 w-5 text-primary" /> Products
         </Link>
-        <Link to="/explore" className={cls("/explore")}>
-          <Compass className="h-5 w-5" /> Explore
-        </Link>
-        <Link to="/wishlist" className={`${cls("/wishlist")} relative`}>
-          <span className="relative">
-            <Bookmark className={`h-5 w-5 ${wishCount > 0 ? "fill-primary text-primary" : ""}`} />
+        {bypass && (
+          <Link to="/wishlist" onClick={close} className={`${itemCls} justify-between`}>
+            <span className="flex items-center gap-3">
+              <Bookmark className="h-5 w-5 text-primary" /> Wishlist
+            </span>
             {wishCount > 0 && (
-              <span className="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold text-primary-foreground">
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
                 {wishCount > 99 ? "99+" : wishCount}
               </span>
             )}
-          </span>
-          Wishlist
-        </Link>
-      </nav>
-    </>
+          </Link>
+        )}
+
+        <div className="my-2 h-px bg-border-warm" />
+
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className={`${itemCls} text-destructive hover:bg-destructive/10`}
+        >
+          <LogOut className="h-5 w-5" /> Sign out
+        </button>
+      </SheetContent>
+    </Sheet>
   );
 }

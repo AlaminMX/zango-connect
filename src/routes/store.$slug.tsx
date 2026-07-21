@@ -45,7 +45,7 @@ function prettifySlug(slug: string) {
 }
 
 export const Route = createFileRoute("/store/$slug")({
-  beforeLoad: async () => (await import("@/lib/launchGate")).assertLaunchGate(),
+  beforeLoad: async (ctx) => (await import("@/lib/launchGate")).assertLaunchGate(ctx),
   component: StorePage,
   head: ({ params }) => {
     const name = prettifySlug(params.slug);

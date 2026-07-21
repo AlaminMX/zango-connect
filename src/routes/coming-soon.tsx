@@ -1,16 +1,35 @@
 /**
  * /coming-soon — pre-launch landing page shown to buyers (and guests) while
- * `MARKETPLACE_OPEN` is false. Sellers can still reach their dashboard, admin,
- * and auth flows; those routes are explicitly not gated.
+ * the marketplace is closed (see `isMarketplaceOpen` in launchGate.ts).
+ * Sellers can still reach their dashboard, admin, and auth flows; those
+ * routes are explicitly not gated.
  *
  * Not styled as an error page — this is an invitation.
  */
 import { useEffect, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { LayoutDashboard, Package, Sparkles } from "lucide-react";
-import { LAUNCH_DATE } from "@/lib/launchGate";
+import { LAUNCH_DATE, isMarketplaceOpen, canBypassLaunchGate } from "@/lib/launchGate";
+import { useAuth } from "@/lib/authContext";
+import { useSellerProfile } from "@/lib/sellerProfile";
+
+/**
+ * Only ever an internal path — never hand this straight to navigation.
+ * `from` arrives as a raw query string value, so it's attacker-controlled;
+ * reject anything that isn't a same-origin path to rule out an open redirect
+ * (`?from=https://evil.com`, `?from=//evil.com`).
+ */
+function safeFrom(from: string | undefined): string {
+  if (!from) return "/";
+  if (!from.startsWith("/") || from.startsWith("//") || from.includes("://")) return "/";
+  if (from.startsWith("/coming-soon")) return "/"; // never bounce back into a loop
+  return from;
+}
 
 export const Route = createFileRoute("/coming-soon")({
+  validateSearch: (search: Record<string, unknown>): { from?: string } => ({
+    from: typeof search.from === "string" ? search.from : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "ZANGO — Opening Soon" },
@@ -25,7 +44,13 @@ export const Route = createFileRoute("/coming-soon")({
   component: ComingSoonPage,
 });
 
-interface Remaining { d: number; h: number; m: number; s: number; done: boolean }
+interface Remaining {
+  d: number;
+  h: number;
+  m: number;
+  s: number;
+  done: boolean;
+}
 
 function computeRemaining(target: number): Remaining {
   const diff = target - Date.now();
@@ -40,11 +65,45 @@ function computeRemaining(target: number): Remaining {
 function ComingSoonPage() {
   const target = new Date(LAUNCH_DATE).getTime();
   const [t, setT] = useState<Remaining>(() => computeRemaining(target));
+  const nav = useNavigate();
+  const { from: rawFrom } = Route.useSearch();
+  const dest = safeFrom(rawFrom);
+
+  const { isReady, isAdmin } = useAuth();
+  const { seller, loading: sellerLoading } = useSellerProfile();
 
   useEffect(() => {
-    const id = setInterval(() => setT(computeRemaining(target)), 1000);
+    // If someone lands here after launch has already passed, don't even
+    // flash the countdown — bounce straight to the (now open) destination.
+    if (isMarketplaceOpen()) {
+      nav({ href: dest, replace: true });
+      return;
+    }
+    const id = setInterval(() => {
+      const remaining = computeRemaining(target);
+      setT(remaining);
+      // Countdown hit zero while the page was open — hide it automatically,
+      // no manual refresh required.
+      if (remaining.done) {
+        clearInterval(id);
+        nav({ href: dest, replace: true });
+      }
+    }, 1000);
     return () => clearInterval(id);
-  }, [target]);
+  }, [target, nav, dest]);
+
+  useEffect(() => {
+    // SSR fails closed and can't tell admins/Nexel apart from anyone else
+    // (see assertLaunchGate) — every gated request lands here first. Once
+    // the client has a real session, self-correct straight back to `dest`
+    // for anyone who was actually allowed through. Wait for both auth and
+    // the seller lookup to settle so an allowed vendor isn't judged before
+    // their business_name has loaded.
+    if (!isReady || sellerLoading) return;
+    if (canBypassLaunchGate(isAdmin, seller?.business_name)) {
+      nav({ href: dest, replace: true });
+    }
+  }, [isReady, isAdmin, sellerLoading, seller, dest, nav]);
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#F8EDD9] via-[#F1DBB4] to-[#E8B87A]">
@@ -61,15 +120,19 @@ function ComingSoonPage() {
           </div>
 
           <h1 className="font-serif text-4xl leading-[1.08] text-espresso sm:text-5xl md:text-6xl">
-            The Market Gates<br className="hidden sm:block" /> Are Almost Open
+            The Gates Are
+            <br className="hidden sm:block" /> About To Open
           </h1>
 
+          <p className="mx-auto mt-4 max-w-xl text-lg font-medium leading-snug text-espresso/90 sm:text-xl">
+            Your store is ready.
+            <br className="hidden sm:block" /> The marketplace opens soon.
+          </p>
+
           <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-espresso/80 sm:text-lg">
-            Welcome to Zango. Your store has been created successfully and you're
-            officially one of our Founding Vendors. You can continue uploading
-            products, editing your store, and preparing for launch while we
-            finish opening the marketplace. Customers will begin discovering
-            your store in 5 days.
+            You're officially one of Zango's Founding Vendors. You can continue uploading products,
+            editing your shop and preparing your business while we get everything ready for launch.
+            When the countdown reaches zero, customers will be able to discover your products.
           </p>
 
           {/* Countdown */}

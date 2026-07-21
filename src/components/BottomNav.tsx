@@ -13,7 +13,7 @@ import { Home, Compass, Bookmark, Plus, Store, LayoutGrid, Shield, LogOut } from
 import { useAuth } from "@/lib/authContext";
 import { useSellerProfile } from "@/lib/sellerProfile";
 import { useWishlistCount } from "@/lib/wishlist";
-import { canBypassLaunchGate, MARKETPLACE_OPEN } from "@/lib/launchGate";
+import { canBypassLaunchGate } from "@/lib/launchGate";
 import { ProductSheet } from "@/components/ProductSheet";
 import { toast } from "sonner";
 
@@ -21,14 +21,14 @@ const tabBase =
   "flex flex-1 min-h-[44px] flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors duration-100";
 
 export function BottomNav() {
-  const { user, isReady, isAdmin, signOut } = useAuth();
+  const { isReady, isAdmin, signOut } = useAuth();
   const { seller } = useSellerProfile();
   const wishCount = useWishlistCount();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const nav = useNavigate();
   const [sheetOpen, setSheetOpen] = useState(false);
-  const bypass = canBypassLaunchGate(user?.id, isAdmin);
-  const gateClosed = !MARKETPLACE_OPEN && !bypass;
+  const bypass = canBypassLaunchGate(isAdmin, seller?.business_name);
+  const gateClosed = !bypass;
 
   // Hide entirely on the pre-launch page itself
   if (pathname === "/coming-soon") return null;
@@ -40,8 +40,13 @@ export function BottomNav() {
     `${tabBase} ${active(path) ? "text-primary" : "text-muted-foreground hover:text-foreground"}`;
 
   const handleSignOut = async () => {
-    try { await signOut(); toast.success("Signed out"); nav({ to: "/", replace: true }); }
-    catch (e: any) { toast.error(e?.message ?? "Sign out failed"); }
+    try {
+      await signOut();
+      toast.success("Signed out");
+      nav({ to: "/", replace: true });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Sign out failed");
+    }
   };
 
   // ── ADMIN ──
@@ -50,9 +55,17 @@ export function BottomNav() {
       <>
         <div className="h-16" aria-hidden />
         <nav className="fixed bottom-0 inset-x-0 z-50 flex h-16 items-stretch border-t border-border-warm bg-card/95 backdrop-blur-md shadow-[0_-2px_12px_rgba(62,39,35,0.08)]">
-          <Link to="/" className={cls("/")}><Home className="h-5 w-5" /> Home</Link>
-          <Link to="/admin" className={cls("/admin")}><Shield className="h-5 w-5" /> Admin</Link>
-          <button type="button" onClick={handleSignOut} className={`${tabBase} text-muted-foreground hover:text-destructive`}>
+          <Link to="/" className={cls("/")}>
+            <Home className="h-5 w-5" /> Home
+          </Link>
+          <Link to="/admin" className={cls("/admin")}>
+            <Shield className="h-5 w-5" /> Admin
+          </Link>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className={`${tabBase} text-muted-foreground hover:text-destructive`}
+          >
             <LogOut className="h-5 w-5" /> Sign out
           </button>
         </nav>
@@ -68,7 +81,9 @@ export function BottomNav() {
         <>
           <div className="h-16" aria-hidden />
           <nav className="fixed bottom-0 inset-x-0 z-50 flex h-16 items-stretch border-t border-border-warm bg-card/95 backdrop-blur-md shadow-[0_-2px_12px_rgba(62,39,35,0.08)]">
-            <Link to="/dashboard" className={cls("/dashboard")}><Home className="h-5 w-5" /> Dashboard</Link>
+            <Link to="/dashboard" className={cls("/dashboard")}>
+              <Home className="h-5 w-5" /> Dashboard
+            </Link>
             <Link to="/seller/products" className={cls("/seller/products")}>
               <LayoutGrid className="h-5 w-5" /> Products
             </Link>
@@ -83,8 +98,12 @@ export function BottomNav() {
       <>
         <div className="h-16" aria-hidden />
         <nav className="fixed bottom-0 inset-x-0 z-50 flex h-16 items-stretch border-t border-border-warm bg-card/95 backdrop-blur-md shadow-[0_-2px_12px_rgba(62,39,35,0.08)]">
-          <Link to="/" className={cls("/")}><Home className="h-5 w-5" /> Home</Link>
-          <Link to="/explore" className={cls("/explore")}><Compass className="h-5 w-5" /> Explore</Link>
+          <Link to="/" className={cls("/")}>
+            <Home className="h-5 w-5" /> Home
+          </Link>
+          <Link to="/explore" className={cls("/explore")}>
+            <Compass className="h-5 w-5" /> Explore
+          </Link>
 
           <div className="flex flex-1 items-center justify-center">
             <button
@@ -128,8 +147,12 @@ export function BottomNav() {
     <>
       <div className="h-16" aria-hidden />
       <nav className="fixed bottom-0 inset-x-0 z-50 flex h-16 items-stretch border-t border-border-warm bg-card/95 backdrop-blur-md shadow-[0_-2px_12px_rgba(62,39,35,0.08)]">
-        <Link to="/" className={cls("/")}><Home className="h-5 w-5" /> Home</Link>
-        <Link to="/explore" className={cls("/explore")}><Compass className="h-5 w-5" /> Explore</Link>
+        <Link to="/" className={cls("/")}>
+          <Home className="h-5 w-5" /> Home
+        </Link>
+        <Link to="/explore" className={cls("/explore")}>
+          <Compass className="h-5 w-5" /> Explore
+        </Link>
         <Link to="/wishlist" className={`${cls("/wishlist")} relative`}>
           <span className="relative">
             <Bookmark className={`h-5 w-5 ${wishCount > 0 ? "fill-primary text-primary" : ""}`} />
@@ -145,4 +168,3 @@ export function BottomNav() {
     </>
   );
 }
-

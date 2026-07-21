@@ -11,9 +11,7 @@
  */
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Home, Compass, Store, LayoutGrid, Bookmark, LogOut } from "lucide-react";
-import {
-  Sheet, SheetContent, SheetHeader, SheetTitle,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/lib/authContext";
 import { useSellerProfile } from "@/lib/sellerProfile";
 import { useWishlistCount } from "@/lib/wishlist";
@@ -26,11 +24,11 @@ interface NavSidebarProps {
 }
 
 export function NavSidebar({ open, onOpenChange }: NavSidebarProps) {
-  const { user, isAdmin, signOut } = useAuth();
+  const { isAdmin, signOut } = useAuth();
   const { seller } = useSellerProfile();
   const wishCount = useWishlistCount();
   const nav = useNavigate();
-  const bypass = canBypassLaunchGate(user?.id, isAdmin);
+  const bypass = canBypassLaunchGate(isAdmin, seller?.business_name);
 
   const close = () => onOpenChange(false);
 
@@ -66,7 +64,12 @@ export function NavSidebar({ open, onOpenChange }: NavSidebarProps) {
           </>
         )}
         {seller && bypass && (
-          <Link to="/store/$slug" params={{ slug: seller.slug }} onClick={close} className={itemCls}>
+          <Link
+            to="/store/$slug"
+            params={{ slug: seller.slug }}
+            onClick={close}
+            className={itemCls}
+          >
             <Store className="h-5 w-5 text-primary" /> My store
           </Link>
         )}
@@ -88,7 +91,11 @@ export function NavSidebar({ open, onOpenChange }: NavSidebarProps) {
 
         <div className="my-2 h-px bg-border-warm" />
 
-        <button type="button" onClick={handleSignOut} className={`${itemCls} text-destructive hover:bg-destructive/10`}>
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className={`${itemCls} text-destructive hover:bg-destructive/10`}
+        >
           <LogOut className="h-5 w-5" /> Sign out
         </button>
       </SheetContent>

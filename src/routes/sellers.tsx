@@ -12,7 +12,8 @@ import { Search, Users } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import { useCity } from "@/lib/cityContext";
 
-export const Route = createFileRoute("/sellers")({ component: SellersPage });
+import { assertLaunchGate } from "@/lib/launchGate";
+export const Route = createFileRoute("/sellers")({ beforeLoad: assertLaunchGate, component: SellersPage });
 
 function SellersPage() {
   const [search, setSearch] = useState("");

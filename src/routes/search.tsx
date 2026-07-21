@@ -29,7 +29,9 @@ const schema = z.object({
   category: z.string().optional().catch(undefined),
 });
 
+import { assertLaunchGate } from "@/lib/launchGate";
 export const Route = createFileRoute("/search")({
+  beforeLoad: assertLaunchGate,
   validateSearch: (search) => schema.parse(search),
   component: SearchPage,
 });

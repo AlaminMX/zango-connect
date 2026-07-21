@@ -11,7 +11,9 @@ import { BottomNav } from "@/components/BottomNav";
 import { Footer } from "@/components/Footer";
 import { MapPin, Search, ArrowUpRight } from "lucide-react";
 
+import { assertLaunchGate } from "@/lib/launchGate";
 export const Route = createFileRoute("/cities")({
+  beforeLoad: assertLaunchGate,
   head: () => ({
     meta: [
       { title: "All cities — ZANGO" },

@@ -21,7 +21,8 @@ import { useCity } from "@/lib/cityContext";
 import { getTrendingSellers } from "@/lib/homepage-cms";
 import { getCategoryIcon } from "@/lib/category-icons";
 
-export const Route = createFileRoute("/explore")({ component: Explore });
+import { assertLaunchGate } from "@/lib/launchGate";
+export const Route = createFileRoute("/explore")({ beforeLoad: assertLaunchGate, component: Explore });
 
 const PAGE_SIZE = 12;
 

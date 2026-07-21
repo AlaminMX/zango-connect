@@ -15,7 +15,9 @@ function prettifySlug(slug: string) {
   return slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
 
+import { assertLaunchGate } from "@/lib/launchGate";
 export const Route = createFileRoute("/category/$slug")({
+  beforeLoad: assertLaunchGate,
   component: CategoryPage,
   head: ({ params }) => {
     const name = prettifySlug(params.slug);

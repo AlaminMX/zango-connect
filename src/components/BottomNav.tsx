@@ -13,6 +13,7 @@ import { Home, Compass, Bookmark, Plus, Store, LayoutGrid, Shield, LogOut } from
 import { useAuth } from "@/lib/authContext";
 import { useSellerProfile } from "@/lib/sellerProfile";
 import { useWishlistCount } from "@/lib/wishlist";
+import { canBypassLaunchGate, MARKETPLACE_OPEN } from "@/lib/launchGate";
 import { ProductSheet } from "@/components/ProductSheet";
 import { toast } from "sonner";
 
@@ -20,12 +21,17 @@ const tabBase =
   "flex flex-1 min-h-[44px] flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium transition-colors duration-100";
 
 export function BottomNav() {
-  const { isReady, isAdmin, signOut } = useAuth();
+  const { user, isReady, isAdmin, signOut } = useAuth();
   const { seller } = useSellerProfile();
   const wishCount = useWishlistCount();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const nav = useNavigate();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const bypass = canBypassLaunchGate(user?.id, isAdmin);
+  const gateClosed = !MARKETPLACE_OPEN && !bypass;
+
+  // Hide entirely on the pre-launch page itself
+  if (pathname === "/coming-soon") return null;
 
   if (!isReady) return <div className="h-16" aria-hidden />;
 
@@ -57,6 +63,22 @@ export function BottomNav() {
   // ── SELLER ──
   if (seller) {
     const storeHref = `/store/${seller.slug}`;
+    if (gateClosed) {
+      return (
+        <>
+          <div className="h-16" aria-hidden />
+          <nav className="fixed bottom-0 inset-x-0 z-50 flex h-16 items-stretch border-t border-border-warm bg-card/95 backdrop-blur-md shadow-[0_-2px_12px_rgba(62,39,35,0.08)]">
+            <Link to="/dashboard" className={cls("/dashboard")}><Home className="h-5 w-5" /> Dashboard</Link>
+            <Link to="/seller/products" className={cls("/seller/products")}>
+              <LayoutGrid className="h-5 w-5" /> Products
+            </Link>
+            <Link to="/account" className={cls("/account")}>
+              <Store className="h-5 w-5" /> Account
+            </Link>
+          </nav>
+        </>
+      );
+    }
     return (
       <>
         <div className="h-16" aria-hidden />
@@ -101,6 +123,7 @@ export function BottomNav() {
   }
 
   // ── BUYER ──
+  if (gateClosed) return null;
   return (
     <>
       <div className="h-16" aria-hidden />
@@ -122,3 +145,4 @@ export function BottomNav() {
     </>
   );
 }
+

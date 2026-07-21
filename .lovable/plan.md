@@ -1,72 +1,62 @@
-## Logo
+# Launch Gate + Share-Card Removal
 
-Apply this current one and remove the one from the previous turn (that one has a backgroung that was not removed) this is a fixed version
+## Part 1 — Launch Gate
 
-## Explore by City — end-to-end fix
+### 1. `src/lib/launchGate.ts` (new)
+Single source of truth:
+- `MARKETPLACE_OPEN = false`
+- `LAUNCH_DATE` ISO constant (used by countdown)
+- `PRELAUNCH_ALLOWLIST: string[]` — Supabase user IDs, seeded with `"REPLACE_WITH_ADMIN_USER_ID"` / `"REPLACE_WITH_NEXEL_USER_ID"` placeholders
+- `canBypassLaunchGate(userId, isAdmin)` → true if `MARKETPLACE_OPEN`, `isAdmin`, or `userId ∈ PRELAUNCH_ALLOWLIST`
 
-### 1. Auto-create cities on seller registration (DB)
+### 2. Route guard (client-side, blocking)
+Two coordinated pieces in `launchGate.ts`, both reading from the existing `useAuth()` / `authContext` (already tracks session + admin role via `has_role`), so no new backend plumbing:
 
-Migration adds an admin-safe function `public.ensure_city(name, state)`:
+**a. `assertLaunchGate` — `beforeLoad` hook**
+- Reads auth from router context (we'll thread `{ auth }` into router context in `router.tsx` + `__root.tsx`, matching TanStack's documented pattern)
+- If auth is not yet ready (first hard refresh, session still hydrating), returns without redirecting — the pending gate below handles that frame
+- If ready and `canBypassLaunchGate(user?.id, isAdmin) === false` → `throw redirect({ to: "/coming-soon" })`
+- In-app navigation: `beforeLoad` runs before the component mounts, so gated routes never paint
 
-- Normalises name/state (trim, title-case).
-- Looks up existing `cities_of_business` by case-insensitive name + state.
-- If found → returns its id.
-- If not → inserts a new row with `is_active = true`, `is_featured_home = false`, unique slug (`slugify(name)-slugify(state)` with numeric suffix on conflict), `sort_order = 9999`. Returns new id.
-- `SECURITY DEFINER`, callable by `authenticated`.
+**b. `LaunchGatePending` — blocking hydration shim**
+- Wrapper used inside each gated route's `component` (or once at the root via a `pendingComponent`-style boundary) that renders a neutral full-screen skeleton while `isReady === false`
+- Prevents any gated content from painting during the split-second between initial HTML and session rehydration on hard refresh
+- Once `isReady` flips true, either the content renders (bypass allowed) or `assertLaunchGate` has already redirected
 
-Add column `cities_of_business.is_featured_home boolean not null default false` — controls homepage 5.
+This is stronger than `admin.tsx`'s current post-mount `useEffect` check — no flash on client nav, no flash on refresh. Caveat (per your note): not airtight against JS-disabled scraping of the initial SSR HTML frame; that's acceptable for a launch gate.
 
-Trigger `sellers_set_city_id_before_write` (BEFORE INSERT/UPDATE on `sellers`): when `city` and `state` are set and `city_id` is null, calls `ensure_city(city, state)` and sets `city_id`. Guarantees every seller has a `city_id`, even if the frontend forgets.
+**Gated routes** (add `beforeLoad: assertLaunchGate` + wrap component in `LaunchGatePending`):
+`index.tsx`, `products.tsx`, `category.$slug.tsx`, `product.$id.tsx`, `store.$slug.tsx`, `sellers.tsx`, `search.tsx`, `explore.tsx`, `cities.tsx`, `city.$slug.tsx`, `wishlist.tsx`
 
-One-off backfill in same migration: for every seller with `city IS NOT NULL AND state IS NOT NULL AND city_id IS NULL`, populate via `ensure_city`.
+**Explicitly untouched:** `dashboard.tsx`, `seller.products.tsx`, `account.tsx`, `auth.tsx`, `register.tsx`, `reset-password.tsx`, `verify-email.tsx`, `verified.tsx`, `vendor-approval-pending.tsx`, `vendor-rejected.tsx`, `admin.tsx`, `coming-soon.tsx`.
 
-### 2. Homepage "Explore by city" — top 5 + More tile
+### 3. `src/routes/coming-soon.tsx` (new)
+- Heading: "The Market Gates Are Almost Open" (DM Serif Display)
+- Body copy verbatim from spec (Fira Sans)
+- Countdown timer reading `LAUNCH_DATE` from `launchGate.ts` (days / hours / minutes / seconds, updates every 1s)
+- Two CTAs: "Go to Dashboard" → `/dashboard`, "Upload Products" → `/seller/products`
+- Warm Northern-inspired gradient built from existing terracotta/sage tokens (no new palette), subtle radial glow / soft pattern for texture
+- Fully responsive, mobile-first — mirrors `TopBar`/`BottomNav` spacing conventions
+- No auth wall; guests land here too. No 401/403 framing — it's an invitation, not an error page
 
-Rewrite `src/components/ExploreCities.tsx`:
+### 4. Nav polish (UI only — real enforcement is Part 2)
+`BottomNav.tsx` and `NavSidebar.tsx`: when `canBypassLaunchGate(user?.id, isAdmin)` is false, hide links to marketplace/search/categories/explore/sellers/wishlist. Dashboard/account/profile stay. Reads from `useAuth()`.
 
-- Query `cities_with_stats` filtered to `is_active = true`.
-- Sort: `is_featured_home DESC, sellers_count DESC, sort_order ASC, name ASC`.
-- If admin has featured ≥1 city, featured cities fill first slots up to 5; remaining slots filled by top sellers_count.
-- Take first 5. Render 6th tile "More cities" → `<Link to="/cities">` with distinct styling (dashed border, ArrowRight icon).
-- Grid stays `grid-cols-2 sm:grid-cols-3 lg:grid-cols-6` so 6 tiles align on desktop.
+### 5. Post-launch behavior
+Flip `MARKETPLACE_OPEN = true`. `assertLaunchGate` short-circuits to allow, `LaunchGatePending` becomes a no-op, nav links reappear. `PRELAUNCH_ALLOWLIST` + `canBypassLaunchGate` stay in tree, dormant, ready for future private-beta or maintenance-window reuse.
 
-### 3. New `/cities` page (`src/routes/cities.tsx`)
+## Part 2 — Remove share-card feature
 
-Public SSR route. Fetches all active cities via a new public server fn `listAllActiveCitiesWithStats` (uses server publishable client, reads `cities_with_stats` where `is_active`).
+Delete:
+- `src/components/vendor-card/` (entire folder)
+- `src/components/VendorShareCardDialog.tsx`
+- `src/components/ShareCardDialog.tsx`
 
-UI:
+Edit `src/routes/store.$slug.tsx`: drop `VendorShareCardDialog` import, `shareCardOpen` state, "Generate Share Card" button, dialog render.
 
-- `head()` with unique title/description/canonical + `CollectionPage` JSON-LD.
-- Header + search input (client-side, debounced) that filters by city name OR state name (case-insensitive substring).
-- Grouped rendering: cities grouped by state, each state a section heading; within state, cities sorted by sellers_count desc.
-- Each tile links to `/city/$slug` (existing route).
-- Empty-state when search yields nothing.
+Edit `src/routes/admin.tsx`: drop `ShareCardDialog` import + render + any state/handlers only used by it.
 
-### 4. Admin controls (`src/routes/admin.tsx` — Cities tab)
+Grep repo for `vendor-card`, `VendorShareCardDialog`, `ShareCardDialog` and remove leftover imports / props.
 
-Extend existing city admin table:
-
-- New "Homepage" toggle column bound to `is_featured_home`. Enforce max 5 featured with a client-side check + server-side validation in the upsert fn (throw if trying to feature a 6th).
-- Existing add/edit/activate/sort remain.
-
-Server fns updated in `src/lib/cities.functions.ts`:
-
-- `adminUpsertCity` extended to accept `is_featured_home`; validates ≤5 featured.
-- Add `adminSetCityFeatured({ id, featured })` for quick toggle.
-
-### 5. Public grants
-
-Ensure `cities_of_business` and `cities_with_stats` view remain readable by `anon` (already are). New `is_featured_home` column inherits table grants.
-
-## Files touched
-
-- **New migration** — `ensure_city` function, `is_featured_home` column, sellers trigger, backfill.
-- **New**: `src/routes/cities.tsx`, `src/lib/cities-public.functions.ts` (public listing).
-- **Edit**: `src/components/ExploreCities.tsx` (top-5 + More tile), `src/lib/cities.functions.ts` (featured toggle + validation), `src/routes/admin.tsx` (Homepage toggle in cities tab).
-
-## Technical notes
-
-- `ensure_city` is `SECURITY DEFINER` so unverified sellers (who otherwise can't insert into `cities_of_business`) can still trigger city creation during onboarding via the trigger path.
-- Featured-max-5 enforced server-side: `SELECT count(*) FROM cities_of_business WHERE is_featured_home` before setting a new one to true.
-- `cities_with_stats` view already exposes `sellers_count`; no view change needed.
-- Search on /cities is fully client-side over the (small) active-cities list — no extra server calls, snappy UX.
+## Notes
+- Admins bypass automatically via `has_role`, so `PRELAUNCH_ALLOWLIST` only matters for non-admin bypass users. Send Nexel's UUID when ready and I'll drop it in — placeholders ship in the meantime.

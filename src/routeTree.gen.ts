@@ -23,6 +23,7 @@ import { Route as ProductsRouteImport } from './routes/products'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as ComingSoonRouteImport } from './routes/coming-soon'
 import { Route as CitiesRouteImport } from './routes/cities'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -108,6 +109,11 @@ const DashboardRoute = DashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ComingSoonRoute = ComingSoonRouteImport.update({
+  id: '/coming-soon',
+  path: '/coming-soon',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CitiesRoute = CitiesRouteImport.update({
   id: '/cities',
   path: '/cities',
@@ -188,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/cities': typeof CitiesRoute
+  '/coming-soon': typeof ComingSoonRoute
   '/dashboard': typeof DashboardRoute
   '/explore': typeof ExploreRoute
   '/mcp': typeof McpRoute
@@ -218,6 +225,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/cities': typeof CitiesRoute
+  '/coming-soon': typeof ComingSoonRoute
   '/dashboard': typeof DashboardRoute
   '/explore': typeof ExploreRoute
   '/mcp': typeof McpRoute
@@ -249,6 +257,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/cities': typeof CitiesRoute
+  '/coming-soon': typeof ComingSoonRoute
   '/dashboard': typeof DashboardRoute
   '/explore': typeof ExploreRoute
   '/mcp': typeof McpRoute
@@ -281,6 +290,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/cities'
+    | '/coming-soon'
     | '/dashboard'
     | '/explore'
     | '/mcp'
@@ -311,6 +321,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/cities'
+    | '/coming-soon'
     | '/dashboard'
     | '/explore'
     | '/mcp'
@@ -341,6 +352,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/cities'
+    | '/coming-soon'
     | '/dashboard'
     | '/explore'
     | '/mcp'
@@ -372,6 +384,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   CitiesRoute: typeof CitiesRoute
+  ComingSoonRoute: typeof ComingSoonRoute
   DashboardRoute: typeof DashboardRoute
   ExploreRoute: typeof ExploreRoute
   McpRoute: typeof McpRoute
@@ -497,6 +510,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/coming-soon': {
+      id: '/coming-soon'
+      path: '/coming-soon'
+      fullPath: '/coming-soon'
+      preLoaderRoute: typeof ComingSoonRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/cities': {
       id: '/cities'
       path: '/cities'
@@ -604,6 +624,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   CitiesRoute: CitiesRoute,
+  ComingSoonRoute: ComingSoonRoute,
   DashboardRoute: DashboardRoute,
   ExploreRoute: ExploreRoute,
   McpRoute: McpRoute,

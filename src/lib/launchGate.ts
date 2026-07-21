@@ -33,9 +33,7 @@ export function isMarketplaceOpen(): boolean {
  */
 const FOUNDING_TESTER_NAME = "nexel";
 
-export function isFoundingTesterSeller(
-  businessName: string | null | undefined,
-): boolean {
+export function isFoundingTesterSeller(businessName: string | null | undefined): boolean {
   return (businessName ?? "").trim().toLowerCase() === FOUNDING_TESTER_NAME;
 }
 
@@ -45,10 +43,7 @@ export function isFoundingTesterSeller(
  * query — never fetch it separately here, that's exactly the kind of
  * duplicate-call auth race this codebase has already fixed once.
  */
-export function canBypassLaunchGate(
-  isAdmin: boolean,
-  sellerBusinessName?: string | null,
-): boolean {
+export function canBypassLaunchGate(isAdmin: boolean, sellerBusinessName?: string | null): boolean {
   if (isMarketplaceOpen()) return true;
   if (isAdmin) return true;
   if (isFoundingTesterSeller(sellerBusinessName)) return true;
@@ -56,17 +51,33 @@ export function canBypassLaunchGate(
 }
 
 /**
- * `beforeLoad` guard for gated (public-marketplace-only) routes. Runs
- * client-side — SSR/prerender is skipped so we don't redirect when there's
- * no session storage to read. Because it awaits the session check, TanStack
- * Router does NOT mount the route component until we know — no flash on
- * hard refresh or in-app nav.
+ * `beforeLoad` guard for gated (public-marketplace-only) routes.
+ *
+ * IMPORTANT — SSR is fail-closed, not fail-open. This app server-renders
+ * every request (see src/server.ts), and the Supabase client only has a
+ * session on the client (auth storage is `localStorage`-only — see
+ * integrations/supabase/client.ts — there's no cookie for the server to
+ * read). That means the server can NEVER identify who's asking.
+ *
+ * Given that, the only safe default is to block: on the server we redirect
+ * to /coming-soon unconditionally while the gate is closed, for EVERY
+ * visitor — anonymous, blocked vendor, admin, even the Nexel test account.
+ * Yes, that means an allowed user's very first byte is the pre-launch page.
+ * We pass their intended URL through as `?from=`, and /coming-soon
+ * self-corrects them straight back to it the moment the client hydrates
+ * and confirms they're allowed (see ComingSoonPage). That one-frame
+ * redirect is the acceptable cost — the alternative is serving real
+ * marketplace HTML to curl, scrapers, and JS-disabled visitors, which is
+ * the actual leak this replaces.
  */
-export async function assertLaunchGate() {
+export async function assertLaunchGate(opts?: { location?: { href: string } }) {
   if (isMarketplaceOpen()) return;
 
-  // SSR / prerender has no localStorage session — defer to client run.
-  if (typeof window === "undefined") return;
+  const from = opts?.location?.href;
+
+  if (typeof window === "undefined") {
+    throw redirect({ to: "/coming-soon", search: from ? { from } : undefined });
+  }
 
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData.session?.user?.id ?? null;
@@ -81,15 +92,11 @@ export async function assertLaunchGate() {
         .eq("role", "admin")
         .maybeSingle(),
       // Founding-vendor bypass, matched by name — see isFoundingTesterSeller.
-      supabase
-        .from("sellers")
-        .select("business_name")
-        .eq("user_id", userId)
-        .maybeSingle(),
+      supabase.from("sellers").select("business_name").eq("user_id", userId).maybeSingle(),
     ]);
     if (roleRow) return;
     if (isFoundingTesterSeller(sellerRow?.business_name)) return;
   }
 
-  throw redirect({ to: "/coming-soon" });
+  throw redirect({ to: "/coming-soon", search: from ? { from } : undefined });
 }

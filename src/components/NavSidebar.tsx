@@ -17,6 +17,7 @@ import {
 import { useAuth } from "@/lib/authContext";
 import { useSellerProfile } from "@/lib/sellerProfile";
 import { useWishlistCount } from "@/lib/wishlist";
+import { canBypassLaunchGate } from "@/lib/launchGate";
 import { toast } from "sonner";
 
 interface NavSidebarProps {
@@ -25,10 +26,11 @@ interface NavSidebarProps {
 }
 
 export function NavSidebar({ open, onOpenChange }: NavSidebarProps) {
-  const { signOut } = useAuth();
+  const { user, isAdmin, signOut } = useAuth();
   const { seller } = useSellerProfile();
   const wishCount = useWishlistCount();
   const nav = useNavigate();
+  const bypass = canBypassLaunchGate(user?.id, isAdmin);
 
   const close = () => onOpenChange(false);
 
@@ -53,13 +55,17 @@ export function NavSidebar({ open, onOpenChange }: NavSidebarProps) {
           <SheetTitle className="font-display text-xl text-espresso">Menu</SheetTitle>
         </SheetHeader>
 
-        <Link to="/" onClick={close} className={itemCls}>
-          <Home className="h-5 w-5 text-primary" /> Home
-        </Link>
-        <Link to="/explore" onClick={close} className={itemCls}>
-          <Compass className="h-5 w-5 text-primary" /> Explore
-        </Link>
-        {seller && (
+        {bypass && (
+          <>
+            <Link to="/" onClick={close} className={itemCls}>
+              <Home className="h-5 w-5 text-primary" /> Home
+            </Link>
+            <Link to="/explore" onClick={close} className={itemCls}>
+              <Compass className="h-5 w-5 text-primary" /> Explore
+            </Link>
+          </>
+        )}
+        {seller && bypass && (
           <Link to="/store/$slug" params={{ slug: seller.slug }} onClick={close} className={itemCls}>
             <Store className="h-5 w-5 text-primary" /> My store
           </Link>
@@ -67,16 +73,18 @@ export function NavSidebar({ open, onOpenChange }: NavSidebarProps) {
         <Link to="/seller/products" onClick={close} className={itemCls}>
           <LayoutGrid className="h-5 w-5 text-primary" /> Products
         </Link>
-        <Link to="/wishlist" onClick={close} className={`${itemCls} justify-between`}>
-          <span className="flex items-center gap-3">
-            <Bookmark className="h-5 w-5 text-primary" /> Wishlist
-          </span>
-          {wishCount > 0 && (
-            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
-              {wishCount > 99 ? "99+" : wishCount}
+        {bypass && (
+          <Link to="/wishlist" onClick={close} className={`${itemCls} justify-between`}>
+            <span className="flex items-center gap-3">
+              <Bookmark className="h-5 w-5 text-primary" /> Wishlist
             </span>
-          )}
-        </Link>
+            {wishCount > 0 && (
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                {wishCount > 99 ? "99+" : wishCount}
+              </span>
+            )}
+          </Link>
+        )}
 
         <div className="my-2 h-px bg-border-warm" />
 

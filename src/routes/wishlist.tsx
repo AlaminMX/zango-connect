@@ -15,7 +15,8 @@ import { Bookmark, ShoppingBag, MessageCircle, X, Heart } from "lucide-react";
 import { useWishlist, removeFromWishlist, type WishlistItem } from "@/lib/wishlist";
 import { trackClick } from "@/lib/whatsapp";
 
-export const Route = createFileRoute("/wishlist")({ component: WishlistPage });
+import { assertLaunchGate } from "@/lib/launchGate";
+export const Route = createFileRoute("/wishlist")({ beforeLoad: assertLaunchGate, component: WishlistPage });
 
 function naira(n: number) { return `₦${n.toLocaleString()}`; }
 

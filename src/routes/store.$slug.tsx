@@ -24,7 +24,7 @@ import { ImageUploader } from "@/components/ImageUploader";
 import { SectionLoader } from "@/components/LoadingSpinner";
 import {
   MapPin, Share2, Heart, Pencil, X, Check,
-  Plus, Trash2, MessageCircle, Loader2, ImageOff, CreditCard,
+  Plus, Trash2, MessageCircle, Loader2, ImageOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,13 +38,14 @@ import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCity } from "@/lib/cityContext";
 import { validateNigerianPhone } from "@/lib/whatsapp";
-import { VendorShareCardDialog } from "@/components/VendorShareCardDialog";
+
 
 function prettifySlug(slug: string) {
   return slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
 
 export const Route = createFileRoute("/store/$slug")({
+  beforeLoad: async () => (await import("@/lib/launchGate")).assertLaunchGate(),
   component: StorePage,
   head: ({ params }) => {
     const name = prettifySlug(params.slug);
@@ -108,7 +109,7 @@ function StorePage() {
   const [eProfileUrl, setEProfileUrl] = useState<string | null>(null);
   const [eCoverUrl, setECoverUrl]     = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [shareCardOpen, setShareCardOpen] = useState(false);
+  
 
   const { activeCities, citiesLoading } = useCity();
 
@@ -530,13 +531,6 @@ function StorePage() {
                 <Button onClick={() => setEditMode(!editMode)} variant={editMode ? "outline" : "default"} className="flex-1 rounded-full">
                   {editMode ? <><X className="mr-1.5 h-4 w-4" /> Exit edit mode</> : <><Pencil className="mr-1.5 h-4 w-4" /> Edit store</>}
                 </Button>
-                <Button
-                  variant="outline"
-                  className="rounded-full border-border-warm text-sage-deep hover:border-sage/60 hover:bg-sage/10"
-                  onClick={() => setShareCardOpen(true)}
-                >
-                  <CreditCard className="mr-1.5 h-4 w-4" /> Generate Share Card
-                </Button>
               </>
             ) : (
               <>
@@ -720,14 +714,6 @@ function StorePage() {
         </DialogContent>
       </Dialog>
 
-      {isOwner && (
-        <VendorShareCardDialog
-          seller={seller}
-          productCount={activeProducts.length}
-          open={shareCardOpen}
-          onOpenChange={setShareCardOpen}
-        />
-      )}
     </div>
   );
 }

@@ -16,7 +16,8 @@ import { toggleWishlist, useIsWishlisted } from "@/lib/wishlist";
 import { Heart, MessageCircle, ShieldCheck, MapPin } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/product/$id")({ component: ProductDetail });
+import { assertLaunchGate } from "@/lib/launchGate";
+export const Route = createFileRoute("/product/$id")({ beforeLoad: assertLaunchGate, component: ProductDetail });
 
 function ProductDetail() {
   const { id } = useParams({ from: "/product/$id" });

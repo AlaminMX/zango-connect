@@ -23,7 +23,8 @@ import { iconFor, hausaFor } from "@/lib/categories";
 import { Search, ArrowRight, Store, LayoutGrid, ChevronRight } from "lucide-react";
 import { getTrendingSellers } from "@/lib/homepage-cms";
 
-export const Route = createFileRoute("/")({ component: Index });
+import { assertLaunchGate } from "@/lib/launchGate";
+export const Route = createFileRoute("/")({ beforeLoad: assertLaunchGate, component: Index });
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 

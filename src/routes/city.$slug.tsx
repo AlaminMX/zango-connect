@@ -18,7 +18,9 @@ const cityQuery = (slug: string) =>
     queryFn: () => getCityMarketplace({ data: { slug } }),
   });
 
+import { assertLaunchGate } from "@/lib/launchGate";
 export const Route = createFileRoute("/city/$slug")({
+  beforeLoad: assertLaunchGate,
   loader: async ({ params, context }) => {
     const data = await context.queryClient.ensureQueryData(cityQuery(params.slug));
     if (!data) throw notFound();

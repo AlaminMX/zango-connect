@@ -24,7 +24,7 @@ export function TopBar() {
             height={56}
             className="h-14 w-14 object-contain"
           />
-          <div className="hidden flex-col leading-none sm:flex">
+          <div className="flex flex-col leading-none">
             <span className="font-display text-xl text-espresso">ZANGO</span>
             <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-sage-deep">
               Kasuwancin Arewa

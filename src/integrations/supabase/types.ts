@@ -633,6 +633,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_delete_user: {
+        Args: { target_user_id: string }
+        Returns: undefined
+      }
       ensure_city: { Args: { _name: string; _state: string }; Returns: string }
       has_role: {
         Args: {

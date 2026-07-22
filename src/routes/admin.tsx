@@ -852,15 +852,15 @@ function AdminPage() {
         <h1 className="font-serif text-3xl">Admin Panel</h1>
 
         {/* Stats */}
-        <div className="mt-6 grid grid-cols-3 gap-3">
+        <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-3">
           {[
             { label: "Sellers",   value: stats.sellers },
             { label: "Products",  value: stats.products },
             { label: "WA clicks", value: stats.clicks },
           ].map((s) => (
-            <div key={s.label} className="rounded-2xl border bg-card p-4 shadow-warm">
+            <div key={s.label} className="rounded-2xl border bg-card p-3 shadow-warm sm:p-4">
               <p className="text-xs text-muted-foreground">{s.label}</p>
-              <p className="mt-1 font-serif text-3xl text-primary">{s.value}</p>
+              <p className="mt-1 font-serif text-2xl text-primary sm:text-3xl">{s.value}</p>
             </div>
           ))}
         </div>
@@ -877,9 +877,9 @@ function AdminPage() {
         )}
 
         {/* Tab nav */}
-        <div className="mt-8 flex flex-wrap gap-2">
+        <div className="-mx-5 mt-8 flex gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
           {(["sellers","categories","products","vouches","homepage","cities","cms"] as const).map((t) => (
-            <button key={t} onClick={() => setActiveTab(t)} className={tabCls(t)}>
+            <button key={t} onClick={() => setActiveTab(t)} className={`shrink-0 ${tabCls(t)}`}>
               {t === "sellers"    ? `Sellers ${pendingSellers.length > 0 ? `(${pendingSellers.length} pending)` : ""}` :
                t === "categories" ? "Categories" :
                t === "products"   ? "Products" :
@@ -1094,7 +1094,7 @@ function AdminPage() {
           <section className="mt-6">
             {/* ── Auto-verification threshold card ── */}
             <div className="mb-6 rounded-2xl border border-border-warm bg-card p-4 shadow-warm">
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-sm">Auto-verification threshold</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
@@ -1104,7 +1104,7 @@ function AdminPage() {
                     Current value: <span className="font-semibold text-foreground">{vouchThreshold}</span>
                   </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex items-center gap-2 sm:shrink-0">
                   <Input
                     type="number"
                     min={1}
@@ -1609,7 +1609,7 @@ function SellerRow({
 }) {
   return (
     <div className={`rounded-xl border bg-card p-3 shadow-warm ${s.is_blocked ? "border-destructive/30 opacity-60" : ""}`}>
-      <div className="flex items-start gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 flex-wrap">
             <Link to="/store/$slug" params={{ slug: s.slug }} className="truncate font-medium hover:text-primary">
@@ -1666,7 +1666,7 @@ function SellerRow({
         </div>
 
         {/* Admin actions */}
-        <div className="flex shrink-0 flex-wrap items-center gap-1.5 text-xs">
+        <div className="flex flex-wrap items-center gap-1.5 border-t pt-2.5 text-xs sm:w-auto sm:shrink-0 sm:border-t-0 sm:pt-0">
 
           {/* Approve button — shown for pending and rejected sellers */}
           {onApprove && (

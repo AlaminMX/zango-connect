@@ -10,10 +10,11 @@ import { Footer } from "@/components/Footer";
 import { BackButton } from "@/components/BackButton";
 import { ProductCard } from "@/components/ProductCard";
 import { PageLoader } from "@/components/LoadingSpinner";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { Button } from "@/components/ui/button";
 import { buildWhatsAppUrl, trackClick } from "@/lib/whatsapp";
 import { toggleWishlist, useIsWishlisted } from "@/lib/wishlist";
-import { Heart, MessageCircle, ShieldCheck, MapPin } from "lucide-react";
+import { Heart, MessageCircle, MapPin } from "lucide-react";
 import { toast } from "sonner";
 
 import { assertLaunchGate } from "@/lib/launchGate";
@@ -142,7 +143,7 @@ function ProductDetail() {
               <div>
                 <p className="flex items-center gap-1 font-semibold text-espresso group-hover:text-primary">
                   {seller.business_name}
-                  {seller.is_verified && <ShieldCheck className="h-4 w-4 text-[#C9A84C]" aria-label="Verified" />}
+                  {seller.is_verified && <VerifiedBadge className="h-4 w-4" />}
                 </p>
                 <p className="flex items-center gap-1 text-xs text-muted-foreground">
                   <MapPin className="h-3 w-3" /> {seller.city}

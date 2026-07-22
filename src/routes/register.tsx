@@ -22,7 +22,7 @@ import { ImageUploader } from "@/components/ImageUploader";
 import { toast } from "sonner";
 import { slugify, validateNigerianPhone } from "@/lib/whatsapp";
 import { humanizeError } from "@/lib/error-messages";
-import { ChevronLeft, ChevronRight, Loader2, AlertCircle, Clock, Home, Check, Compass, MessageCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, AlertCircle, Check, MessageCircle } from "lucide-react";
 
 export const Route = createFileRoute("/register")({ component: Register });
 
@@ -495,36 +495,75 @@ function Register() {
           )}
 
           {step === 3 && (
-            <div className="space-y-5 text-center">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-amber-600">
-                <Clock className="h-8 w-8" />
-              </div>
-              <h2 className="font-serif text-2xl">Application submitted!</h2>
-              <p className="text-sm text-muted-foreground">
-                Thank you for registering. Your business is currently <strong>under review</strong>.
-              </p>
+            <div className="relative -m-6 overflow-hidden rounded-2xl">
+              {/* Warm arrival backdrop — echoes the coming-soon gradient so this feels
+                  like a distinct, celebratory moment rather than a form-step */}
+              <div className="absolute inset-0 bg-gradient-to-b from-[#FBF3E4] via-card to-card" />
+              <div className="pointer-events-none absolute -top-16 -right-14 h-48 w-48 rounded-full bg-sage/20 blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-20 -left-14 h-52 w-52 rounded-full bg-primary/15 blur-3xl" />
 
-              {/* ── Updated message — WhatsApp notification, no in-app mention ── */}
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-left text-sm text-amber-900">
-                <div className="flex items-start gap-2.5">
-                  <MessageCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                  <div>
-                    <p className="font-semibold">What happens next?</p>
-                    <p className="mt-1 leading-relaxed">
-                      Once your registration has been fully reviewed and approved, you will receive a
-                      <strong> WhatsApp notification</strong> from the admin. Please ensure your
-                      WhatsApp number is active and reachable.
-                    </p>
+              <div className="relative space-y-7 px-6 py-10 text-center">
+                {/* Success badge — soft pulse instead of a static clock, reads as
+                    "in motion" rather than "waiting" */}
+                <div className="relative mx-auto flex h-20 w-20 items-center justify-center">
+                  <span className="absolute inset-0 rounded-full bg-primary/15 animate-ping [animation-duration:2.2s]" />
+                  <span className="absolute inset-2.5 rounded-full bg-primary/10" />
+                  <div className="relative flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
+                    <Check className="h-6 w-6" />
                   </div>
                 </div>
-              </div>
 
-              <Link to="/" className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3 font-medium text-primary-foreground hover:bg-primary/90">
-                <Home className="h-4 w-4" /> Return to homepage
-              </Link>
-              <Link to="/explore" className="inline-flex w-full items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-primary">
-                While you wait, explore the marketplace <Compass className="h-3.5 w-3.5" />
-              </Link>
+                <div>
+                  <h2 className="font-serif text-2xl text-espresso">You're on the list</h2>
+                  <p className="mt-2 text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed">
+                    {businessName ? <strong>{businessName}</strong> : "Your store"} has been submitted.
+                    Every application gets a real look from our team — we'll be in touch soon.
+                  </p>
+                </div>
+
+                {/* Where-you-are tracker — a real sequence, so numbered stages earn their
+                    place here (mirrors the pill styling used in steps 1–2 above) */}
+                <div className="mx-auto flex max-w-[19rem] items-center">
+                  <div className="flex flex-col items-center gap-1.5">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-sage-deep text-white">
+                      <Check className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="text-[11px] font-medium text-espresso">Submitted</span>
+                  </div>
+                  <div className="mx-1.5 h-px flex-1 bg-sage-deep/40" />
+                  <div className="flex flex-col items-center gap-1.5">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-semibold animate-pulse [animation-duration:2.2s]">
+                      2
+                    </span>
+                    <span className="text-[11px] font-medium text-primary">Under review</span>
+                  </div>
+                  <div className="mx-1.5 h-px flex-1 bg-border-warm" />
+                  <div className="flex flex-col items-center gap-1.5">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-border-warm text-[10px] font-semibold text-muted-foreground">
+                      3
+                    </span>
+                    <span className="text-[11px] font-medium text-muted-foreground">Approved</span>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-left text-sm text-amber-900">
+                  <div className="flex items-start gap-2.5">
+                    <MessageCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                    <div>
+                      <p className="font-semibold">What happens next?</p>
+                      <p className="mt-1 leading-relaxed">
+                        Once your registration has been fully reviewed and approved, you will receive a
+                        <strong> WhatsApp notification</strong> from the admin. Please ensure your
+                        WhatsApp number is active and reachable.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                  You're free to close this tab — we'll reach you on WhatsApp the moment there's an update.
+                </p>
+              </div>
             </div>
           )}
         </div>

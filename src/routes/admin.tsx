@@ -35,9 +35,10 @@ import {
   BadgeCheck, Plus, Pencil, Trash2, ChevronUp, ChevronDown,
   Star, StarOff, Eye, EyeOff, Loader2, GripVertical,
   ShieldOff, ShieldCheck, Users, CheckCircle2, XCircle, Clock,
-  AlertCircle, RefreshCw, MapPin, Save,
+  AlertCircle, RefreshCw, MapPin, Save, Phone, Copy, MessageCircle,
 } from "lucide-react";
 import { PageLoader } from "@/components/LoadingSpinner";
+import { normaliseNigerianPhone, buildWhatsAppUrl } from "@/lib/whatsapp";
 
 export const Route = createFileRoute("/admin")({ component: AdminPage });
 
@@ -1621,6 +1622,44 @@ function SellerRow({
             )}
           </div>
           <p className="text-xs text-muted-foreground">{s.category} · {s.city}</p>
+
+          {/* Vendor phone — always visible so admin can DM without opening the store page */}
+          <div className="mt-1 flex items-center gap-1.5">
+            {s.whatsapp_number ? (
+              <>
+                <Phone className="h-3 w-3 shrink-0 text-muted-foreground" />
+                <a
+                  href={`tel:+${normaliseNigerianPhone(s.whatsapp_number) ?? s.whatsapp_number}`}
+                  className="text-xs font-medium text-foreground hover:text-primary"
+                  title="Call vendor"
+                >
+                  {s.whatsapp_number}
+                </a>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(s.whatsapp_number ?? "");
+                    toast.success("Number copied");
+                  }}
+                  className="rounded-full p-0.5 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                  title="Copy number"
+                >
+                  <Copy className="h-3 w-3" />
+                </button>
+                <a
+                  href={buildWhatsAppUrl(s.whatsapp_number)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-full p-0.5 text-emerald-600 transition hover:bg-emerald-50"
+                  title="Message on WhatsApp"
+                >
+                  <MessageCircle className="h-3 w-3" />
+                </a>
+              </>
+            ) : (
+              <span className="text-xs italic text-rose-500">No phone on file</span>
+            )}
+          </div>
+
           {s.rejection_reason && (
             <p className="mt-1 text-xs text-rose-600 italic">Rejection: {s.rejection_reason}</p>
           )}

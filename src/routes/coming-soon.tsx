@@ -69,8 +69,16 @@ function ComingSoonPage() {
   const { from: rawFrom } = Route.useSearch();
   const dest = safeFrom(rawFrom);
 
-  const { isReady, isAdmin } = useAuth();
+  const { user, isReady, isAdmin } = useAuth();
   const { seller, loading: sellerLoading } = useSellerProfile();
+
+  // Logged-out visitors have no dashboard or product list to go to — send
+  // them to vendor onboarding instead, not into the /auth sign-in wall
+  // that /dashboard and /seller/products bounce unauthenticated users to.
+  // Once logged in, both buttons behave normally.
+  const loggedIn = isReady && !!user;
+  const dashboardHref = loggedIn ? "/dashboard" : "/register";
+  const uploadProductsHref = loggedIn ? "/seller/products" : "/register";
 
   useEffect(() => {
     // If someone lands here after launch has already passed, don't even
@@ -168,14 +176,14 @@ function ComingSoonPage() {
           {/* CTAs */}
           <div className="mx-auto mt-10 flex w-full max-w-md flex-col gap-3 sm:flex-row sm:justify-center">
             <Link
-              to="/dashboard"
+              to={dashboardHref}
               className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg transition hover:bg-primary/90 active:scale-[0.98]"
             >
               <LayoutDashboard className="h-4 w-4" />
               Go to Dashboard
             </Link>
             <Link
-              to="/seller/products"
+              to={uploadProductsHref}
               className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-espresso/20 bg-white/70 px-6 py-3 text-sm font-semibold text-espresso backdrop-blur-sm transition hover:bg-white active:scale-[0.98]"
             >
               <Package className="h-4 w-4" />

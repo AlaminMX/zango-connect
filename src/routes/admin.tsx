@@ -1612,7 +1612,7 @@ function SellerRow({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <Link to="/store/$slug" params={{ slug: s.slug }} className="truncate font-medium hover:text-primary">
+            <Link to="/admin/vendor/$id" params={{ id: s.id }} className="truncate font-medium hover:text-primary">
               {s.business_name}
             </Link>
             {s.is_verified && <VerifiedBadge className="h-4 w-4" />}

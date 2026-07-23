@@ -13,8 +13,9 @@
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { trackView } from "@/lib/viewTracking";
 import { TopBar } from "@/components/TopBar";
 import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
@@ -214,6 +215,17 @@ function StorePage() {
   useEffect(() => {
     if (vouchCount !== undefined) setLocalVouchCount(vouchCount);
   }, [vouchCount]);
+
+  // Log a store view — once per mount, and only once auth state has
+  // resolved so the owner checking their own store and admins reviewing it
+  // don't inflate the vendor's real view count.
+  const viewLoggedRef = useRef(false);
+  useEffect(() => {
+    if (!seller || !authReady || viewLoggedRef.current) return;
+    if (isOwner || isAdmin) return;
+    viewLoggedRef.current = true;
+    trackView("store", seller.id, seller.id);
+  }, [seller, authReady, isOwner, isAdmin]);
 
   useEffect(() => {
     if (seller && userId) {

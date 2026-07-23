@@ -152,6 +152,8 @@ export const getVendorAuthInfo = createServerFn({ method: "POST" })
       lastSignInAt: authUser.user?.last_sign_in_at ?? null,
     };
   });
+
+const noticeSchema = z.object({
   sellerId: z.string().uuid(),
   title: z.string().min(1).max(200),
   message: z.string().min(1).max(2000),

@@ -43,7 +43,7 @@ import {
   Package, Eye, MousePointerClick, TrendingUp, Clock,
 } from "lucide-react";
 
-export const Route = createFileRoute("/admin/vendor/$id")({ component: VendorDetailPage });
+export const Route = createFileRoute("/admin_/vendor/$id")({ component: VendorDetailPage });
 
 // ---------------------------------------------------------------------------
 // Types
@@ -84,7 +84,7 @@ function StatCard({ icon: Icon, label, value }: { icon: any; label: string; valu
 }
 
 function VendorDetailPage() {
-  const { id } = useParams({ from: "/admin/vendor/$id" });
+  const { id } = useParams({ from: "/admin_/vendor/$id" });
   const nav = useNavigate();
   const { user, isAdmin, isReady } = useAuth();
   const allowed = isReady && !!user && isAdmin;

@@ -73,7 +73,7 @@ function SearchPage() {
       let qb = supabase
         .from("products")
         .select("id, name, price, image_url, stock_status, status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, category, is_blocked, verification_status)")
-        .or(`name.ilike.%${debouncedQ}%,description.ilike.%${debouncedQ}%`)
+        .or(`name.ilike.%${sanitizePostgrestLike(debouncedQ)}%,description.ilike.%${sanitizePostgrestLike(debouncedQ)}%`)
         .eq("status", "active")
         .eq("sellers.is_blocked", false)
         .eq("sellers.verification_status", "approved")

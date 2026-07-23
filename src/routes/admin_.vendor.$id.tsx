@@ -102,6 +102,7 @@ function VendorDetailPage() {
   const [note, setNote]         = useState("");
   const [noteSaving, setNoteSaving] = useState(false);
   const [authInfo, setAuthInfo] = useState<{ email: string | null; lastSignInAt: string | null } | null>(null);
+  const [authInfoError, setAuthInfoError] = useState<string | null>(null);
   const [storeViews, setStoreViews]     = useState(0);
   const [productViews, setProductViews] = useState(0);
   const [loading, setLoading]   = useState(true);
@@ -178,9 +179,12 @@ function VendorDetailPage() {
       try {
         const info = await getVendorAuthInfo({ data: { sellerId: id } });
         setAuthInfo(info);
-      } catch (e) {
+        setAuthInfoError(null);
+      } catch (e: any) {
+        const msg = e?.message ?? String(e);
         console.warn("[vendor-detail] auth info fetch failed:", e);
         setAuthInfo(null);
+        setAuthInfoError(msg);
       }
     } catch (e) {
       console.error(e);
@@ -342,14 +346,26 @@ function VendorDetailPage() {
             <div><dt className="text-xs text-muted-foreground">Business name</dt><dd className="font-medium">{seller.business_name}</dd></div>
             <div>
               <dt className="text-xs text-muted-foreground">Email</dt>
-              <dd className="font-medium">{authInfo?.email ?? <span className="italic text-muted-foreground">Unavailable</span>}</dd>
+              <dd className="font-medium">
+                {authInfo?.email ?? (
+                  <span className="italic text-muted-foreground" title={authInfoError ?? undefined}>
+                    {authInfoError ? `Error: ${authInfoError}` : "Unavailable"}
+                  </span>
+                )}
+              </dd>
             </div>
             <div><dt className="text-xs text-muted-foreground">Phone</dt><dd className="font-medium">{seller.whatsapp_number}</dd></div>
             <div><dt className="text-xs text-muted-foreground">City of business</dt><dd className="font-medium">{seller.city}</dd></div>
             <div><dt className="text-xs text-muted-foreground">Date joined</dt><dd className="font-medium">{new Date(seller.created_at).toLocaleDateString()}</dd></div>
             <div>
               <dt className="text-xs text-muted-foreground">Last login</dt>
-              <dd className="font-medium">{authInfo?.lastSignInAt ? new Date(authInfo.lastSignInAt).toLocaleString() : <span className="italic text-muted-foreground">Never / unavailable</span>}</dd>
+              <dd className="font-medium">
+                {authInfo?.lastSignInAt
+                  ? new Date(authInfo.lastSignInAt).toLocaleString()
+                  : <span className="italic text-muted-foreground" title={authInfoError ?? undefined}>
+                      {authInfoError ? `Error: ${authInfoError}` : "Never / unavailable"}
+                    </span>}
+              </dd>
             </div>
             {seller.rejection_reason && (
               <div className="sm:col-span-2"><dt className="text-xs text-rose-600">Rejection reason</dt><dd className="text-rose-700">{seller.rejection_reason}</dd></div>

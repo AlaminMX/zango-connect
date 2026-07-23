@@ -102,6 +102,7 @@ function VendorDetailPage() {
   const [note, setNote]         = useState("");
   const [noteSaving, setNoteSaving] = useState(false);
   const [authInfo, setAuthInfo] = useState<{ email: string | null; lastSignInAt: string | null } | null>(null);
+  const [authInfoError, setAuthInfoError] = useState<string | null>(null);
   const [storeViews, setStoreViews]     = useState(0);
   const [productViews, setProductViews] = useState(0);
   const [loading, setLoading]   = useState(true);

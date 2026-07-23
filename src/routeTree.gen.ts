@@ -189,7 +189,7 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     getParentRoute: () => rootRouteImport,
   } as any)
 const AdminVendorIdRoute = AdminVendorIdRouteImport.update({
-  id: '/admin/vendor/$id',
+  id: '/admin_/vendor/$id',
   path: '/admin/vendor/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
@@ -197,7 +197,7 @@ const AdminVendorIdRoute = AdminVendorIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
-  '/admin': typeof AdminRouteWithChildren
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/cities': typeof CitiesRoute
   '/coming-soon': typeof ComingSoonRoute
@@ -229,7 +229,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
-  '/admin': typeof AdminRouteWithChildren
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/cities': typeof CitiesRoute
   '/coming-soon': typeof ComingSoonRoute
@@ -262,7 +262,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
-  '/admin': typeof AdminRouteWithChildren
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/cities': typeof CitiesRoute
   '/coming-soon': typeof ComingSoonRoute
@@ -289,7 +289,7 @@ export interface FileRoutesById {
   '/store/$slug': typeof StoreSlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
-  '/admin/vendor/$id': typeof AdminVendorIdRoute
+  '/admin_/vendor/$id': typeof AdminVendorIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -387,13 +387,13 @@ export interface FileRouteTypes {
     | '/store/$slug'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
-    | '/admin/vendor/$id'
+    | '/admin_/vendor/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountRoute: typeof AccountRoute
-  AdminRoute: typeof AdminRouteWithChildren
+  AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   CitiesRoute: typeof CitiesRoute
   ComingSoonRoute: typeof ComingSoonRoute
@@ -628,8 +628,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/vendor/$id': {
-      id: '/admin/vendor/$id'
+    '/admin_/vendor/$id': {
+      id: '/admin_/vendor/$id'
       path: '/admin/vendor/$id'
       fullPath: '/admin/vendor/$id'
       preLoaderRoute: typeof AdminVendorIdRouteImport
@@ -638,12 +638,10 @@ declare module '@tanstack/react-router' {
   }
 }
 
-const AdminRouteWithChildren = AdminRoute
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountRoute: AccountRoute,
-  AdminRoute: AdminRouteWithChildren,
+  AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   CitiesRoute: CitiesRoute,
   ComingSoonRoute: ComingSoonRoute,

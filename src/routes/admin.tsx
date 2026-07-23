@@ -487,31 +487,16 @@ function AdminPage() {
   // ── Seller delete ──
   const deleteSeller = async (id: string, name: string) => {
     if (!confirm(`PERMANENTLY DELETE seller "${name}"?\n\nThis will remove their profile, all products, and their login account. This cannot be undone.`)) return;
-
-    // Get the seller's user_id before deleting
-    const { data: sellerRow } = await supabase
-      .from("sellers")
-      .select("user_id")
-      .eq("id", id)
-      .single();
-
-    // Delete the seller row (cascades to products etc.)
-    const { error } = await supabase.from("sellers").delete().eq("id", id);
-    if (error) { toast.error(error.message); return; }
-
-    // Also hard-delete the auth user so the email can be reused
-    if (sellerRow?.user_id) {
-      try {
-        await supabase.rpc("admin_delete_user", { target_user_id: sellerRow.user_id });
-      } catch (e) {
-        console.warn("[admin] auth user deletion failed:", e);
-        toast.warning("Seller data deleted, but auth account may still exist. Run the SQL cleanup if needed.");
-      }
+    try {
+      const { deleteSeller: deleteSellerFn } = await import("@/lib/admin.functions");
+      await deleteSellerFn({ data: { sellerId: id } });
+      setSellers((prev) => prev.filter((s) => s.id !== id));
+      toast.success("Seller permanently deleted");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to delete seller");
     }
-
-    setSellers((prev) => prev.filter((s) => s.id !== id));
-    toast.success("Seller permanently deleted");
   };
+
 
   // ── Categories ──
   const openNewCat  = () => { setCatName(""); setCatImage(null); setEditingCat(null); setNewCatOpen(true); };

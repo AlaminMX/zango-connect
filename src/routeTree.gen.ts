@@ -38,7 +38,7 @@ import { Route as SellerProductsRouteImport } from './routes/seller.products'
 import { Route as StoreSlugRouteImport } from './routes/store.$slug'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
-import { Route as AdminVendorIdRouteImport } from './routes/admin.vendor.$id'
+import { Route as AdminVendorIdRouteImport } from './routes/admin_.vendor.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -189,9 +189,9 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     getParentRoute: () => rootRouteImport,
   } as any)
 const AdminVendorIdRoute = AdminVendorIdRouteImport.update({
-  id: '/vendor/$id',
-  path: '/vendor/$id',
-  getParentRoute: () => AdminRoute,
+  id: '/admin/vendor/$id',
+  path: '/admin/vendor/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -420,6 +420,7 @@ export interface RootRouteChildren {
   StoreSlugRoute: typeof StoreSlugRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
+  AdminVendorIdRoute: typeof AdminVendorIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -629,23 +630,15 @@ declare module '@tanstack/react-router' {
     }
     '/admin/vendor/$id': {
       id: '/admin/vendor/$id'
-      path: '/vendor/$id'
+      path: '/admin/vendor/$id'
       fullPath: '/admin/vendor/$id'
       preLoaderRoute: typeof AdminVendorIdRouteImport
-      parentRoute: typeof AdminRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
 
-interface AdminRouteChildren {
-  AdminVendorIdRoute: typeof AdminVendorIdRoute
-}
-
-const AdminRouteChildren: AdminRouteChildren = {
-  AdminVendorIdRoute: AdminVendorIdRoute,
-}
-
-const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+const AdminRouteWithChildren = AdminRoute
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -678,6 +671,7 @@ const rootRouteChildren: RootRouteChildren = {
   StoreSlugRoute: StoreSlugRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
+  AdminVendorIdRoute: AdminVendorIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -8,6 +8,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { sanitizePostgrestLike } from "@/lib/postgrestSafe";
 import { TopBar } from "@/components/TopBar";
 import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";

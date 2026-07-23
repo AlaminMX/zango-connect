@@ -179,9 +179,12 @@ function VendorDetailPage() {
       try {
         const info = await getVendorAuthInfo({ data: { sellerId: id } });
         setAuthInfo(info);
-      } catch (e) {
+        setAuthInfoError(null);
+      } catch (e: any) {
+        const msg = e?.message ?? String(e);
         console.warn("[vendor-detail] auth info fetch failed:", e);
         setAuthInfo(null);
+        setAuthInfoError(msg);
       }
     } catch (e) {
       console.error(e);

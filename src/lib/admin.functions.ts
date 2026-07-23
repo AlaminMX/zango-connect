@@ -123,7 +123,35 @@ export const deleteProduct = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-const noticeSchema = z.object({
+const vendorAuthInfoSchema = z.object({ sellerId: z.string().uuid() });
+
+// Email and last-login live in auth.users, which is never reachable via
+// PostgREST/RLS regardless of role — Supabase blocks it at the schema
+// level. This is the one piece of the Vendor Details page that genuinely
+// needs the service-role client; everything else on that page (warnings,
+// notes, page_views, seller/product rows) goes through normal RLS-gated
+// reads because the admin's own session already satisfies has_role(admin).
+export const getVendorAuthInfo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => vendorAuthInfoSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { data: seller, error: sellerError } = await supabaseAdmin
+      .from("sellers")
+      .select("user_id")
+      .eq("id", data.sellerId)
+      .maybeSingle();
+    if (sellerError) throw new Error(sellerError.message);
+    if (!seller) throw new Error("Seller not found");
+
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(seller.user_id);
+    if (authError) throw new Error(authError.message);
+
+    return {
+      email: authUser.user?.email ?? null,
+      lastSignInAt: authUser.user?.last_sign_in_at ?? null,
+    };
+  });
   sellerId: z.string().uuid(),
   title: z.string().min(1).max(200),
   message: z.string().min(1).max(2000),

@@ -3,8 +3,9 @@
  */
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { trackView } from "@/lib/viewTracking";
 import { TopBar } from "@/components/TopBar";
 import { Footer } from "@/components/Footer";
 import { BackButton } from "@/components/BackButton";
@@ -39,6 +40,17 @@ function ProductDetail() {
   });
 
   const saved = useIsWishlisted(id);
+
+  // Log a product view — once per mount. Unlike store.$slug.tsx, this page
+  // has no owner/admin session detection today, so unlike the store-view
+  // tracker above this can't exclude the seller's own visits yet. Worth
+  // knowing before you treat this number as precise.
+  const viewLoggedRef = useRef(false);
+  useEffect(() => {
+    if (!data || viewLoggedRef.current) return;
+    viewLoggedRef.current = true;
+    trackView("product", data.id, data.seller_id);
+  }, [data]);
 
   if (isLoading) return <PageLoader label="Loading product…" />;
   if (error || !data) {

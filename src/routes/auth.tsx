@@ -13,7 +13,12 @@ import { humanizeError } from "@/lib/error-messages";
 
 export const Route = createFileRoute("/auth")({ component: AuthPage });
 
-type Mode = "signin" | "signup" | "forgot" | "reset";
+// Public sign-up is gone — this is a sign-in-only page now. New vendor
+// accounts are created inline as step 1 of /register (see that file's own
+// header comment) or by an admin. "signup" is intentionally not a Mode
+// anymore, not just hidden — removing it from the type means the compiler
+// catches it if anything tries to route here in signup mode again.
+type Mode = "signin" | "forgot" | "reset";
 
 function AuthPage() {
   const nav = useNavigate();
@@ -90,20 +95,7 @@ function AuthPage() {
     setLoading(true);
 
     try {
-      if (mode === "signup") {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: `${window.location.origin}/verified` },
-        });
-        if (error) { toast.error(humanizeError(error.message)); return; }
-        if (data.user && !data.session) {
-          nav({ to: "/verify-email", search: { email } });
-          return;
-        }
-        if (data.user) await routeAfterLogin(data.user.id);
-
-      } else if (mode === "signin") {
+      if (mode === "signin") {
         // Race the actual sign-in against a 12-second timeout so the
         // button can never get permanently stuck in the loading state.
         const signInPromise = supabase.auth.signInWithPassword({ email, password });
@@ -264,48 +256,16 @@ function AuthPage() {
     );
   }
 
-  // ── Sign in / Sign up ─────────────────────────────────────────────────────
-  const tabCls = (m: "signin" | "signup") =>
-    `flex-1 rounded-full px-4 py-1.5 text-sm font-medium transition ${
-      mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-    }`;
-
+  // ── Sign in (only mode left on this page) ─────────────────────────────────
   return (
     <div className="min-h-screen bg-background">
       <TopBar />
       <div className="mx-auto max-w-md px-5 py-10">
         <BackButton fallback="/" />
 
-        <div
-          role="tablist"
-          aria-label="Sign in or sign up"
-          className="mt-6 flex gap-2 rounded-full border border-border-warm bg-card p-1 shadow-warm"
-        >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mode === "signin"}
-            onClick={() => setMode("signin")}
-            className={tabCls("signin")}
-          >
-            Sign in
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mode === "signup"}
-            onClick={() => setMode("signup")}
-            className={tabCls("signup")}
-          >
-            Sign up
-          </button>
-        </div>
-
-        <div className="mt-5">
-          <h1 className="font-serif text-3xl">{mode === "signin" ? "Welcome back" : "Create your account"}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {mode === "signin" ? "Sign in to manage your store." : "Start your store in minutes."}
-          </p>
+        <div className="mt-6">
+          <h1 className="font-serif text-3xl">Welcome back</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Sign in to manage your store.</p>
         </div>
 
         <form onSubmit={submit} className="mt-6 space-y-4 rounded-2xl border bg-card p-6 shadow-warm">
@@ -323,27 +283,25 @@ function AuthPage() {
           <div>
             <div className="flex items-center justify-between">
               <Label htmlFor="pw">Password</Label>
-              {mode === "signin" && (
-                <button
-                  type="button"
-                  onClick={() => setMode("forgot")}
-                  className="text-xs text-muted-foreground hover:text-primary underline underline-offset-2"
-                >
-                  Forgot password?
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => setMode("forgot")}
+                className="text-xs text-muted-foreground hover:text-primary underline underline-offset-2"
+              >
+                Forgot password?
+              </button>
             </div>
             <PasswordInput
               id="pw"
               required
               minLength={6}
-              autoComplete={mode === "signin" ? "current-password" : "new-password"}
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
           <Button type="submit" disabled={loading} className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
-            {loading ? "…" : mode === "signin" ? "Sign in" : "Create account"}
+            {loading ? "…" : "Sign in"}
           </Button>
         </form>
         <p className="mt-4 text-center text-xs text-muted-foreground">

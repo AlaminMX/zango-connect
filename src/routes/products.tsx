@@ -70,7 +70,7 @@ function ProductsPage() {
 
       if (activeCat)  qb = qb.eq("sellers.category", activeCat);
       if (activeCity) qb = qb.eq("sellers.city", activeCity);
-      if (q.trim())   qb = qb.or(`name.ilike.%${q.trim()}%,description.ilike.%${q.trim()}%`);
+      if (q.trim())   { const sq = sanitizePostgrestLike(q); if (sq) qb = qb.or(`name.ilike.%${sq}%,description.ilike.%${sq}%`); }
 
       const { data, error } = await qb.abortSignal(AbortSignal.timeout(10000));
       if (error) throw error;

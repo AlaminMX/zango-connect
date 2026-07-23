@@ -75,12 +75,19 @@ export const deleteSeller = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => deleteSellerSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
+    // Capture user_id BEFORE deleting so we can hard-delete the auth account.
+    const { data: sellerRow } = await supabaseAdmin
+      .from("sellers").select("user_id").eq("id", data.sellerId).maybeSingle();
     await supabaseAdmin.from("products").delete().eq("seller_id", data.sellerId);
     await supabaseAdmin.from("seller_notices").delete().eq("seller_id", data.sellerId);
     await supabaseAdmin.from("vouches").delete().or(`vouched_seller_id.eq.${data.sellerId},voucher_seller_id.eq.${data.sellerId}`);
     await supabaseAdmin.from("whatsapp_clicks").delete().eq("seller_id", data.sellerId);
     const { error } = await supabaseAdmin.from("sellers").delete().eq("id", data.sellerId);
     if (error) throw new Error(error.message);
+    if (sellerRow?.user_id) {
+      const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(sellerRow.user_id);
+      if (authErr) console.warn("[admin] auth user delete failed:", authErr.message);
+    }
     await audit(context.userId, "seller.delete", "seller", data.sellerId);
     return { ok: true };
   });

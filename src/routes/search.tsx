@@ -11,6 +11,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { sanitizePostgrestLike } from "@/lib/postgrestSafe";
 import { TopBar } from "@/components/TopBar";
 import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
@@ -73,7 +74,7 @@ function SearchPage() {
       let qb = supabase
         .from("products")
         .select("id, name, price, image_url, stock_status, status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, category, is_blocked, verification_status)")
-        .or(`name.ilike.%${debouncedQ}%,description.ilike.%${debouncedQ}%`)
+        .or(`name.ilike.%${sanitizePostgrestLike(debouncedQ)}%,description.ilike.%${sanitizePostgrestLike(debouncedQ)}%`)
         .eq("status", "active")
         .eq("sellers.is_blocked", false)
         .eq("sellers.verification_status", "approved")
@@ -93,7 +94,7 @@ function SearchPage() {
       let qb = supabase
         .from("sellers")
         .select("id, slug, business_name, category, city, profile_photo_url, is_verified, rating")
-        .or(`business_name.ilike.%${debouncedQ}%,name.ilike.%${debouncedQ}%,bio.ilike.%${debouncedQ}%,category.ilike.%${debouncedQ}%,city.ilike.%${debouncedQ}%`)
+        .or(`business_name.ilike.%${sanitizePostgrestLike(debouncedQ)}%,name.ilike.%${sanitizePostgrestLike(debouncedQ)}%,bio.ilike.%${sanitizePostgrestLike(debouncedQ)}%,category.ilike.%${sanitizePostgrestLike(debouncedQ)}%,city.ilike.%${sanitizePostgrestLike(debouncedQ)}%`)
         .eq("is_blocked", false)
         .eq("verification_status", "approved")
         .limit(20);

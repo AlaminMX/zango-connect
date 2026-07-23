@@ -94,7 +94,7 @@ function SearchPage() {
       let qb = supabase
         .from("sellers")
         .select("id, slug, business_name, category, city, profile_photo_url, is_verified, rating")
-        .or(`business_name.ilike.%${debouncedQ}%,name.ilike.%${debouncedQ}%,bio.ilike.%${debouncedQ}%,category.ilike.%${debouncedQ}%,city.ilike.%${debouncedQ}%`)
+        .or(`business_name.ilike.%${sanitizePostgrestLike(debouncedQ)}%,name.ilike.%${sanitizePostgrestLike(debouncedQ)}%,bio.ilike.%${sanitizePostgrestLike(debouncedQ)}%,category.ilike.%${sanitizePostgrestLike(debouncedQ)}%,city.ilike.%${sanitizePostgrestLike(debouncedQ)}%`)
         .eq("is_blocked", false)
         .eq("verification_status", "approved")
         .limit(20);

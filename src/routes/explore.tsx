@@ -8,7 +8,7 @@
  */
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
 import { Footer } from "@/components/Footer";
@@ -16,10 +16,12 @@ import { ProductCard } from "@/components/ProductCard";
 import { ProductSkeleton } from "@/components/LoadingSpinner";
 import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+
 import { useCity } from "@/lib/cityContext";
 import { getTrendingSellers } from "@/lib/homepage-cms";
 import { getCategoryIcon } from "@/lib/category-icons";
+import { MarketplaceSearchBox } from "@/components/search/MarketplaceSearchBox";
+import { useMarketplaceSearch } from "@/hooks/use-marketplace-search";
 
 import { assertLaunchGate } from "@/lib/launchGate";
 export const Route = createFileRoute("/explore")({ beforeLoad: assertLaunchGate, component: Explore });
@@ -33,6 +35,7 @@ function Explore() {
   const [activeCat, setActiveCat] = useState<string | null>(null);
   const [activeState, setActiveState] = useState<string | null>(null);
   const [shown, setShown] = useState(PAGE_SIZE);
+  const selectedCityFilter = selectedCity && selectedCity !== "All" ? selectedCity : undefined;
 
   // ── Categories ──────────────────────────────────────────────────────────────
   const { data: categories = [] } = useQuery({
@@ -177,7 +180,21 @@ function Explore() {
     },
   });
 
-  const visible = useMemo(() => products.slice(0, shown), [products, shown]);
+  const activeCategoryName = activeCat ? (categories as any[]).find((c) => c.slug === activeCat)?.name : undefined;
+  const { data: liveResults, isFetching: liveSearchFetching } = useMarketplaceSearch({
+    query: q,
+    city: selectedCityFilter,
+    state: activeState ?? undefined,
+    category: activeCategoryName,
+    limit: 80,
+    includeSellers: false,
+  });
+  const searchedProducts = q.trim() ? (liveResults?.products ?? []) : products;
+  const visible = useMemo(() => searchedProducts.slice(0, shown), [searchedProducts, shown]);
+
+  useEffect(() => {
+    setShown(PAGE_SIZE);
+  }, [q, activeCat, activeState, selectedCityFilter]);
 
   const clearFilters = () => {
     setActiveCat(null);
@@ -190,7 +207,7 @@ function Explore() {
   const submitSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!q.trim()) return;
-    nav({ to: "/search", search: { q: q.trim(), city: selectedCity !== "All" ? selectedCity : undefined } });
+    nav({ to: "/search", search: { q: q.trim(), city: selectedCityFilter } });
   };
 
   return (
@@ -201,13 +218,13 @@ function Explore() {
       <div className="sticky top-16 z-30 border-b border-border-warm bg-background/95 backdrop-blur">
         <div className="mx-auto max-w-6xl px-5 py-3">
           <form onSubmit={submitSearch} className="flex items-center gap-2 rounded-full border border-border-warm bg-card px-3 py-1.5 shadow-warm">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <input
+            <MarketplaceSearchBox
               value={q}
-              onChange={(e) => setQ(e.target.value)}
+              onChange={setQ}
+              onSubmit={(value) => setQ(value)}
+              isSearching={liveSearchFetching}
               placeholder="Search products, sellers, categories…"
-              className="min-h-[36px] flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-              aria-label="Search marketplace"
+              inputClassName="min-h-[36px]"
             />
             <Button type="submit" size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
               Search
@@ -275,7 +292,7 @@ function Explore() {
 
         {/* Products grid */}
         <section className="mt-6">
-          {isLoading ? (
+          {isLoading && !q.trim() ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {Array.from({ length: 8 }).map((_, i) => <ProductSkeleton key={i} />)}
             </div>
@@ -286,7 +303,7 @@ function Explore() {
             </div>
           ) : visible.length === 0 ? (
             <div className="py-16 text-center">
-              <p className="text-sm text-muted-foreground">No products found{hasFilters ? " for this filter" : ""}.</p>
+              <p className="text-sm text-muted-foreground">No products found{q.trim() ? ` for "${q.trim()}"` : hasFilters ? " for this filter" : ""}.</p>
               {hasFilters && (
                 <button type="button" onClick={clearFilters} className="mt-3 text-xs font-semibold text-primary hover:underline">
                   Clear filters
@@ -295,7 +312,7 @@ function Explore() {
             </div>
           ) : (
             <>
-              <p className="mb-3 text-xs text-muted-foreground">{products.length} product{products.length !== 1 ? "s" : ""}</p>
+              <p className="mb-3 text-xs text-muted-foreground">{searchedProducts.length} product{searchedProducts.length !== 1 ? "s" : ""}{q.trim() ? ` for "${q.trim()}"` : ""}</p>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {visible.map((p: any) => (
                   <ProductCard
@@ -313,7 +330,7 @@ function Explore() {
                   />
                 ))}
               </div>
-              {products.length > shown && (
+              {searchedProducts.length > shown && (
                 <div className="mt-8 text-center">
                   <Button onClick={() => setShown((n) => n + PAGE_SIZE)} variant="outline" className="min-h-[44px] rounded-full border-border-warm bg-card px-8">
                     Load more

@@ -20,8 +20,9 @@ import { useCity } from "@/lib/cityContext";
 import { useAuth } from "@/lib/authContext";
 import { useSellerProfile } from "@/lib/sellerProfile";
 import { iconFor, hausaFor } from "@/lib/categories";
-import { Search, ArrowRight, Store, LayoutGrid, ChevronRight } from "lucide-react";
+import { ArrowRight, Store, LayoutGrid, ChevronRight } from "lucide-react";
 import { getTrendingSellers } from "@/lib/homepage-cms";
+import { MarketplaceSearchBox } from "@/components/search/MarketplaceSearchBox";
 
 import { assertLaunchGate } from "@/lib/launchGate";
 export const Route = createFileRoute("/")({ beforeLoad: assertLaunchGate, component: Index });
@@ -238,16 +239,14 @@ function Index() {
           ) : (
             <>
               <form onSubmit={submitSearch} className="mt-8 flex w-full max-w-lg gap-2">
-                <div className="relative flex-1">
-                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-                  <input
-                    type="search"
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                    placeholder="Search products, sellers…"
-                    className="h-12 w-full rounded-full border border-white/15 bg-white/10 pl-10 pr-4 text-sm text-white placeholder:text-white/40 backdrop-blur-sm transition focus:border-white/30 focus:bg-white/15 focus:outline-none"
-                  />
-                </div>
+                <MarketplaceSearchBox
+                  value={q}
+                  onChange={setQ}
+                  onSubmit={(value) => nav({ to: "/search", search: { q: value, city: city !== "All" ? city : undefined } })}
+                  placeholder="Search products, sellers…"
+                  dark
+                  inputClassName="h-12 rounded-full border border-white/15 bg-white/10 text-white placeholder:text-white/40 backdrop-blur-sm transition focus:border-white/30 focus:bg-white/15"
+                />
                 <button
                   type="submit"
                   className="h-12 shrink-0 rounded-full bg-[#C9674A] px-5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#B85C41] active:scale-95"

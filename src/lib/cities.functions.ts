@@ -101,9 +101,12 @@ export const adminUpsertCity = createServerFn({ method: "POST" })
       return { ok: true, id: data.id };
     }
     const slug = slugify(data.name);
-    const { data: row, error } = await supabaseAdmin.from("cities_of_business")
-      .insert({ name: data.name, state: data.state, slug, is_active: data.is_active, sort_order: data.sort_order })
+    const { data: stateId, error: stErr } = await (supabaseAdmin as any).rpc("ensure_state", { _name: data.state });
+    if (stErr || !stateId) throw new Error(stErr?.message ?? "Couldn't resolve state");
+    const { data: row, error } = await (supabaseAdmin as any).from("cities_of_business")
+      .insert({ name: data.name, state: data.state, slug, is_active: data.is_active, sort_order: data.sort_order, state_id: stateId })
       .select().single();
+
     if (error) throw new Error(error.message);
     await audit(context.userId, "city.create", row.id, { name: data.name });
     return { ok: true, id: row.id };

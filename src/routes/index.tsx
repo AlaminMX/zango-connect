@@ -198,7 +198,7 @@ function Index() {
           ].join(", "),
         }}
       >
-        <div className="mx-auto flex max-w-3xl flex-col items-center px-5 py-16 text-center sm:py-24">
+        <div className="mx-auto flex max-w-3xl flex-col items-center px-5 py-16 text-center sm:py-24 lg:py-28">
           {/* eyebrow */}
           <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/8 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.22em] text-white/70">
             <span className="h-1.5 w-1.5 rounded-full bg-[#C9674A]" />
@@ -213,7 +213,7 @@ function Index() {
             }
           </h1>
 
-          <p className="mt-4 max-w-md text-sm leading-relaxed text-white/60">
+          <p className="mt-5 max-w-xl text-base leading-relaxed text-white/70 sm:text-lg">
             {isSeller
               ? "Manage your store, track your products, and connect with buyers."
               : `Discover handcrafted fashion, food, beauty and more from ${sellerCount ? sellerCount.toLocaleString() : "verified"} trusted sellers.`
@@ -225,20 +225,20 @@ function Index() {
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
               <Link
                 to="/dashboard"
-                className="inline-flex items-center gap-2 rounded-full bg-[#C9674A] px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-[#B85C41] active:scale-95"
+                className="inline-flex min-h-[48px] items-center gap-2 rounded-full bg-[#C9674A] px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#B85C41] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1A0B08] active:scale-95"
               >
                 <LayoutGrid className="h-4 w-4" /> Go to my dashboard
               </Link>
               <Link
                 to="/seller/products"
-                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/8 px-6 py-3 text-sm font-medium text-white/80 transition hover:bg-white/15"
+                className="inline-flex min-h-[48px] items-center gap-2 rounded-full border border-white/20 bg-white/8 px-6 py-3 text-sm font-medium text-white/80 transition hover:-translate-y-0.5 hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1A0B08] active:scale-95"
               >
                 My products <ChevronRight className="h-4 w-4" />
               </Link>
             </div>
           ) : (
             <>
-              <form onSubmit={submitSearch} className="mt-8 flex w-full max-w-lg gap-2">
+              <form onSubmit={submitSearch} className="mt-9 flex w-full max-w-xl flex-col gap-3 sm:flex-row">
                 <MarketplaceSearchBox
                   value={q}
                   onChange={setQ}
@@ -249,23 +249,23 @@ function Index() {
                 />
                 <button
                   type="submit"
-                  className="h-12 shrink-0 rounded-full bg-[#C9674A] px-5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#B85C41] active:scale-95"
+                  className="h-12 shrink-0 rounded-full bg-[#C9674A] px-7 text-sm font-semibold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#B85C41] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1A0B08] active:scale-95"
                 >
                   Search
                 </button>
               </form>
 
-              <div className="mt-5 flex items-center gap-4">
+              <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:gap-4">
                 <Link
                   to="/explore"
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-white/70 transition hover:text-white"
+                  className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-white/15 bg-white/12 px-5 py-2.5 text-sm font-semibold text-white shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/18 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1A0B08] active:scale-95"
                 >
                   Browse all products <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
-                <span className="text-white/20">·</span>
+                <span className="hidden text-white/20 sm:inline">·</span>
                 <Link
                   to="/register"
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-[#D97C5A] transition hover:text-[#E8906E]"
+                  className="inline-flex min-h-[44px] items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-[#E8906E] transition hover:bg-white/8 hover:text-[#F0A283] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1A0B08] active:scale-95"
                 >
                   <Store className="h-3.5 w-3.5" /> Sell on Sutura
                 </Link>
@@ -277,9 +277,9 @@ function Index() {
 
       {/* ── CATEGORY SHORTCUTS ───────────────────────────────────────────── */}
       {(categories?.length ?? 0) > 0 && (
-        <section className="border-b border-border-warm bg-card">
-          <div className="mx-auto max-w-6xl px-5">
-            <div className="flex gap-3 overflow-x-auto py-4 scrollbar-hide">
+        <section className="border-b border-border-warm bg-card/95 shadow-[0_10px_30px_-28px_rgba(62,39,35,0.45)]">
+          <div className="mx-auto max-w-6xl px-4 sm:px-5">
+            <div className="grid auto-cols-[minmax(6.75rem,1fr)] grid-flow-col gap-3 overflow-x-auto py-5 scrollbar-hide sm:auto-cols-fr sm:grid-flow-row sm:grid-cols-4 sm:gap-4 md:grid-cols-7">
               {(categories ?? []).map((cat: any) => {
                 const icon = iconFor(cat.name);
                 return (
@@ -287,14 +287,14 @@ function Index() {
                     key={cat.id}
                     to="/category/$slug"
                     params={{ slug: cat.slug }}
-                    className="group flex shrink-0 flex-col items-center gap-1.5 rounded-2xl border border-border-warm bg-background px-4 py-3 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-warm active:scale-95"
+                    className="group flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-3xl border border-border-warm bg-background px-4 py-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-white hover:shadow-warm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:scale-95"
                   >
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${icon.containerClass}`}>
-                      <icon.Component size={24} />
+                    <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${icon.containerClass} ring-1 ring-inset ring-espresso/5 transition group-hover:scale-105 sm:h-16 sm:w-16`}>
+                      <icon.Component size={34} />
                     </div>
-                    <span className="whitespace-nowrap text-[11px] font-semibold text-espresso">{cat.name}</span>
+                    <span className="max-w-full truncate text-xs font-semibold leading-tight text-espresso sm:text-sm">{cat.name}</span>
                     {hausaFor(cat.name) && (
-                      <span className="whitespace-nowrap text-[9px] font-medium uppercase tracking-wide text-sage-deep/70">
+                      <span className="max-w-full truncate text-[10px] font-semibold uppercase tracking-wide text-sage-deep/75">
                         {hausaFor(cat.name)}
                       </span>
                     )}
@@ -305,13 +305,13 @@ function Index() {
               {/* All products shortcut */}
               <Link
                 to="/explore"
-                className="group flex shrink-0 flex-col items-center gap-1.5 rounded-2xl border border-dashed border-border-warm bg-background px-4 py-3 transition hover:-translate-y-0.5 hover:border-primary/40"
+                className="group flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-3xl border border-dashed border-primary/35 bg-primary/5 px-4 py-4 text-center transition hover:-translate-y-0.5 hover:border-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:scale-95"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-warm">
-                  <ArrowRight className="h-5 w-5 text-sage-deep" />
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-warm ring-1 ring-inset ring-espresso/5 transition group-hover:scale-105 sm:h-16 sm:w-16">
+                  <ArrowRight className="h-7 w-7 text-sage-deep" />
                 </div>
-                <span className="whitespace-nowrap text-[11px] font-semibold text-muted-foreground">All</span>
-                <span className="whitespace-nowrap text-[9px] font-medium uppercase tracking-wide text-sage-deep/70">Duka</span>
+                <span className="text-xs font-semibold text-espresso sm:text-sm">All</span>
+                <span className="max-w-full truncate text-[10px] font-semibold uppercase tracking-wide text-sage-deep/75">Duka</span>
               </Link>
             </div>
           </div>
@@ -319,28 +319,28 @@ function Index() {
       )}
 
       {/* ── TRENDING SELLERS ─────────────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-5 py-12">
-        <div className="mb-6 flex items-end justify-between">
+      <section className="mx-auto max-w-6xl px-4 py-12 sm:px-5 sm:py-14 lg:py-16">
+        <div className="mb-7 flex items-end justify-between gap-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-sage-deep">
               {city !== "All" ? city : "This week"}
             </p>
-            <h2 className="mt-1 font-display text-3xl text-espresso">Trending sellers</h2>
+            <h2 className="mt-1 font-display text-3xl leading-tight text-espresso sm:text-4xl">Trending sellers</h2>
           </div>
           <Link
             to="/sellers"
-            className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-sage-deep transition hover:text-primary"
+            className="shrink-0 rounded-full px-2 py-2 text-xs font-semibold uppercase tracking-wider text-sage-deep transition hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
-            View all <ArrowRight className="h-3 w-3" />
+            <span className="inline-flex items-center gap-1">View all <ArrowRight className="h-3 w-3" /></span>
           </Link>
         </div>
 
         {sellersLoading ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => <SellerSkeleton key={i} />)}
           </div>
         ) : hasSellers ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
             {trendingSellers!.map((s: any) => (
               <SellerCard
                 key={s.id}
@@ -360,7 +360,7 @@ function Index() {
             <p className="mt-1 text-sm text-muted-foreground">Be the first to open a store.</p>
             <Link
               to="/register"
-              className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+              className="mt-5 inline-flex min-h-[44px] items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:scale-95"
             >
               <Store className="h-4 w-4" /> Open your store
             </Link>
@@ -369,28 +369,28 @@ function Index() {
       </section>
 
       {/* ── FEATURED PRODUCTS ────────────────────────────────────────────── */}
-      <section className="mx-auto max-w-6xl px-5 pb-12">
-        <div className="mb-6 flex items-end justify-between">
+      <section className="mx-auto max-w-6xl px-4 pb-12 sm:px-5 sm:pb-14 lg:pb-16">
+        <div className="mb-7 flex items-end justify-between gap-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-sage-deep">Just in</p>
-            <h2 className="mt-1 font-display text-3xl text-espresso">
+            <h2 className="mt-1 font-display text-3xl leading-tight text-espresso sm:text-4xl">
               {featuredSection?.title ?? "Featured products"}
             </h2>
           </div>
           <Link
             to="/explore"
-            className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-sage-deep transition hover:text-primary"
+            className="shrink-0 rounded-full px-2 py-2 text-xs font-semibold uppercase tracking-wider text-sage-deep transition hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
-            View all <ArrowRight className="h-3 w-3" />
+            <span className="inline-flex items-center gap-1">View all <ArrowRight className="h-3 w-3" /></span>
           </Link>
         </div>
 
         {productsLoading ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => <ProductSkeleton key={i} />)}
           </div>
         ) : hasProducts ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
             {featuredProducts!.map((p: any, i: number) => {
               const s = p.sellers;
               return (
@@ -416,11 +416,12 @@ function Index() {
         )}
 
         {hasProducts && (
-          <div className="mt-8 text-center">
-            <Link to="/explore">
-              <button className="inline-flex items-center gap-2 rounded-full border border-border-warm bg-card px-6 py-3 text-sm font-medium text-espresso shadow-warm transition hover:bg-surface-warm hover:shadow-warm-lg active:scale-95">
-                Browse all products <ArrowRight className="h-4 w-4" />
-              </button>
+          <div className="mt-9 text-center sm:mt-10">
+            <Link
+              to="/explore"
+              className="inline-flex min-h-[48px] items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-7 py-3.5 text-sm font-bold text-primary shadow-warm transition hover:-translate-y-0.5 hover:border-primary/45 hover:bg-primary hover:text-primary-foreground hover:shadow-warm-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:scale-95 sm:px-8"
+            >
+              Browse all products <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         )}
@@ -460,14 +461,14 @@ function Index() {
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
               <Link
                 to="/register"
-                className="inline-flex items-center gap-2 rounded-full bg-[#C9674A] px-7 py-3.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#B85C41] active:scale-95"
+                className="inline-flex min-h-[48px] items-center gap-2 rounded-full bg-[#C9674A] px-7 py-3.5 text-sm font-semibold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#B85C41] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1A0B08] active:scale-95"
               >
                 <Store className="h-4 w-4" /> Open your store — it's free
               </Link>
               {!user && (
                 <Link
                   to="/auth"
-                  className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/8 px-6 py-3.5 text-sm font-medium text-white/80 transition hover:bg-white/15"
+                  className="inline-flex min-h-[48px] items-center gap-2 rounded-full border border-white/20 bg-white/8 px-6 py-3.5 text-sm font-medium text-white/80 transition hover:-translate-y-0.5 hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1A0B08] active:scale-95"
                 >
                   Already have an account? Sign in
                 </Link>
@@ -485,7 +486,7 @@ function Index() {
         <div className="fixed bottom-20 right-4 z-40 sm:hidden">
           <Link
             to="/register"
-            className="flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-warm-lg transition hover:bg-primary/90 active:scale-95"
+            className="flex min-h-[48px] items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-warm-lg transition hover:-translate-y-0.5 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:scale-95"
             aria-label="Open your store"
           >
             <Store className="h-4 w-4" />

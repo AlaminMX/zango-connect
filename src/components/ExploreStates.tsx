@@ -42,26 +42,26 @@ export function ExploreStates() {
   const top5 = states.slice(0, 5);
 
   return (
-    <section className="mx-auto max-w-6xl px-5 py-12">
-      <div className="mb-6 flex items-end justify-between">
+    <section className="mx-auto max-w-6xl px-4 py-12 sm:px-5 sm:py-14 lg:py-16">
+      <div className="mb-7 flex items-end justify-between gap-4">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.22em] text-sage-deep">Regional hubs</p>
-          <h2 className="mt-1 font-display text-3xl text-espresso">Explore by state</h2>
+          <h2 className="mt-1 font-display text-3xl leading-tight text-espresso sm:text-4xl">Explore by state</h2>
         </div>
         <Link
           to="/states"
-          className="hidden text-xs font-semibold uppercase tracking-[0.18em] text-sage-deep hover:text-primary sm:inline"
+          className="hidden rounded-full px-2 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-sage-deep transition hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:inline"
         >
           All states →
         </Link>
       </div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:grid-cols-6">
         {top5.map((s) => (
           <Link
             key={s.id}
             to="/state/$slug"
             params={{ slug: s.slug }}
-            className="group flex flex-col justify-between rounded-3xl border border-border-warm bg-surface-warm/60 p-5 transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-surface-warm hover:shadow-warm"
+            className="group flex min-h-[172px] flex-col justify-between rounded-3xl border border-border-warm bg-surface-warm/60 p-5 transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-surface-warm hover:shadow-warm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             <div className="flex items-start justify-between">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-primary">
@@ -82,7 +82,7 @@ export function ExploreStates() {
         ))}
         <Link
           to="/states"
-          className="group flex flex-col justify-between rounded-3xl border-2 border-dashed border-primary/40 bg-primary/5 p-5 transition hover:-translate-y-0.5 hover:border-primary hover:bg-primary/10"
+          className="group flex min-h-[172px] flex-col justify-between rounded-3xl border-2 border-dashed border-primary/40 bg-primary/5 p-5 transition hover:-translate-y-0.5 hover:border-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           <div className="flex items-start justify-between">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">

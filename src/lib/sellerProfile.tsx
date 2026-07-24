@@ -18,6 +18,9 @@ export interface SellerProfile {
   profile_photo_url: string | null;
   cover_photo_url: string | null;
   bio: string | null;
+  category: string | null;
+  rating: number | null;
+  created_at: string | null;
 }
 
 interface Ctx {
@@ -43,7 +46,7 @@ export function SellerProfileProvider({ children }: { children: ReactNode }) {
       try {
         const { data } = await supabase
           .from("sellers")
-          .select("id, slug, business_name, verification_status, is_verified, is_blocked, city, whatsapp_number, profile_photo_url, cover_photo_url, bio")
+          .select("id, slug, business_name, verification_status, is_verified, is_blocked, city, whatsapp_number, profile_photo_url, cover_photo_url, bio, category, rating, created_at")
           .eq("user_id", user.id)
           .abortSignal(AbortSignal.timeout(8000))
           .maybeSingle();

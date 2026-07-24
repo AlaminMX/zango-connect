@@ -15,7 +15,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { ProductSkeleton } from "@/components/LoadingSpinner";
 import { SellerCard } from "@/components/SellerCard";
 import { WelcomeModal } from "@/components/WelcomeModal";
-import { ExploreCities } from "@/components/ExploreCities";
+import { ExploreStates } from "@/components/ExploreStates";
 import { useCity } from "@/lib/cityContext";
 import { useAuth } from "@/lib/authContext";
 import { useSellerProfile } from "@/lib/sellerProfile";

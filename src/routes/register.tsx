@@ -236,11 +236,12 @@ function Register() {
     }
     const { data, error } = await supabase.from("sellers").insert({
       user_id: uid!, name, business_name: businessName.trim(), slug,
-      whatsapp_number: whatsapp, city, city_id: resolvedCityId, category, bio,
+      whatsapp_number: whatsapp, city, state: selectedState, city_id: resolvedCityId, category, bio,
       verification_status: "pending",
       onboarding_status: "step1_complete",
       is_blocked: false,
     }).select().single();
+
     setBusy(false);
     if (error) { toast.error(humanizeError(error.message)); return; }
     setSellerId(data.id);

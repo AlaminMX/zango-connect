@@ -252,7 +252,7 @@ function Explore() {
             <div className="flex gap-2 overflow-x-auto pb-2">
               <CatPill active={activeState === null} onClick={() => { setActiveState(null); setShown(PAGE_SIZE); }}>All states</CatPill>
               {states.map((s) => (
-                <CatPill key={s} active={activeState === s} onClick={() => { setActiveState(s); setShown(PAGE_SIZE); }}>{s}</CatPill>
+                <CatPill key={s} active={activeState === s} onClick={() => { setActiveState((cur) => (cur === s ? null : s)); setShown(PAGE_SIZE); }}>{s}</CatPill>
               ))}
             </div>
           </section>
@@ -265,7 +265,7 @@ function Explore() {
             <div className="flex gap-2 overflow-x-auto pb-2">
               <CatPill active={activeCat === null} onClick={() => { setActiveCat(null); setShown(PAGE_SIZE); }}>All</CatPill>
               {(categories as any[]).map((c) => (
-                <CatPill key={c.id} active={activeCat === c.slug} onClick={() => { setActiveCat(c.slug); setShown(PAGE_SIZE); }} categoryName={c.name}>
+                <CatPill key={c.id} active={activeCat === c.slug} onClick={() => { setActiveCat((cur) => (cur === c.slug ? null : c.slug)); setShown(PAGE_SIZE); }} categoryName={c.name}>
                   {c.name}
                 </CatPill>
               ))}

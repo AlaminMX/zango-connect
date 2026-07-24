@@ -99,6 +99,7 @@ export type Database = {
           slug: string
           sort_order: number
           state: string
+          state_id: string
           updated_at: string
         }
         Insert: {
@@ -110,6 +111,7 @@ export type Database = {
           slug: string
           sort_order?: number
           state: string
+          state_id: string
           updated_at?: string
         }
         Update: {
@@ -121,9 +123,25 @@ export type Database = {
           slug?: string
           sort_order?: number
           state?: string
+          state_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cities_of_business_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cities_of_business_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states_with_stats"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       featured_products_admin: {
         Row: {
@@ -480,6 +498,7 @@ export type Database = {
           rejection_reason: string | null
           slug: string
           state: string | null
+          state_id: string | null
           status: string
           subscription_expires_at: string | null
           user_id: string
@@ -509,6 +528,7 @@ export type Database = {
           rejection_reason?: string | null
           slug: string
           state?: string | null
+          state_id?: string | null
           status?: string
           subscription_expires_at?: string | null
           user_id: string
@@ -538,6 +558,7 @@ export type Database = {
           rejection_reason?: string | null
           slug?: string
           state?: string | null
+          state_id?: string | null
           status?: string
           subscription_expires_at?: string | null
           user_id?: string
@@ -562,7 +583,54 @@ export type Database = {
             referencedRelation: "cities_with_stats"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "sellers_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sellers_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states_with_stats"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      states: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          is_featured_home: boolean
+          name: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_featured_home?: boolean
+          name: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_featured_home?: boolean
+          name?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       trending_sellers_admin: {
         Row: {
@@ -708,19 +776,69 @@ export type Database = {
     Views: {
       cities_with_stats: {
         Row: {
-          created_at: string | null
           id: string | null
           is_active: boolean | null
           is_featured_home: boolean | null
           name: string | null
-          products_added_30d: number | null
           products_count: number | null
-          sellers_added_30d: number | null
           sellers_count: number | null
           slug: string | null
           sort_order: number | null
-          state: string | null
-          updated_at: string | null
+          state_id: string | null
+          state_is_active: boolean | null
+          state_name: string | null
+          state_slug: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cities_of_business_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cities_of_business_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states_with_stats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      states_with_stats: {
+        Row: {
+          cities_count: number | null
+          id: string | null
+          is_active: boolean | null
+          is_featured_home: boolean | null
+          name: string | null
+          products_count: number | null
+          sellers_count: number | null
+          slug: string | null
+          sort_order: number | null
+        }
+        Insert: {
+          cities_count?: never
+          id?: string | null
+          is_active?: boolean | null
+          is_featured_home?: boolean | null
+          name?: string | null
+          products_count?: never
+          sellers_count?: never
+          slug?: string | null
+          sort_order?: number | null
+        }
+        Update: {
+          cities_count?: never
+          id?: string | null
+          is_active?: boolean | null
+          is_featured_home?: boolean | null
+          name?: string | null
+          products_count?: never
+          sellers_count?: never
+          slug?: string | null
+          sort_order?: number | null
         }
         Relationships: []
       }
@@ -731,6 +849,7 @@ export type Database = {
         Returns: undefined
       }
       ensure_city: { Args: { _name: string; _state: string }; Returns: string }
+      ensure_state: { Args: { _name: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

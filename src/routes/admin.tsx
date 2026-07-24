@@ -681,13 +681,17 @@ function AdminPage() {
       ));
     } else {
       const maxOrder = Math.max(0, ...cities.map((c) => c.sort_order));
-      const { error } = await supabase
+      // Resolve state_id via ensure_state so admins can add cities under existing or new states.
+      const { data: stateId, error: stErr } = await (supabase as any).rpc("ensure_state", { _name: cityState.trim() });
+      if (stErr || !stateId) { toast.error(stErr?.message ?? "Couldn't resolve state"); setCitySaving(false); return; }
+      const { error } = await (supabase as any)
         .from("cities_of_business")
-        .insert({ name: cityName.trim(), state: cityState.trim(), slug, is_active: cityIsActive, sort_order: maxOrder + 1 });
+        .insert({ name: cityName.trim(), state: cityState.trim(), slug, is_active: cityIsActive, sort_order: maxOrder + 1, state_id: stateId });
       if (error) { toast.error(error.message); setCitySaving(false); return; }
       toast.success("City added");
       await loadCities();
     }
+
     setCitySaving(false);
     setCityDialogOpen(false);
   };

@@ -12,6 +12,7 @@ import { CityProvider } from "@/lib/cityContext";
 import { AuthProvider } from "@/lib/authContext";
 import { SellerProfileProvider } from "@/lib/sellerProfile";
 import { BottomNav } from "@/components/BottomNav";
+import { PwaManager } from "@/components/PwaManager";
 
 import appCss from "../styles.css?url";
 
@@ -48,7 +49,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "theme-color", content: "#C05A3F" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-title", content: "ZANGO" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
+      { name: "application-name", content: "ZANGO" },
+      { name: "msapplication-TileColor", content: "#C05A3F" },
       { title: "ZANGO — Your Business, Discovered." },
       { name: "description", content: "The marketplace built for northern Nigeria's entrepreneurs. Discover sellers, order on WhatsApp." },
       { property: "og:site_name", content: "ZANGO" },
@@ -66,6 +74,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Fira+Sans:wght@300;400;500;600;700&display=swap" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "icon", type: "image/svg+xml", sizes: "192x192", href: "/icons/icon-192x192.svg" },
+      { rel: "icon", type: "image/svg+xml", sizes: "512x512", href: "/icons/icon-512x512.svg" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.svg" },
       { rel: "stylesheet", href: appCss },
     ],
     scripts: [
@@ -123,6 +135,7 @@ function RootComponent() {
                 <Outlet />
               </main>
               <BottomNav />
+              <PwaManager />
               <Toaster />
             </CityProvider>
           </LangProvider>

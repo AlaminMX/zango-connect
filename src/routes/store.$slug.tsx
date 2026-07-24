@@ -80,7 +80,7 @@ export const Route = createFileRoute("/store/$slug")({
 
 const STOCK_OPTIONS = [
   { value: "available", label: "Available" },
-  { value: "low_stock",  label: "Low stock" },
+  { value: "low_stock",  label: "Selling fast" },
   { value: "sold_out",   label: "Sold out" },
 ];
 

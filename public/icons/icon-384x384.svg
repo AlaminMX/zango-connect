@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="384" height="384" viewBox="0 0 512 512" role="img" aria-label="ZANGO app icon">
+  <rect width="512" height="512" rx="112" fill="#C05A3F"/>
+  <path d="M0 0h512v180C392 143 240 117 0 145z" fill="#D17159" opacity=".72"/>
+  <circle cx="256" cy="256" r="160" fill="#FCF9F5"/>
+  <path fill="#3E2723" d="M170 216c0-56 38-96 86-96s86 40 86 96h-48c0-30-15-50-38-50s-38 20-38 50h-48Z"/>
+  <path fill="#3E2723" d="M160 210h192v150c0 18-14 32-32 32H192c-18 0-32-14-32-32V210Z"/>
+  <path fill="#FCF9F5" d="M210 292h92l-96 58h104v-34h-42l92-58H210v34Z"/>
+</svg>

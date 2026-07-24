@@ -14,6 +14,7 @@ import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as VerifiedRouteImport } from './routes/verified'
 import { Route as VendorRejectedRouteImport } from './routes/vendor-rejected'
 import { Route as VendorApprovalPendingRouteImport } from './routes/vendor-approval-pending'
+import { Route as StatesRouteImport } from './routes/states'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SellersRouteImport } from './routes/sellers'
 import { Route as SearchRouteImport } from './routes/search'
@@ -30,6 +31,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StoreSlugRouteImport } from './routes/store.$slug'
+import { Route as StateSlugRouteImport } from './routes/state.$slug'
 import { Route as SellerProductsRouteImport } from './routes/seller.products'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as CitySlugRouteImport } from './routes/city.$slug'
@@ -63,6 +65,11 @@ const VendorRejectedRoute = VendorRejectedRouteImport.update({
 const VendorApprovalPendingRoute = VendorApprovalPendingRouteImport.update({
   id: '/vendor-approval-pending',
   path: '/vendor-approval-pending',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StatesRoute = StatesRouteImport.update({
+  id: '/states',
+  path: '/states',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -145,6 +152,11 @@ const StoreSlugRoute = StoreSlugRouteImport.update({
   path: '/store/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StateSlugRoute = StateSlugRouteImport.update({
+  id: '/state/$slug',
+  path: '/state/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SellerProductsRoute = SellerProductsRouteImport.update({
   id: '/seller/products',
   path: '/seller/products',
@@ -210,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/sellers': typeof SellersRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/states': typeof StatesRoute
   '/vendor-approval-pending': typeof VendorApprovalPendingRoute
   '/vendor-rejected': typeof VendorRejectedRoute
   '/verified': typeof VerifiedRoute
@@ -221,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/city/$slug': typeof CitySlugRoute
   '/product/$id': typeof ProductIdRoute
   '/seller/products': typeof SellerProductsRoute
+  '/state/$slug': typeof StateSlugRoute
   '/store/$slug': typeof StoreSlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -242,6 +256,7 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/sellers': typeof SellersRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/states': typeof StatesRoute
   '/vendor-approval-pending': typeof VendorApprovalPendingRoute
   '/vendor-rejected': typeof VendorRejectedRoute
   '/verified': typeof VerifiedRoute
@@ -253,6 +268,7 @@ export interface FileRoutesByTo {
   '/city/$slug': typeof CitySlugRoute
   '/product/$id': typeof ProductIdRoute
   '/seller/products': typeof SellerProductsRoute
+  '/state/$slug': typeof StateSlugRoute
   '/store/$slug': typeof StoreSlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -275,6 +291,7 @@ export interface FileRoutesById {
   '/search': typeof SearchRoute
   '/sellers': typeof SellersRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/states': typeof StatesRoute
   '/vendor-approval-pending': typeof VendorApprovalPendingRoute
   '/vendor-rejected': typeof VendorRejectedRoute
   '/verified': typeof VerifiedRoute
@@ -286,6 +303,7 @@ export interface FileRoutesById {
   '/city/$slug': typeof CitySlugRoute
   '/product/$id': typeof ProductIdRoute
   '/seller/products': typeof SellerProductsRoute
+  '/state/$slug': typeof StateSlugRoute
   '/store/$slug': typeof StoreSlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -309,6 +327,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/sellers'
     | '/sitemap.xml'
+    | '/states'
     | '/vendor-approval-pending'
     | '/vendor-rejected'
     | '/verified'
@@ -320,6 +339,7 @@ export interface FileRouteTypes {
     | '/city/$slug'
     | '/product/$id'
     | '/seller/products'
+    | '/state/$slug'
     | '/store/$slug'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -341,6 +361,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/sellers'
     | '/sitemap.xml'
+    | '/states'
     | '/vendor-approval-pending'
     | '/vendor-rejected'
     | '/verified'
@@ -352,6 +373,7 @@ export interface FileRouteTypes {
     | '/city/$slug'
     | '/product/$id'
     | '/seller/products'
+    | '/state/$slug'
     | '/store/$slug'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -373,6 +395,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/sellers'
     | '/sitemap.xml'
+    | '/states'
     | '/vendor-approval-pending'
     | '/vendor-rejected'
     | '/verified'
@@ -384,6 +407,7 @@ export interface FileRouteTypes {
     | '/city/$slug'
     | '/product/$id'
     | '/seller/products'
+    | '/state/$slug'
     | '/store/$slug'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
@@ -406,6 +430,7 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   SellersRoute: typeof SellersRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  StatesRoute: typeof StatesRoute
   VendorApprovalPendingRoute: typeof VendorApprovalPendingRoute
   VendorRejectedRoute: typeof VendorRejectedRoute
   VerifiedRoute: typeof VerifiedRoute
@@ -417,6 +442,7 @@ export interface RootRouteChildren {
   CitySlugRoute: typeof CitySlugRoute
   ProductIdRoute: typeof ProductIdRoute
   SellerProductsRoute: typeof SellerProductsRoute
+  StateSlugRoute: typeof StateSlugRoute
   StoreSlugRoute: typeof StoreSlugRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
@@ -458,6 +484,13 @@ declare module '@tanstack/react-router' {
       path: '/vendor-approval-pending'
       fullPath: '/vendor-approval-pending'
       preLoaderRoute: typeof VendorApprovalPendingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/states': {
+      id: '/states'
+      path: '/states'
+      fullPath: '/states'
+      preLoaderRoute: typeof StatesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -572,6 +605,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/state/$slug': {
+      id: '/state/$slug'
+      path: '/state/$slug'
+      fullPath: '/state/$slug'
+      preLoaderRoute: typeof StateSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/seller/products': {
       id: '/seller/products'
       path: '/seller/products'
@@ -654,6 +694,7 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   SellersRoute: SellersRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  StatesRoute: StatesRoute,
   VendorApprovalPendingRoute: VendorApprovalPendingRoute,
   VendorRejectedRoute: VendorRejectedRoute,
   VerifiedRoute: VerifiedRoute,
@@ -666,6 +707,7 @@ const rootRouteChildren: RootRouteChildren = {
   CitySlugRoute: CitySlugRoute,
   ProductIdRoute: ProductIdRoute,
   SellerProductsRoute: SellerProductsRoute,
+  StateSlugRoute: StateSlugRoute,
   StoreSlugRoute: StoreSlugRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,

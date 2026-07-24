@@ -93,7 +93,7 @@ function ProductCardContent(p: ProductCardProps) {
           <span className="absolute left-2 top-2 rounded-full bg-espresso/90 px-2 py-0.5 text-[10px] font-medium text-background">Out of stock</span>
         )}
         {low && !soldOut && (
-          <span className="absolute left-2 top-2 rounded-full bg-sage px-2 py-0.5 text-[10px] font-medium text-white">Low stock</span>
+          <span className="absolute left-2 top-2 rounded-full bg-sage px-2 py-0.5 text-[10px] font-medium text-white">Selling fast</span>
         )}
         <button
           type="button" onClick={handleSave}

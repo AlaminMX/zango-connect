@@ -121,7 +121,12 @@ function AuthPage() {
         }
 
       } else if (mode === "forgot") {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        const trimmedEmail = email.trim();
+        if (!/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
+          toast.error("Enter a valid email address.");
+          return;
+        }
+        const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
           redirectTo: `${window.location.origin}/reset-password`,
         });
         if (error) { toast.error(humanizeError(error.message)); return; }
@@ -158,7 +163,7 @@ function AuthPage() {
             <div className="mb-3 text-4xl">📬</div>
             <h1 className="font-serif text-2xl">Check your email</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              We sent a password reset link to <strong>{email}</strong>. Click the link in
+              If an account exists for <strong>{email.trim()}</strong>, we sent a password reset link. Click the link in
               the email to set a new password.
             </p>
             <button

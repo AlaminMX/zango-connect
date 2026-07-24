@@ -68,7 +68,7 @@ function ProductsPage() {
         .order("created_at", { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
-      if (activeCat)  qb = qb.eq("sellers.category", activeCat);
+      if (activeCat)  qb = qb.eq("category", activeCat);
       if (activeCity) qb = qb.eq("sellers.city", activeCity);
       if (q.trim())   { const sq = sanitizePostgrestLike(q); if (sq) qb = qb.or(`name.ilike.%${sq}%,description.ilike.%${sq}%`); }
 

@@ -7,7 +7,7 @@
  *   4. Products management — inline block/unblock + featured control
  *   5. Homepage sections management
  *   6. Vouch analytics — count per seller + voucher list + auto-verification threshold
- *   7. Cities management — CRUD for cities_of_business
+ *   7. Locations management — CRUD for states and areas
  *
  * FIXES:
  *  - Auth uses getSession() (localStorage) instead of getUser() (network request),
@@ -88,7 +88,8 @@ interface ProductRow {
 interface Section    { id: string; key: string; title: string; subtitle: string | null; content: string | null; sort_order: number; is_visible: boolean; }
 interface VouchRow   { seller_id: string; seller_name: string; vouch_count: number; }
 interface VoucherDetail { voucher_seller_id: string; business_name: string; created_at: string; }
-interface CityRow    { id: string; name: string; state: string; slug: string; is_active: boolean; sort_order: number; }
+interface StateRow   { id: string; name: string; slug: string; is_active: boolean; sort_order: number; }
+interface CityRow    { id: string; name: string; state: string; state_id: string; slug: string; is_active: boolean; sort_order: number; }
 
 function slugify(s: string) {
   return s.toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
@@ -128,6 +129,7 @@ function AdminPage() {
   const [products,   setProducts]   = useState<ProductRow[]>([]);
   const [sections,   setSections]   = useState<Section[]>([]);
   const [vouches,    setVouches]    = useState<VouchRow[]>([]);
+  const [states,     setStates]     = useState<StateRow[]>([]);
   const [cities,     setCities]     = useState<CityRow[]>([]);
   const [stats,      setStats]      = useState({ sellers: 0, products: 0, clicks: 0 });
 
@@ -136,6 +138,7 @@ function AdminPage() {
   const [productsState,   setProductsState]   = useState<LoadState>("loading");
   const [sectionsState,   setSectionsState]   = useState<LoadState>("loading");
   const [vouchesState,    setVouchesState]    = useState<LoadState>("loading");
+  const [statesState,     setStatesState]     = useState<LoadState>("loading");
   const [citiesState,     setCitiesState]     = useState<LoadState>("loading");
   const [statsState,      setStatsState]      = useState<LoadState>("loading");
 
@@ -174,6 +177,12 @@ function AdminPage() {
   const [editingCity,     setEditingCity]      = useState<CityRow | null>(null);
   const [cityName,        setCityName]         = useState("");
   const [cityState,       setCityState]        = useState("");
+  const [stateDialogOpen, setStateDialogOpen] = useState(false);
+  const [editingState, setEditingState] = useState<StateRow | null>(null);
+  const [stateName, setStateName] = useState("");
+  const [stateSlug, setStateSlug] = useState("");
+  const [stateIsActive, setStateIsActive] = useState(true);
+  const [stateSaving, setStateSaving] = useState(false);
   const [citySlug,        setCitySlug]         = useState("");
   const [cityIsActive,    setCityIsActive]     = useState(true);
   const [citySaving,      setCitySaving]       = useState(false);
@@ -324,12 +333,31 @@ function AdminPage() {
     }
   }, []);
 
+
+  const loadStates = useCallback(async () => {
+    setStatesState("loading");
+    try {
+      const { data, error } = await supabase
+        .from("states")
+        .select("id, name, slug, is_active, sort_order")
+        .order("sort_order")
+        .order("name")
+        .abortSignal(ABORT());
+      if (error) throw error;
+      setStates((data ?? []) as StateRow[]);
+      setStatesState("ok");
+    } catch (err) {
+      console.warn("[admin] states failed:", err);
+      setStatesState("error");
+    }
+  }, []);
+
   const loadCities = useCallback(async () => {
     setCitiesState("loading");
     try {
       const { data, error } = await supabase
         .from("cities_of_business")
-        .select("id, name, state, slug, is_active, sort_order")
+        .select("id, name, state, state_id, slug, is_active, sort_order")
         .order("sort_order")
         .abortSignal(ABORT());
       if (error) throw error;
@@ -401,18 +429,19 @@ function AdminPage() {
     void loadStats();
     void loadVouches();
     void loadVouchThreshold();
+    void loadStates();
     void loadCities();
     void loadCmsFeaturedProducts();
     void loadCmsTrendingSellers();
-  }, [allowed, loadSellers, loadCategories, loadProducts, loadSections, loadStats, loadVouches, loadVouchThreshold, loadCities, loadCmsFeaturedProducts, loadCmsTrendingSellers]);
+  }, [allowed, loadSellers, loadCategories, loadProducts, loadSections, loadStats, loadVouches, loadVouchThreshold, loadStates, loadCities, loadCmsFeaturedProducts, loadCmsTrendingSellers]);
 
   // Convenience: reload affected sections after mutations.
   const loadAll = useCallback(async () => {
     await Promise.allSettled([
-      loadSellers(), loadCategories(), loadProducts(), loadSections(), loadStats(), loadVouches(), loadCities(),
+      loadSellers(), loadCategories(), loadProducts(), loadSections(), loadStats(), loadVouches(), loadStates(), loadCities(),
       loadCmsFeaturedProducts(), loadCmsTrendingSellers(),
     ]);
-  }, [loadSellers, loadCategories, loadProducts, loadSections, loadStats, loadVouches, loadCities, loadCmsFeaturedProducts, loadCmsTrendingSellers]);
+  }, [loadSellers, loadCategories, loadProducts, loadSections, loadStats, loadVouches, loadStates, loadCities, loadCmsFeaturedProducts, loadCmsTrendingSellers]);
 
 
   // ── Seller verification approval ──
@@ -665,17 +694,17 @@ function AdminPage() {
   };
 
   const saveCity = async () => {
-    if (!cityName.trim()) { toast.error("City name required"); return; }
+    if (!cityName.trim()) { toast.error("Area name required"); return; }
     if (!cityState.trim()) { toast.error("State required"); return; }
     const slug = citySlug.trim() || slugify(cityName);
     setCitySaving(true);
     if (editingCity) {
       const { error } = await supabase
         .from("cities_of_business")
-        .update({ name: cityName.trim(), state: cityState.trim(), slug, is_active: cityIsActive })
+        .update({ name: cityName.trim(), state: cityState.trim(), state_id: states.find((st) => st.name === cityState.trim())?.id, slug, is_active: cityIsActive })
         .eq("id", editingCity.id);
       if (error) { toast.error(error.message); setCitySaving(false); return; }
-      toast.success("City updated");
+      toast.success("Area updated");
       setCities((prev) => prev.map((c) =>
         c.id === editingCity.id ? { ...c, name: cityName.trim(), state: cityState.trim(), slug, is_active: cityIsActive } : c
       ));
@@ -688,7 +717,7 @@ function AdminPage() {
         .from("cities_of_business")
         .insert({ name: cityName.trim(), state: cityState.trim(), slug, is_active: cityIsActive, sort_order: maxOrder + 1, state_id: stateId });
       if (error) { toast.error(error.message); setCitySaving(false); return; }
-      toast.success("City added");
+      toast.success("Area added");
       await loadCities();
     }
 
@@ -697,10 +726,10 @@ function AdminPage() {
   };
 
   const deleteCity = async (id: string, name: string) => {
-    if (!confirm(`Delete city "${name}"? Sellers using it won't be affected.`)) return;
+    if (!confirm(`Delete area "${name}"? Sellers using it won't be affected.`)) return;
     const { error } = await supabase.from("cities_of_business").delete().eq("id", id);
     if (error) { toast.error(error.message); return; }
-    toast.success("City deleted");
+    toast.success("Area deleted");
     setCities((prev) => prev.filter((c) => c.id !== id));
   };
 
@@ -708,7 +737,7 @@ function AdminPage() {
     const { error } = await supabase.from("cities_of_business").update({ is_active: !current }).eq("id", id);
     if (error) { toast.error(error.message); return; }
     setCities((prev) => prev.map((c) => c.id === id ? { ...c, is_active: !current } : c));
-    toast.success(!current ? "City activated" : "City deactivated");
+    toast.success(!current ? "Area activated" : "Area deactivated");
   };
 
   const moveCity = async (id: string, dir: "up" | "down") => {
@@ -723,6 +752,39 @@ function AdminPage() {
       supabase.from("cities_of_business").update({ sort_order: updated[idx].sort_order }).eq("id", updated[idx].id),
       supabase.from("cities_of_business").update({ sort_order: updated[swapIdx].sort_order }).eq("id", updated[swapIdx].id),
     ]);
+  };
+
+
+
+  // ── States ──
+  const openNewState = () => { setEditingState(null); setStateName(""); setStateSlug(""); setStateIsActive(true); setStateDialogOpen(true); };
+  const openEditState = (st: StateRow) => { setEditingState(st); setStateName(st.name); setStateSlug(st.slug); setStateIsActive(st.is_active); setStateDialogOpen(true); };
+  const saveState = async () => {
+    if (!stateName.trim()) { toast.error("State name required"); return; }
+    const slug = stateSlug.trim() || slugify(stateName);
+    setStateSaving(true);
+    const op = editingState
+      ? supabase.from("states").update({ name: stateName.trim(), slug, is_active: stateIsActive }).eq("id", editingState.id)
+      : supabase.from("states").insert({ name: stateName.trim(), slug, is_active: stateIsActive, sort_order: Math.max(0, ...states.map((st) => st.sort_order)) + 1 });
+    const { error } = await op;
+    setStateSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(editingState ? "State updated" : "State added");
+    setStateDialogOpen(false);
+    await Promise.all([loadStates(), loadCities()]);
+  };
+  const deleteState = async (id: string, name: string) => {
+    if (!confirm(`Delete state "${name}"? Areas assigned to it must be moved or deleted first.`)) return;
+    const { error } = await supabase.from("states").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("State deleted");
+    await Promise.all([loadStates(), loadCities()]);
+  };
+  const toggleStateActive = async (id: string, current: boolean) => {
+    const { error } = await supabase.from("states").update({ is_active: !current }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    setStates((prev) => prev.map((st) => st.id === id ? { ...st, is_active: !current } : st));
+    toast.success(!current ? "State activated" : "State deactivated");
   };
 
   // ── CMS: Featured Products ──
@@ -1195,18 +1257,37 @@ function AdminPage() {
         {activeTab === "cities" && (
           <section className="mt-6">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-serif text-xl">Cities ({cities.length})</h2>
+              <h2 className="font-serif text-xl">Locations</h2>
               <Button onClick={openNewCity} size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
-                <Plus className="mr-1 h-4 w-4" /> Add city
+                <Plus className="mr-1 h-4 w-4" /> Add area
               </Button>
             </div>
-            <p className="mb-4 text-xs text-muted-foreground">Manage the cities available for sellers to choose from during registration.</p>
+            <p className="mb-4 text-xs text-muted-foreground">Manage states and the areas available for sellers to choose from during registration.</p>
+            {statesState === "loading" && <SectionSkeleton />}
+            {statesState === "error" && <SectionError label="states" onRetry={loadStates} />}
+            {statesState === "ok" && (
+              <div className="mb-6 space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-serif text-lg">States ({states.length})</h3>
+                  <Button onClick={openNewState} size="sm" variant="outline" className="rounded-full"><Plus className="mr-1 h-4 w-4" /> Add state</Button>
+                </div>
+                {states.map((st) => (
+                  <div key={st.id} className={`flex items-center gap-3 rounded-xl border bg-card p-3 shadow-warm ${!st.is_active ? "opacity-60" : ""}`}>
+                    <div className="flex-1 min-w-0"><p className="font-medium">{st.name}</p><p className="text-xs text-muted-foreground">/{st.slug}</p></div>
+                    <Switch checked={st.is_active} onCheckedChange={() => toggleStateActive(st.id, st.is_active)} />
+                    <button onClick={() => openEditState(st)} className="rounded p-1 hover:bg-muted"><Pencil className="h-4 w-4" /></button>
+                    <button onClick={() => deleteState(st.id, st.name)} className="rounded p-1 text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <h3 className="mb-3 font-serif text-lg">Areas ({cities.length})</h3>
             {citiesState === "loading" && <SectionSkeleton />}
-            {citiesState === "error" && <SectionError label="cities" onRetry={loadCities} />}
+            {citiesState === "error" && <SectionError label="areas" onRetry={loadCities} />}
             {citiesState === "ok" && (
               <div className="space-y-2">
                 {cities.length === 0 && (
-                  <p className="text-sm text-muted-foreground">No cities yet. Add one to get started.</p>
+                  <p className="text-sm text-muted-foreground">No areas yet. Add one to get started.</p>
                 )}
                 {cities.map((c, idx) => (
                   <div key={c.id} className={`flex items-center gap-3 rounded-xl border bg-card p-3 shadow-warm ${!c.is_active ? "opacity-60" : ""}`}>
@@ -1228,7 +1309,7 @@ function AdminPage() {
                       <Switch
                         checked={c.is_active}
                         onCheckedChange={() => toggleCityActive(c.id, c.is_active)}
-                        aria-label={c.is_active ? "Deactivate city" : "Activate city"}
+                        aria-label={c.is_active ? "Deactivate area" : "Activate area"}
                       />
                       <div className="flex items-center gap-1">
                         <button onClick={() => moveCity(c.id, "up")} disabled={idx === 0}
@@ -1519,11 +1600,11 @@ function AdminPage() {
       <Dialog open={cityDialogOpen} onOpenChange={(o) => !o && setCityDialogOpen(false)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingCity ? "Edit city" : "Add city"}</DialogTitle>
+            <DialogTitle>{editingCity ? "Edit area" : "Add area"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>City name *</Label>
+              <Label>Area name *</Label>
               <Input
                 value={cityName}
                 onChange={(e) => {
@@ -1535,11 +1616,12 @@ function AdminPage() {
             </div>
             <div>
               <Label>State *</Label>
-              <Input
-                value={cityState}
-                onChange={(e) => setCityState(e.target.value)}
-                placeholder="e.g. Kano State"
-              />
+              <Select value={cityState} onValueChange={setCityState}>
+                <SelectTrigger><SelectValue placeholder="Choose state" /></SelectTrigger>
+                <SelectContent>
+                  {states.map((st) => <SelectItem key={st.id} value={st.name}>{st.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Slug</Label>
@@ -1565,8 +1647,20 @@ function AdminPage() {
               disabled={citySaving}
               className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
             >
-              {citySaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : editingCity ? "Save changes" : "Add city"}
+              {citySaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : editingCity ? "Save changes" : "Add area"}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={stateDialogOpen} onOpenChange={(o) => !o && setStateDialogOpen(false)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editingState ? "Edit state" : "Add state"}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div><Label>State name *</Label><Input value={stateName} onChange={(e) => { setStateName(e.target.value); if (!editingState) setStateSlug(slugify(e.target.value)); }} placeholder="e.g. Kano" /></div>
+            <div><Label>Slug</Label><Input value={stateSlug} onChange={(e) => setStateSlug(e.target.value)} placeholder="e.g. kano" /></div>
+            <div className="flex items-center justify-between rounded-xl border border-border-warm bg-muted/30 px-3 py-2.5"><div><p className="text-sm font-medium">Active</p><p className="text-xs text-muted-foreground">Visible during onboarding</p></div><Switch checked={stateIsActive} onCheckedChange={setStateIsActive} /></div>
+            <Button onClick={saveState} disabled={stateSaving} className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">{stateSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : "Save state"}</Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -65,19 +65,22 @@ function CategoryPage() {
   });
 
   const { data: sellers, isLoading } = useQuery({
-    queryKey: ["sellers", category?.name, city],
+    queryKey: ["sellers-by-product-category", category?.name, city],
     enabled: !!category,
     queryFn: async () => {
       let q = supabase
-        .from("sellers")
-        .select("id, slug, business_name, category, city, profile_photo_url, is_verified, rating")
+        .from("products")
+        .select("sellers!inner(id, slug, business_name, city, profile_photo_url, is_verified, rating, is_blocked, verification_status)")
         .eq("category", category!.name)
-        .eq("is_blocked", false)
-        .eq("verification_status", "approved");
-      if (city !== "All cities") q = q.eq("city", city);
-      const { data, error } = await q.order("is_verified", { ascending: false });
+        .eq("status", "active")
+        .eq("sellers.is_blocked", false)
+        .eq("sellers.verification_status", "approved");
+      if (city !== "All cities") q = q.eq("sellers.city", city);
+      const { data, error } = await q.limit(100);
       if (error) throw error;
-      return data;
+      const byId = new Map<string, any>();
+      (data ?? []).forEach((row: any) => { if (row.sellers?.id) byId.set(row.sellers.id, row.sellers); });
+      return Array.from(byId.values()).sort((a, b) => Number(b.is_verified) - Number(a.is_verified));
     },
   });
 
@@ -88,7 +91,7 @@ function CategoryPage() {
       let qb = supabase
         .from("products")
         .select("id, name, price, image_url, stock_status, status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, category, is_blocked, verification_status)")
-        .eq("sellers.category", category!.name)
+        .eq("category", category!.name)
         .eq("status", "active")
         .eq("sellers.is_blocked", false)
         .eq("sellers.verification_status", "approved")

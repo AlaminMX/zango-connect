@@ -23,53 +23,9 @@ import { toast } from "sonner";
 import { slugify, validateNigerianPhone } from "@/lib/whatsapp";
 import { humanizeError } from "@/lib/error-messages";
 import { ChevronLeft, ChevronRight, Loader2, AlertCircle, Check, MessageCircle } from "lucide-react";
+import { listActiveStates, listCitiesForState } from "@/lib/states.functions";
 
 export const Route = createFileRoute("/register")({ component: Register });
-
-// ---------------------------------------------------------------------------
-// Nigeria — All 36 states + FCT with capitals and major cities
-// ---------------------------------------------------------------------------
-export const NIGERIA_STATE_CITIES: Record<string, string[]> = {
-  "Abia":          ["Umuahia", "Aba", "Ohafia", "Arochukwu"],
-  "Adamawa":       ["Yola", "Mubi", "Jimeta", "Ganye", "Numan"],
-  "Akwa Ibom":    ["Uyo", "Eket", "Ikot Ekpene", "Abak", "Oron"],
-  "Anambra":       ["Awka", "Onitsha", "Nnewi", "Ekwulobia", "Aguata"],
-  "Bauchi":        ["Bauchi", "Azare", "Misau", "Dass", "Tafawa Balewa"],
-  "Bayelsa":       ["Yenagoa", "Ogbia", "Sagbama", "Brass", "Ekeremor"],
-  "Benue":         ["Makurdi", "Gboko", "Otukpo", "Katsina-Ala", "Vandeikya"],
-  "Borno":         ["Maiduguri", "Biu", "Bama", "Gwoza", "Dikwa"],
-  "Cross River":   ["Calabar", "Ogoja", "Ikom", "Obudu", "Akamkpa"],
-  "Delta":         ["Asaba", "Warri", "Ughelli", "Sapele", "Agbor"],
-  "Ebonyi":        ["Abakaliki", "Afikpo", "Onueke", "Ezza-Ohu", "Ishielu"],
-  "Edo":           ["Benin City", "Ekpoma", "Uromi", "Auchi", "Igueben"],
-  "Ekiti":         ["Ado Ekiti", "Ikere Ekiti", "Ilawe Ekiti", "Ijero Ekiti", "Efon Alaaye"],
-  "Enugu":         ["Enugu", "Nsukka", "Agbani", "Oji River", "Udi"],
-  "FCT":           ["Abuja", "Gwagwalada", "Kuje", "Kubwa", "Lugbe"],
-  "Gombe":         ["Gombe", "Kumo", "Kaltungo", "Bajoga", "Billiri"],
-  "Imo":           ["Owerri", "Orlu", "Okigwe", "Oguta", "Mbaise"],
-  "Jigawa":        ["Dutse", "Hadejia", "Birnin Kudu", "Kazaure", "Gumel"],
-  "Kaduna":        ["Kaduna", "Zaria", "Kafanchan", "Saminaka", "Kachia"],
-  "Kano":          ["Kano", "Wudil", "Bichi", "Rano", "Gwarzo"],
-  "Katsina":       ["Katsina", "Funtua", "Daura", "Malumfashi", "Dutsin Ma"],
-  "Kebbi":         ["Birnin Kebbi", "Argungu", "Yauri", "Zuru", "Gwandu"],
-  "Kogi":          ["Lokoja", "Okene", "Idah", "Kabba", "Ankpa"],
-  "Kwara":         ["Ilorin", "Offa", "Omu-Aran", "Pategi", "Lafiagi"],
-  "Lagos":         ["Lagos Island", "Ikeja", "Lekki", "Surulere", "Badagry", "Epe", "Ikorodu"],
-  "Nasarawa":      ["Lafia", "Keffi", "Nasarawa", "Akwanga", "Wamba"],
-  "Niger":         ["Minna", "Bida", "Kontagora", "Suleja", "Lapai"],
-  "Ogun":          ["Abeokuta", "Sagamu", "Ijebu Ode", "Ilaro", "Ota"],
-  "Ondo":          ["Akure", "Ondo", "Owo", "Ikare", "Okitipupa"],
-  "Osun":          ["Osogbo", "Ile-Ife", "Ilesa", "Ede", "Iwo"],
-  "Oyo":           ["Ibadan", "Ogbomosho", "Oyo", "Iseyin", "Saki"],
-  "Plateau":       ["Jos", "Bukuru", "Pankshin", "Shendam", "Barkin Ladi"],
-  "Rivers":        ["Port Harcourt", "Obio/Akpor", "Eleme", "Ahoada", "Bonny"],
-  "Sokoto":        ["Sokoto", "Wurno", "Wamako", "Bodinga", "Tambuwal"],
-  "Taraba":        ["Jalingo", "Wukari", "Bali", "Gembu", "Gashaka"],
-  "Yobe":          ["Damaturu", "Gashua", "Nguru", "Potiskum", "Geidam"],
-  "Zamfara":       ["Gusau", "Kaura Namoda", "Talata Mafara", "Anka", "Bungudu"],
-};
-
-export const NIGERIA_STATES = Object.keys(NIGERIA_STATE_CITIES).sort((a, b) => a.localeCompare(b));
 
 // ---------------------------------------------------------------------------
 
@@ -112,9 +68,8 @@ function Register() {
   const [name, setName] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
-  const [city, setCity] = useState("");
-  const [cityId, setCityId] = useState<string | null>(null);
-  const [category, setCategory] = useState("");
+  const [area, setArea] = useState("");
+  const [areaId, setAreaId] = useState<string | null>(null);
   const [bio, setBio] = useState("");
 
   const [selectedState, setSelectedState] = useState("");
@@ -123,7 +78,9 @@ function Register() {
   const [profileUrl, setProfileUrl] = useState<string | null>(null);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
 
-  const [categories, setCategories] = useState<{ name: string }[]>([]);
+  const [states, setStates] = useState<{ id: string; name: string; slug: string }[]>([]);
+  const [areas, setAreas] = useState<{ id: string; name: string; slug: string }[]>([]);
+  const [areasLoading, setAreasLoading] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -143,8 +100,22 @@ function Register() {
         }
       }
     });
-    supabase.from("categories").select("name").order("sort_order").then(({ data }) => setCategories(data ?? []));
+    listActiveStates().then((rows) => setStates((rows ?? []).map((s: any) => ({ id: s.id, name: s.name, slug: s.slug })))).catch(() => toast.error("Could not load states."));
   }, []);
+
+
+  useEffect(() => {
+    const state = states.find((s) => s.name === selectedState);
+    setArea("");
+    setAreaId(null);
+    setAreas([]);
+    if (!state) return;
+    setAreasLoading(true);
+    listCitiesForState({ data: { slug: state.slug } })
+      .then((result) => setAreas((result?.cities ?? []).map((a: any) => ({ id: a.id, name: a.name, slug: a.slug }))))
+      .catch(() => toast.error("Could not load areas for this state."))
+      .finally(() => setAreasLoading(false));
+  }, [selectedState, states]);
 
   const validateStep1 = (): Errors => {
     const e: Errors = {};
@@ -156,8 +127,8 @@ function Register() {
     if (!name.trim()) e.name = "Your name is required";
     if (!whatsapp.trim()) e.whatsapp = "WhatsApp number is required";
     else { const c = validateNigerianPhone(whatsapp); if (!c.valid) e.whatsapp = c.error ?? "Invalid phone number"; }
-    if (!city) e.city = "Please choose a city";
-    if (!category) e.category = "Please choose a category";
+    if (!selectedState) e.state = "Please choose a state";
+    if (!area) e.area = "Please choose an area";
     return e;
   };
 
@@ -225,18 +196,19 @@ function Register() {
       if (!clash) break;
       slug = `${baseSlug}-${Math.floor(Math.random() * 999)}`;
     }
-    let resolvedCityId = cityId;
-    if (!resolvedCityId && city) {
-      const { data: cityRow } = await supabase
+    let resolvedAreaId = areaId;
+    if (!resolvedAreaId && area) {
+      const { data: areaRow } = await supabase
         .from("cities_of_business")
         .select("id")
-        .ilike("name", city)
+        .eq("state", selectedState)
+        .ilike("name", area)
         .maybeSingle();
-      resolvedCityId = cityRow?.id ?? null;
+      resolvedAreaId = areaRow?.id ?? null;
     }
     const { data, error } = await supabase.from("sellers").insert({
       user_id: uid!, name, business_name: businessName.trim(), slug,
-      whatsapp_number: whatsapp, city, state: selectedState, city_id: resolvedCityId, category, bio,
+      whatsapp_number: whatsapp, city: area, state: selectedState, city_id: resolvedAreaId, bio,
       verification_status: "pending",
       onboarding_status: "step1_complete",
       is_blocked: false,
@@ -383,62 +355,49 @@ function Register() {
                 <FieldError msg={errors.whatsapp} />
               </div>
 
-              {/* State → City two-level selector */}
+              {/* State → Area two-level selector */}
               <div>
                 <Label>State of Business<Req /></Label>
                 <Select
                   value={selectedState}
                   onValueChange={(v) => {
                     setSelectedState(v);
-                    setCity("");
-                    setCityId(null);
+                    setArea("");
+                    setAreaId(null);
                   }}
                 >
-                  <SelectTrigger className={errors.city && !selectedState ? "border-destructive" : ""}>
+                  <SelectTrigger className={errors.state ? "border-destructive" : ""}>
                     <SelectValue placeholder="Choose your state" />
                   </SelectTrigger>
                   <SelectContent>
-                    {NIGERIA_STATES.map((s) => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    {states.map((s) => (
+                      <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              {selectedState && (
-                <div>
-                  <Label>City of Business<Req /></Label>
-                  <Select
-                    value={city}
-                    onValueChange={(v) => {
-                      setCity(v);
-                      setCityId(null);
-                    }}
-                  >
-                    <SelectTrigger className={errors.city ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Choose your city" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(NIGERIA_STATE_CITIES[selectedState] ?? []).map((c) => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FieldError msg={errors.city} />
-                </div>
-              )}
-
               <div>
-                <Label>Category<Req /></Label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger className={errors.category ? "border-destructive" : ""}>
-                    <SelectValue placeholder="Choose category" />
+                <Label>Area of Business<Req /></Label>
+                <Select
+                  value={area}
+                  disabled={!selectedState || areasLoading}
+                  onValueChange={(v) => {
+                    setArea(v);
+                    setAreaId(areas.find((a) => a.name === v)?.id ?? null);
+                  }}
+                >
+                  <SelectTrigger className={errors.area ? "border-destructive" : ""}>
+                    <SelectValue placeholder={!selectedState ? "Choose a state first" : areasLoading ? "Loading areas…" : "Choose your area"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((c) => <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>)}
+                    {areas.map((a) => (
+                      <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-                <FieldError msg={errors.category} />
+                <FieldError msg={errors.state} />
+                <FieldError msg={errors.area} />
               </div>
 
               <div>

@@ -25,7 +25,6 @@ export interface ProductSheetProps {
   mode: "add" | "edit";
   sellerId: string;
   sellerSlug?: string;
-  sellerCategory?: string;
   product?: {
     id: string;
     name: string;
@@ -41,7 +40,7 @@ export interface ProductSheetProps {
 }
 
 export function ProductSheet({
-  open, onOpenChange, mode, sellerId, sellerCategory, product, onSaved,
+  open, onOpenChange, mode, sellerId, product, onSaved,
 }: ProductSheetProps) {
   const qc = useQueryClient();
   const [name, setName] = useState("");
@@ -49,7 +48,8 @@ export function ProductSheet({
   const [desc, setDesc] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [stock, setStock] = useState<"available" | "low_stock" | "sold_out">("available");
-  const [category, setCategory] = useState<string>(sellerCategory || "");
+  const [category, setCategory] = useState<string>("");
+  const [categories, setCategories] = useState<{ name: string }[]>([]);
   const [attributes, setAttributes] = useState<Record<string, any>>({});
   const [saving, setSaving] = useState(false);
 
@@ -64,14 +64,19 @@ export function ProductSheet({
         : product.image_url ? [product.image_url] : [];
       setImages(existing);
       setStock((product.stock_status as any) ?? "available");
-      setCategory(product.category || sellerCategory || "");
+      setCategory(product.category || "");
       setAttributes({});
     } else {
       setName(""); setPrice(""); setDesc(""); setImages([]); setStock("available");
-      setCategory(sellerCategory || "");
+      setCategory("");
       setAttributes({});
     }
-  }, [open, mode, product, sellerCategory]);
+  }, [open, mode, product]);
+
+  useEffect(() => {
+    if (!open) return;
+    supabase.from("categories").select("name").order("sort_order").then(({ data }) => setCategories(data ?? []));
+  }, [open]);
 
   // Price lock: only on edit, only when there was a previously set price
   const priceLock = (() => {
@@ -89,6 +94,7 @@ export function ProductSheet({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) { toast.error("Product name is required"); return; }
+    if (!category.trim()) { toast.error("Product category is required"); return; }
     const priceVal = price.trim() === "" ? null : Number(price);
     if (priceVal !== null && (!Number.isFinite(priceVal) || priceVal <= 0)) {
       toast.error("Enter a valid price or leave blank for 'Price on request'"); return;
@@ -102,9 +108,7 @@ export function ProductSheet({
         image_urls: images,
         stock_status: stock,
       };
-      // Only include category if the user provided one and the column exists
-      // (column added via migration 20260717010000)
-      if (category?.trim()) payload.category = category.trim();
+      payload.category = category.trim();
       // Only include price when not locked
       if (mode === "add") {
         payload.price = priceVal;
@@ -164,15 +168,16 @@ export function ProductSheet({
           {/* Category - optional but helps with search */}
           <div>
             <Label htmlFor="prod-category">
-              Category <span className="text-xs text-muted-foreground">— optional</span>
+              Category *
             </Label>
-            <Input
-              id="prod-category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              placeholder={sellerCategory || "e.g. Fashion & Clothing"}
-              className="mt-1 min-h-[44px] rounded-full"
-            />
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger id="prod-category" className="mt-1 min-h-[44px] rounded-full">
+                <SelectValue placeholder="Choose product category" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((c) => <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>

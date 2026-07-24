@@ -8,7 +8,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { sanitizePostgrestLike } from "@/lib/postgrestSafe";
 import { TopBar } from "@/components/TopBar";
 import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
@@ -16,8 +15,9 @@ import { BackButton } from "@/components/BackButton";
 import { ProductSkeleton } from "@/components/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search } from "lucide-react";
 import { useCity } from "@/lib/cityContext";
+import { MarketplaceSearchBox } from "@/components/search/MarketplaceSearchBox";
+import { useMarketplaceSearch } from "@/hooks/use-marketplace-search";
 import { z } from "zod";
 
 const PAGE_SIZE = 16;
@@ -56,8 +56,9 @@ function ProductsPage() {
   const activeCat  = filterCat  !== "All" ? filterCat  : undefined;
   const activeCity = filterCity !== "All" ? filterCity : undefined;
 
-  const { data: products, isLoading } = useQuery({
-    queryKey: ["all-products", activeCat, activeCity, q, page],
+  const catalogQuery = useQuery({
+    queryKey: ["all-products", activeCat, activeCity, page],
+    enabled: !q.trim(),
     queryFn: async () => {
       let qb = supabase
         .from("products")
@@ -70,13 +71,23 @@ function ProductsPage() {
 
       if (activeCat)  qb = qb.eq("category", activeCat);
       if (activeCity) qb = qb.eq("sellers.city", activeCity);
-      if (q.trim())   { const sq = sanitizePostgrestLike(q); if (sq) qb = qb.or(`name.ilike.%${sq}%,description.ilike.%${sq}%`); }
 
       const { data, error } = await qb.abortSignal(AbortSignal.timeout(10000));
       if (error) throw error;
       return data ?? [];
     },
   });
+
+  const liveSearch = useMarketplaceSearch({
+    query: q,
+    city: activeCity,
+    category: activeCat,
+    limit: PAGE_SIZE * page,
+    includeSellers: false,
+  });
+
+  const products = q.trim() ? liveSearch.data?.products : catalogQuery.data;
+  const isLoading = q.trim() ? liveSearch.isLoading || liveSearch.isFetching : catalogQuery.isLoading;
 
   const applyFilter = (type: "cat" | "city", val: string) => {
     setPage(1);
@@ -89,7 +100,7 @@ function ProductsPage() {
     if (q.trim()) nav({ to: "/search", search: { q: q.trim() } });
   };
 
-  const hasMore = (products?.length ?? 0) === PAGE_SIZE;
+  const hasMore = q.trim() ? (products?.length ?? 0) >= PAGE_SIZE * page : (products?.length ?? 0) === PAGE_SIZE;
 
   return (
     <div className="min-h-screen bg-background">
@@ -106,13 +117,12 @@ function ProductsPage() {
         {/* Filters bar */}
         <div className="mt-5 flex flex-wrap gap-3">
           <form onSubmit={handleSearch} className="flex flex-1 min-w-[180px] items-center gap-2 rounded-full border border-border bg-card px-4 py-2 shadow-warm">
-            <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-            <input
+            <MarketplaceSearchBox
               value={q}
-              onChange={(e) => setQ(e.target.value)}
+              onChange={(value) => { setQ(value); setPage(1); }}
+              onSubmit={(value) => setQ(value)}
+              isSearching={liveSearch.isFetching}
               placeholder="Search products…"
-              aria-label="Search products"
-              className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
           </form>
 

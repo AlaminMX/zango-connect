@@ -12,6 +12,7 @@ import { BackButton } from "@/components/BackButton";
 import { ProductCard } from "@/components/ProductCard";
 import { PageLoader } from "@/components/LoadingSpinner";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { MediaViewer } from "@/components/MediaViewer";
 import { Button } from "@/components/ui/button";
 import { buildWhatsAppUrl, trackClick } from "@/lib/whatsapp";
 import { toggleWishlist, useIsWishlisted } from "@/lib/wishlist";
@@ -24,6 +25,9 @@ export const Route = createFileRoute("/product/$id")({ beforeLoad: assertLaunchG
 function ProductDetail() {
   const { id } = useParams({ from: "/product/$id" });
   const [activeImg, setActiveImg] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const touchStartX = useRef<number | null>(null);
+  const touchDeltaX = useRef(0);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["product", id],
@@ -114,15 +118,56 @@ function ProductDetail() {
         <div className="mt-4 grid gap-8 lg:grid-cols-2">
           {/* Gallery */}
           <div>
-            <div className="aspect-square overflow-hidden rounded-3xl border border-border-warm bg-surface-warm">
+            <div
+              className="relative aspect-square w-full max-w-full touch-pan-y overflow-hidden rounded-3xl border border-border-warm bg-surface-warm"
+              onTouchStart={(e) => {
+                touchStartX.current = e.touches[0].clientX;
+                touchDeltaX.current = 0;
+              }}
+              onTouchMove={(e) => {
+                if (touchStartX.current == null) return;
+                touchDeltaX.current = e.touches[0].clientX - touchStartX.current;
+              }}
+              onTouchEnd={() => {
+                const delta = touchDeltaX.current;
+                const SWIPE_THRESHOLD = 40;
+                if (delta <= -SWIPE_THRESHOLD) {
+                  setActiveImg((i) => Math.min(imgs.length - 1, i + 1));
+                } else if (delta >= SWIPE_THRESHOLD) {
+                  setActiveImg((i) => Math.max(0, i - 1));
+                }
+                touchStartX.current = null;
+                touchDeltaX.current = 0;
+              }}
+            >
               {mainImg ? (
-                <img src={mainImg} alt={p.name} className={`h-full w-full object-cover ${soldOut ? "opacity-60 grayscale" : ""}`} />
+                <img
+                  src={mainImg} alt={p.name}
+                  onClick={() => setLightboxOpen(true)}
+                  className={`h-full w-full cursor-pointer object-cover ${soldOut ? "opacity-60 grayscale" : ""}`}
+                />
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-muted-foreground">No image</div>
               )}
+              {imgs.length > 1 && (
+                <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/40 px-2.5 py-1 text-xs font-medium text-white">
+                  {activeImg + 1} / {imgs.length}
+                </div>
+              )}
             </div>
             {imgs.length > 1 && (
-              <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+              <div className="mt-3 flex items-center justify-center gap-1.5">
+                {imgs.map((_, i) => (
+                  <span
+                    key={i}
+                    aria-hidden="true"
+                    className={`h-1.5 rounded-full transition-all ${i === activeImg ? "w-4 bg-primary" : "w-1.5 bg-border-warm"}`}
+                  />
+                ))}
+              </div>
+            )}
+            {imgs.length > 1 && (
+              <div className="mt-3 flex h-20 gap-2 overflow-x-auto pb-1">
                 {imgs.map((url, i) => (
                   <button
                     key={url + i} type="button"
@@ -202,6 +247,13 @@ function ProductDetail() {
             </div>
           </div>
         </div>
+
+        <MediaViewer
+          images={imgs}
+          open={lightboxOpen}
+          onOpenChange={setLightboxOpen}
+          initialIndex={activeImg}
+        />
 
         <RelatedProducts sellerId={seller.id} excludeId={p.id} />
       </main>

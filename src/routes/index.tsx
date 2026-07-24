@@ -428,7 +428,7 @@ function Index() {
       </section>
 
       {/* ── CITY EXPLORER ────────────────────────────────────────────────── */}
-      <ExploreCities />
+      <ExploreStates />
 
       {/* ── OPEN YOUR STORE CTA ──────────────────────────────────────────── */}
       {showSellerCTA && (

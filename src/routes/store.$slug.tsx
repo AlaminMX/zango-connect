@@ -543,6 +543,9 @@ function StorePage() {
                 <Button onClick={() => setEditMode(!editMode)} variant={editMode ? "outline" : "default"} className="flex-1 rounded-full">
                   {editMode ? <><X className="mr-1.5 h-4 w-4" /> Exit edit mode</> : <><Pencil className="mr-1.5 h-4 w-4" /> Edit store</>}
                 </Button>
+                <Button asChild variant="outline" className="flex-1 rounded-full">
+                  <Link to="/seller/vendor-card"><Share2 className="mr-1.5 h-4 w-4" /> Vendor card</Link>
+                </Button>
               </>
             ) : (
               <>

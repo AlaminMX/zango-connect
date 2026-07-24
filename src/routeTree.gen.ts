@@ -33,6 +33,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as StoreSlugRouteImport } from './routes/store.$slug'
 import { Route as StateSlugRouteImport } from './routes/state.$slug'
 import { Route as SellerProductsRouteImport } from './routes/seller.products'
+import { Route as SellerVendorCardRouteImport } from './routes/seller.vendor-card'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as CitySlugRouteImport } from './routes/city.$slug'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
@@ -162,6 +163,11 @@ const SellerProductsRoute = SellerProductsRouteImport.update({
   path: '/seller/products',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SellerVendorCardRoute = SellerVendorCardRouteImport.update({
+  id: '/seller/vendor-card',
+  path: '/seller/vendor-card',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProductIdRoute = ProductIdRouteImport.update({
   id: '/product/$id',
   path: '/product/$id',
@@ -234,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/city/$slug': typeof CitySlugRoute
   '/product/$id': typeof ProductIdRoute
   '/seller/products': typeof SellerProductsRoute
+  '/seller/vendor-card': typeof SellerVendorCardRoute
   '/state/$slug': typeof StateSlugRoute
   '/store/$slug': typeof StoreSlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -268,6 +275,7 @@ export interface FileRoutesByTo {
   '/city/$slug': typeof CitySlugRoute
   '/product/$id': typeof ProductIdRoute
   '/seller/products': typeof SellerProductsRoute
+  '/seller/vendor-card': typeof SellerVendorCardRoute
   '/state/$slug': typeof StateSlugRoute
   '/store/$slug': typeof StoreSlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -303,6 +311,7 @@ export interface FileRoutesById {
   '/city/$slug': typeof CitySlugRoute
   '/product/$id': typeof ProductIdRoute
   '/seller/products': typeof SellerProductsRoute
+  '/seller/vendor-card': typeof SellerVendorCardRoute
   '/state/$slug': typeof StateSlugRoute
   '/store/$slug': typeof StoreSlugRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -339,6 +348,7 @@ export interface FileRouteTypes {
     | '/city/$slug'
     | '/product/$id'
     | '/seller/products'
+    | '/seller/vendor-card'
     | '/state/$slug'
     | '/store/$slug'
     | '/.lovable/oauth/consent'
@@ -373,6 +383,7 @@ export interface FileRouteTypes {
     | '/city/$slug'
     | '/product/$id'
     | '/seller/products'
+    | '/seller/vendor-card'
     | '/state/$slug'
     | '/store/$slug'
     | '/.lovable/oauth/consent'
@@ -407,6 +418,7 @@ export interface FileRouteTypes {
     | '/city/$slug'
     | '/product/$id'
     | '/seller/products'
+    | '/seller/vendor-card'
     | '/state/$slug'
     | '/store/$slug'
     | '/.lovable/oauth/consent'
@@ -442,6 +454,7 @@ export interface RootRouteChildren {
   CitySlugRoute: typeof CitySlugRoute
   ProductIdRoute: typeof ProductIdRoute
   SellerProductsRoute: typeof SellerProductsRoute
+  SellerVendorCardRoute: typeof SellerVendorCardRoute
   StateSlugRoute: typeof StateSlugRoute
   StoreSlugRoute: typeof StoreSlugRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
@@ -619,6 +632,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SellerProductsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/seller/vendor-card': {
+      id: '/seller/vendor-card'
+      path: '/seller/vendor-card'
+      fullPath: '/seller/vendor-card'
+      preLoaderRoute: typeof SellerVendorCardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/product/$id': {
       id: '/product/$id'
       path: '/product/$id'
@@ -707,6 +727,7 @@ const rootRouteChildren: RootRouteChildren = {
   CitySlugRoute: CitySlugRoute,
   ProductIdRoute: ProductIdRoute,
   SellerProductsRoute: SellerProductsRoute,
+  SellerVendorCardRoute: SellerVendorCardRoute,
   StateSlugRoute: StateSlugRoute,
   StoreSlugRoute: StoreSlugRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,

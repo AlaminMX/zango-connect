@@ -1,4 +1,4 @@
-const VERSION = "zango-pwa-v1";
+const VERSION = "zango-pwa-v2";
 const APP_SHELL_CACHE = `${VERSION}-shell`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const IMAGE_CACHE = `${VERSION}-images`;
@@ -7,10 +7,10 @@ const APP_SHELL = [
   "/",
   "/offline.html",
   "/manifest.webmanifest",
-  "/icons/icon-192x192.svg",
-  "/icons/icon-512x512.svg",
-  "/icons/maskable-icon-512x512.svg",
-  "/apple-touch-icon.svg"
+  "/icons/icon-192x192.png",
+  "/icons/icon-512x512.png",
+  "/icons/maskable-icon-512x512.png",
+  "/apple-touch-icon.png"
 ];
 const MAX_RUNTIME_ENTRIES = 80;
 const MAX_IMAGE_ENTRIES = 120;
@@ -87,3 +87,4 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(staleWhileRevalidate(request, IMAGE_CACHE, MAX_IMAGE_ENTRIES));
   }
 });
+    

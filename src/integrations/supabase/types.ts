@@ -848,6 +848,7 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: undefined
       }
+      ensure_area: { Args: { _name: string; _state: string }; Returns: string }
       ensure_city: { Args: { _name: string; _state: string }; Returns: string }
       ensure_state: { Args: { _name: string }; Returns: string }
       has_role: {

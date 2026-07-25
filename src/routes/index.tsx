@@ -216,7 +216,7 @@ function Index() {
           <p className="mt-5 max-w-xl text-base leading-relaxed text-white/70 sm:text-lg">
             {isSeller
               ? "Manage your store, track your products, and connect with buyers."
-              : `Discover handcrafted fashion, food, beauty and more from ${sellerCount ? sellerCount.toLocaleString() : "verified"} trusted sellers.`
+              : "Discover handcrafted fashion, food, beauty and more from trusted sellers."
             }
           </p>
 

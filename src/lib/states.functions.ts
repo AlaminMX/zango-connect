@@ -7,6 +7,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { supabase as publicSupabase } from "@/integrations/supabase/client";
 
 async function assertAdmin(supabase: any, userId: string) {
   const { data } = await supabase
@@ -34,7 +35,7 @@ export interface CityStatRow {
 // ─────────────── Public ───────────────
 
 export const listActiveStates = createServerFn({ method: "GET" }).handler(async () => {
-  const { data, error } = await (supabaseAdmin as any)
+  const { data, error } = await (publicSupabase as any)
     .from("states_with_stats")
     .select("*")
     .eq("is_active", true)
@@ -48,11 +49,11 @@ export const listActiveStates = createServerFn({ method: "GET" }).handler(async 
 export const listCitiesForState = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) => z.object({ slug: z.string().min(1).max(100) }).parse(d))
   .handler(async ({ data }) => {
-    const { data: state, error: stErr } = await (supabaseAdmin as any)
+    const { data: state, error: stErr } = await (publicSupabase as any)
       .from("states").select("id, name, slug, is_active").eq("slug", data.slug).maybeSingle();
     if (stErr) throw new Error(stErr.message);
     if (!state || !state.is_active) return null;
-    const { data: cities, error } = await (supabaseAdmin as any)
+    const { data: cities, error } = await (publicSupabase as any)
       .from("cities_with_stats")
       .select("*")
       .eq("state_id", state.id)

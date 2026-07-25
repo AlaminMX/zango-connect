@@ -25,8 +25,8 @@ export function buildWhatsAppUrl(phone: string, productName?: string, storeUrl?:
   const clean = normaliseNigerianPhone(phone) ?? phone.replace(/\D/g, "");
   const storeLine = storeUrl ? `\n\nStore: ${storeUrl}` : "";
   const msg = productName
-    ? `Hi, I saw your listing on Sutura Market. I'm interested in ${productName}.${storeLine}`
-    : `Hi, I saw your store on Sutura Market.${storeLine}`;
+    ? `Hi, I saw your product on Zango. I'm interested in ${productName}.${storeLine}`
+    : `Hi, I saw your store on Zango.${storeLine}`;
   return `https://wa.me/${clean}?text=${encodeURIComponent(msg)}`;
 }
 

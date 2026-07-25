@@ -70,6 +70,9 @@ function Register() {
   const [whatsapp, setWhatsapp] = useState("");
   const [area, setArea] = useState("");
   const [areaId, setAreaId] = useState<string | null>(null);
+  const [areaSelectValue, setAreaSelectValue] = useState("");
+  const [isOtherArea, setIsOtherArea] = useState(false);
+  const [customArea, setCustomArea] = useState("");
   const [bio, setBio] = useState("");
 
   const [selectedState, setSelectedState] = useState("");
@@ -108,6 +111,9 @@ function Register() {
     const state = states.find((s) => s.name === selectedState);
     setArea("");
     setAreaId(null);
+    setAreaSelectValue("");
+    setIsOtherArea(false);
+    setCustomArea("");
     setAreas([]);
     if (!state) return;
     setAreasLoading(true);
@@ -116,6 +122,8 @@ function Register() {
       .catch(() => toast.error("Could not load areas for this state."))
       .finally(() => setAreasLoading(false));
   }, [selectedState, states]);
+
+  const effectiveArea = () => (isOtherArea ? customArea.trim() : area);
 
   const validateStep1 = (): Errors => {
     const e: Errors = {};
@@ -128,7 +136,7 @@ function Register() {
     if (!whatsapp.trim()) e.whatsapp = "WhatsApp number is required";
     else { const c = validateNigerianPhone(whatsapp); if (!c.valid) e.whatsapp = c.error ?? "Invalid phone number"; }
     if (!selectedState) e.state = "Please choose a state";
-    if (!area) e.area = "Please choose an area";
+    if (!effectiveArea()) e.area = isOtherArea ? "Please type your area" : "Please choose an area";
     return e;
   };
 
@@ -196,19 +204,33 @@ function Register() {
       if (!clash) break;
       slug = `${baseSlug}-${Math.floor(Math.random() * 999)}`;
     }
+    const finalArea = effectiveArea();
     let resolvedAreaId = areaId;
-    if (!resolvedAreaId && area) {
+
+    if (isOtherArea && finalArea) {
+      // New area typed by the vendor and not in our curated list — create it
+      // (or find it if another vendor already typed the same name/state).
+      const { data: newAreaId, error: ensureErr } = await supabase.rpc("ensure_area", {
+        _name: finalArea, _state: selectedState,
+      });
+      if (ensureErr || !newAreaId) {
+        setBusy(false);
+        toast.error("Couldn't save that area. Please try again.");
+        return;
+      }
+      resolvedAreaId = newAreaId as string;
+    } else if (!resolvedAreaId && finalArea) {
       const { data: areaRow } = await supabase
         .from("cities_of_business")
         .select("id")
         .eq("state", selectedState)
-        .ilike("name", area)
+        .ilike("name", finalArea)
         .maybeSingle();
       resolvedAreaId = areaRow?.id ?? null;
     }
     const { data, error } = await supabase.from("sellers").insert({
       user_id: uid!, name, business_name: businessName.trim(), slug,
-      whatsapp_number: whatsapp, city: area, state: selectedState, city_id: resolvedAreaId, bio,
+      whatsapp_number: whatsapp, city: finalArea, state: selectedState, city_id: resolvedAreaId, bio,
       verification_status: "pending",
       onboarding_status: "step1_complete",
       is_blocked: false,
@@ -380,11 +402,20 @@ function Register() {
               <div>
                 <Label>Area of Business<Req /></Label>
                 <Select
-                  value={area}
+                  value={areaSelectValue}
                   disabled={!selectedState || areasLoading}
                   onValueChange={(v) => {
-                    setArea(v);
-                    setAreaId(areas.find((a) => a.name === v)?.id ?? null);
+                    setAreaSelectValue(v);
+                    if (v === "__other__") {
+                      setIsOtherArea(true);
+                      setArea("");
+                      setAreaId(null);
+                    } else {
+                      setIsOtherArea(false);
+                      setCustomArea("");
+                      setArea(v);
+                      setAreaId(areas.find((a) => a.name === v)?.id ?? null);
+                    }
                   }}
                 >
                   <SelectTrigger className={errors.area ? "border-destructive" : ""}>
@@ -394,8 +425,17 @@ function Register() {
                     {areas.map((a) => (
                       <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>
                     ))}
+                    <SelectItem value="__other__">Other — my area isn't listed</SelectItem>
                   </SelectContent>
                 </Select>
+                {isOtherArea && (
+                  <Input
+                    className={`mt-2 ${errors.area ? "border-destructive" : ""}`}
+                    placeholder="Type your area, e.g. Sabon Gari"
+                    value={customArea}
+                    onChange={(e) => setCustomArea(e.target.value)}
+                  />
+                )}
                 <FieldError msg={errors.state} />
                 <FieldError msg={errors.area} />
               </div>

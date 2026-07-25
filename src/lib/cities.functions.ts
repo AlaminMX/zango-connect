@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { supabase as publicSupabase } from "@/integrations/supabase/client";
 
 async function assertAdmin(supabase: any, userId: string) {
   const { data } = await supabase
@@ -21,7 +22,7 @@ function slugify(s: string) {
 
 // Public: list active cities (no auth)
 export const listActiveCities = createServerFn({ method: "GET" }).handler(async () => {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await publicSupabase
     .from("cities_of_business")
     .select("id, name, state, slug, sort_order")
     .eq("is_active", true)
@@ -34,7 +35,7 @@ export const listActiveCities = createServerFn({ method: "GET" }).handler(async 
 export const getCityBySlug = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) => z.object({ slug: z.string().min(1).max(100) }).parse(d))
   .handler(async ({ data }) => {
-    const { data: city, error } = await supabaseAdmin
+    const { data: city, error } = await publicSupabase
       .from("cities_of_business").select("*").eq("slug", data.slug).eq("is_active", true).maybeSingle();
     if (error) throw new Error(error.message);
     return city;
@@ -44,20 +45,20 @@ export const getCityBySlug = createServerFn({ method: "GET" })
 export const getCityMarketplace = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) => z.object({ slug: z.string().min(1).max(100) }).parse(d))
   .handler(async ({ data }) => {
-    const { data: city } = await supabaseAdmin
+    const { data: city } = await publicSupabase
       .from("cities_of_business").select("*").eq("slug", data.slug).eq("is_active", true).maybeSingle();
     if (!city) return null;
 
     const [{ data: sellers }, { data: products }, { data: categories }] = await Promise.all([
-      supabaseAdmin.from("sellers")
+      publicSupabase.from("sellers")
         .select("id, business_name, slug, category, city, profile_photo_url, cover_photo_url, is_verified, rating, bio")
         .eq("city_id", city.id).eq("status", "active").eq("verification_status", "approved")
         .order("rating", { ascending: false }).limit(60),
-      supabaseAdmin.from("products")
+      publicSupabase.from("products")
         .select("id, name, price, image_url, stock_status, is_featured, featured_order, sellers!inner(id, business_name, slug, city_id, status, verification_status)")
         .eq("sellers.city_id", city.id).eq("sellers.status", "active").eq("sellers.verification_status", "approved")
         .eq("status", "active").order("is_featured", { ascending: false }).order("featured_order").limit(60),
-      supabaseAdmin.from("categories").select("*").order("sort_order"),
+      publicSupabase.from("categories").select("*").order("sort_order"),
     ]);
     return { city, sellers: sellers ?? [], products: products ?? [], categories: categories ?? [] };
   });

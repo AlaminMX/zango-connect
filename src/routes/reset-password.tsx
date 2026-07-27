@@ -15,19 +15,35 @@ function ResetPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    // Check if we already have a recovery session or wait for PASSWORD_RECOVERY event
+    let settled = false;
+    const finishChecking = () => {
+      if (!settled) {
+        settled = true;
+        setChecking(false);
+      }
+    };
+
+    // Check if we already have a recovery session or wait for PASSWORD_RECOVERY event.
+    // Supabase parses the recovery token out of the URL asynchronously, so getSession()
+    // resolving without a session yet does NOT mean the link is invalid — give the
+    // PASSWORD_RECOVERY event a short window to fire before giving up.
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) {
         setReady(true);
+        finishChecking();
+      } else {
+        setTimeout(finishChecking, 1500);
       }
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && session)) {
         setReady(true);
+        finishChecking();
       }
     });
 
@@ -90,6 +106,22 @@ function ResetPasswordPage() {
     );
   }
 
+  // ── Checking session / waiting for recovery event ─────────────────────────
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-background">
+        <TopBar />
+        <div className="mx-auto max-w-md px-5 py-20 flex flex-col items-center text-center">
+          <svg className="h-8 w-8 animate-spin text-primary" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          <p className="mt-4 text-sm text-muted-foreground">Verifying your reset link…</p>
+        </div>
+      </div>
+    );
+  }
+
   // ── Invalid / expired link ────────────────────────────────────────────────
   if (!ready) {
     return (
@@ -130,7 +162,7 @@ function ResetPasswordPage() {
           </div>
           <h1 className="font-serif text-3xl font-semibold">Set new password</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Choose a strong password for your Sutura Market account.
+            Choose a strong password for your ZANGO account.
           </p>
         </div>
 

@@ -26,7 +26,7 @@ import { ImageUploader } from "@/components/ImageUploader";
 import { SectionLoader } from "@/components/LoadingSpinner";
 import {
   MapPin, Share2, Heart, Pencil, X, Check,
-  Plus, Trash2, MessageCircle, Loader2, ImageOff,
+  Plus, Trash2, MessageCircle, Loader2, ImageOff, Instagram,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,8 +52,8 @@ export const Route = createFileRoute("/store/$slug")({
   head: ({ params }) => {
     const name = prettifySlug(params.slug);
     const url = `https://sutura-connect.lovable.app/store/${params.slug}`;
-    const title = `${name} — Sutura Market`;
-    const description = `Shop ${name} on Sutura Market. Browse products and order directly on WhatsApp.`;
+    const title = `${name} — ZANGO`;
+    const description = `Shop ${name} on ZANGO. Browse products and order directly on WhatsApp.`;
     return {
       meta: [
         { title },
@@ -84,6 +84,15 @@ const STOCK_OPTIONS = [
   { value: "sold_out",   label: "Sold out" },
 ];
 
+// lucide-react has no Snapchat glyph — minimal inline ghost mark, currentColor so it themes.
+function SnapchatIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+      <path d="M12 2c2.9 0 5.1 2.3 5.1 5.4v1.9c0 .3.3.5.7.4l.7-.2c.4-.1.9.1 1 .5.1.4-.1.8-.5 1l-1 .4c-.3.1-.4.4-.3.7.4 1.2 1.3 2.1 2.6 2.6.3.1.5.5.4.8-.2.6-1 1-1.9 1.2-.1 0-.2.2-.2.3 0 .2 0 .5-.1.7-.1.3-.4.4-.7.4-.5 0-1-.1-1.6-.1-.6 0-1 .2-1.5.6-.8.6-1.6 1.2-2.9 1.2s-2.1-.6-2.9-1.2c-.5-.4-.9-.6-1.5-.6-.6 0-1.1.1-1.6.1-.3 0-.6-.1-.7-.4-.1-.2-.1-.5-.1-.7 0-.1-.1-.3-.2-.3-.9-.2-1.7-.6-1.9-1.2-.1-.3.1-.7.4-.8 1.3-.5 2.2-1.4 2.6-2.6.1-.3 0-.6-.3-.7l-1-.4c-.4-.2-.6-.6-.5-1 .1-.4.6-.6 1-.5l.7.2c.4.1.7-.1.7-.4V7.4C6.9 4.3 9.1 2 12 2z"/>
+    </svg>
+  );
+}
+
 function StorePage() {
   const { slug } = Route.useParams();
   const qc = useQueryClient();
@@ -108,6 +117,8 @@ function StorePage() {
   const [eCategory, setECategory] = useState("");
   const [eBio, setEBio]           = useState("");
   const [eWhatsapp, setEWhatsapp] = useState("");
+  const [eInstagram, setEInstagram] = useState("");
+  const [eSnapchat, setESnapchat] = useState("");
   const [eProfileUrl, setEProfileUrl] = useState<string | null>(null);
   const [eCoverUrl, setECoverUrl]     = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -170,7 +181,7 @@ function StorePage() {
       // that are restricted to authenticated/admin users.
       const { data, error } = await supabase
         .from("sellers")
-        .select("id, user_id, name, business_name, slug, whatsapp_number, city, city_id, category, bio, profile_photo_url, cover_photo_url, is_verified, rating, created_at, status, verification_status, is_blocked")
+        .select("id, user_id, name, business_name, slug, whatsapp_number, instagram, snapchat, city, city_id, category, bio, profile_photo_url, cover_photo_url, is_verified, rating, created_at, status, verification_status, is_blocked")
         .eq("slug", slug)
         .maybeSingle();
       if (error) throw error;
@@ -240,6 +251,8 @@ function StorePage() {
         setECategory(seller.category);
         setEBio(seller.bio ?? "");
         setEWhatsapp(seller.whatsapp_number);
+        setEInstagram(seller.instagram ?? "");
+        setESnapchat(seller.snapchat ?? "");
         setEProfileUrl(seller.profile_photo_url ?? null);
         setECoverUrl(seller.cover_photo_url ?? null);
         const since = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
@@ -295,6 +308,26 @@ function StorePage() {
     refetchVouchCount();
   };
 
+  // Strip leading @ and, if a full profile URL was pasted, extract the bare
+  // handle so we always store just the handle — outbound links are built
+  // at render time from this.
+  const normalizeInstagram = (input: string): string | null => {
+    let v = input.trim();
+    if (!v) return null;
+    v = v.replace(/^https?:\/\/(www\.)?instagram\.com\//i, "");
+    v = v.replace(/^@/, "");
+    v = v.split(/[/?#]/)[0];
+    return v || null;
+  };
+  const normalizeSnapchat = (input: string): string | null => {
+    let v = input.trim();
+    if (!v) return null;
+    v = v.replace(/^https?:\/\/(www\.)?snapchat\.com\/add\//i, "");
+    v = v.replace(/^@/, "");
+    v = v.split(/[/?#]/)[0];
+    return v || null;
+  };
+
   const saveProfile = async () => {
     if (!eBusiness.trim()) { toast.error("Business name cannot be empty"); return; }
     const phoneCheck = validateNigerianPhone(eWhatsapp);
@@ -307,6 +340,8 @@ function StorePage() {
       category: eCategory,
       bio: eBio,
       whatsapp_number: eWhatsapp,
+      instagram: normalizeInstagram(eInstagram),
+      snapchat: normalizeSnapchat(eSnapchat),
       profile_photo_url: eProfileUrl,
       cover_photo_url: eCoverUrl,
     };
@@ -503,6 +538,8 @@ function StorePage() {
               </div>
               <div><Label>Bio (max 150 chars)</Label><Textarea maxLength={150} value={eBio} onChange={(e) => setEBio(e.target.value)} /></div>
               <div><Label>WhatsApp number</Label><Input value={eWhatsapp} onChange={(e) => setEWhatsapp(e.target.value)} /></div>
+              <div><Label>Instagram (optional)</Label><Input placeholder="handle or profile link" value={eInstagram} onChange={(e) => setEInstagram(e.target.value)} /></div>
+              <div><Label>Snapchat (optional)</Label><Input placeholder="handle or profile link" value={eSnapchat} onChange={(e) => setESnapchat(e.target.value)} /></div>
             </div>
           ) : (
             <>
@@ -566,6 +603,20 @@ function StorePage() {
                   </Button>
                 )}
               </>
+            )}
+            {seller.instagram && (
+              <Button asChild variant="outline" size="icon" className="rounded-full shrink-0">
+                <a href={`https://instagram.com/${seller.instagram}`} target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                  <Instagram className="h-4 w-4" />
+                </a>
+              </Button>
+            )}
+            {seller.snapchat && (
+              <Button asChild variant="outline" size="icon" className="rounded-full shrink-0">
+                <a href={`https://snapchat.com/add/${seller.snapchat}`} target="_blank" rel="noopener noreferrer" aria-label="Snapchat">
+                  <SnapchatIcon className="h-4 w-4" />
+                </a>
+              </Button>
             )}
           </div>
 

@@ -22,7 +22,7 @@ export const Route = createFileRoute("/category/$slug")({
   head: ({ params }) => {
     const name = prettifySlug(params.slug);
     const url = `https://sutura-connect.lovable.app/category/${params.slug}`;
-    const title = `${name} — Sutura Market`;
+    const title = `${name} — ZANGO`;
     const description = `Browse ${name} sellers and products across northern Nigeria. Order on WhatsApp.`;
     return {
       meta: [
@@ -41,7 +41,7 @@ export const Route = createFileRoute("/category/$slug")({
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "CollectionPage",
-          name: `${name} on Sutura Market`,
+          name: `${name} on ZANGO`,
           url,
           description,
         }),

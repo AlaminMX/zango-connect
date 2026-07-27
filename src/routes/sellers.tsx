@@ -68,7 +68,7 @@ function SellersPage() {
           <div className="flex-1">
             <h1 className="font-serif text-3xl">All Sellers</h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Dukkan masu sayarwa — browse every store on Sutura Market
+              Dukkan masu sayarwa — browse every store on ZANGO
             </p>
           </div>
           {!isLoading && (

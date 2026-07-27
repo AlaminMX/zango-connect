@@ -27,10 +27,10 @@ export const Route = createFileRoute("/city/$slug")({
     return data;
   },
   head: ({ loaderData }) => {
-    if (!loaderData) return { meta: [{ title: "City not found — Sutura Market" }] };
+    if (!loaderData) return { meta: [{ title: "City not found — ZANGO" }] };
     const { city } = loaderData;
-    const title = `${city.name} Marketplace — Sutura Market`;
-    const desc = `Discover sellers and products in ${city.name}, ${city.state}. Shop locally on Sutura — northern Nigeria's WhatsApp-first marketplace.`;
+    const title = `${city.name} Marketplace — ZANGO`;
+    const desc = `Discover sellers and products in ${city.name}, ${city.state}. Shop locally on ZANGO — northern Nigeria's WhatsApp-first marketplace.`;
     const url = `/city/${city.slug}`;
     return {
       meta: [

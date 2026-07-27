@@ -92,7 +92,7 @@ function ProductDetail() {
 
   const storeUrl = typeof window !== "undefined" ? `${window.location.origin}/store/${seller.slug}` : undefined;
   const priceLabel = p.price != null ? `₦${Number(p.price).toLocaleString()}` : "Price on request";
-  const waMessage = `Hi! I found your product on Sutura Market — ${p.name}${p.price != null ? ` (${priceLabel})` : ""}. Is it available?${storeUrl ? `\n\nStore: ${storeUrl}` : ""}`;
+  const waMessage = `Hi! I found your product on ZANGO — ${p.name}${p.price != null ? ` (${priceLabel})` : ""}. Is it available?${storeUrl ? `\n\nStore: ${storeUrl}` : ""}`;
   const waUrl = `https://wa.me/${(seller.whatsapp_number ?? "").replace(/\D/g, "").replace(/^0/, "234")}?text=${encodeURIComponent(waMessage)}`;
   const fallbackWa = buildWhatsAppUrl(seller.whatsapp_number, p.name, storeUrl);
 

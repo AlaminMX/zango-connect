@@ -377,10 +377,23 @@ async function fetchExploreProducts({ cursor, city, state, category, signal }: {
   }));
   const last = pageItems[pageItems.length - 1];
   return {
-    items: pageItems,
+    items: shuffleArray(pageItems),
     hasMore: rows.length > PAGE_SIZE,
     nextCursor: rows.length > PAGE_SIZE && last?.created_at ? { created_at: last.created_at, id: last.id } : null,
   };
+}
+
+// Fisher-Yates — shuffles a page's items once, at fetch time. The cursor above
+// is derived from `last` (the pre-shuffle order), so shuffling here is purely
+// cosmetic and never affects pagination. Called once per page fetch, not on
+// the concatenated feed, so already-visible products never jump position.
+function shuffleArray<T>(arr: T[]): T[] {
+  const out = arr.slice();
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
 }
 
 function dedupeProducts<T extends { id: string }>(products: T[]): T[] {

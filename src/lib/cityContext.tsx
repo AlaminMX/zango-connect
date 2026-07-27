@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { listActiveCities } from "@/lib/cities.functions";
 
-const STORAGE_KEY = "sutura-selected-city";
+const STORAGE_KEY = "zango-selected-city";
 
 export interface CityOption {
   id: string;

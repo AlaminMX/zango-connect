@@ -1,5 +1,5 @@
 /**
- * Homepage — Sutura Market Connect
+ * Homepage — ZANGO
  * Sections: Hero → Category Shortcuts → Trending Sellers → Featured Products → City Explorer → Open Your Store CTA
  * Context-aware: approved/pending seller sees dashboard CTA; guest/buyer sees browse + register CTAs.
  */
@@ -20,7 +20,7 @@ import { useCity } from "@/lib/cityContext";
 import { useAuth } from "@/lib/authContext";
 import { useSellerProfile } from "@/lib/sellerProfile";
 import { iconFor, hausaFor } from "@/lib/categories";
-import { ArrowRight, Store, LayoutGrid, ChevronRight } from "lucide-react";
+import { ArrowRight, Store, LayoutGrid, ChevronRight, Search } from "lucide-react";
 import { getTrendingSellers } from "@/lib/homepage-cms";
 import { MarketplaceSearchBox } from "@/components/search/MarketplaceSearchBox";
 
@@ -126,17 +126,6 @@ function Index() {
     staleTime: 2 * 60 * 1000, gcTime: 5 * 60 * 1000, retry: 1,
   });
 
-  const { data: sellerCount } = useQuery({
-    queryKey: ["seller-count"],
-    queryFn: async () => {
-      const { count } = await supabase.from("sellers")
-        .select("id", { count: "exact", head: true })
-        .eq("is_blocked", false).eq("verification_status", "approved");
-      return count ?? 0;
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
   const { data: featuredProducts, isLoading: productsLoading } = useQuery({
     queryKey: ["featured-products-home", city],
     queryFn: async () => {
@@ -145,7 +134,7 @@ function Index() {
           .select("id, name, price, image_url, stock_status, is_featured, featured_order, status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, is_blocked, verification_status)")
           .eq("is_featured", true).eq("status", "active")
           .eq("sellers.is_blocked", false).eq("sellers.verification_status", "approved")
-          .order("featured_order").limit(8);
+          .order("featured_order").limit(12);
         if (city !== "All") qb = qb.eq("sellers.city", city);
         return qb.abortSignal(AbortSignal.timeout(8000));
       };
@@ -238,7 +227,7 @@ function Index() {
             </div>
           ) : (
             <>
-              <form onSubmit={submitSearch} className="mt-9 flex w-full max-w-xl flex-col gap-3 sm:flex-row">
+              <form onSubmit={submitSearch} className="mt-9 flex w-full max-w-xl flex-row gap-3">
                 <MarketplaceSearchBox
                   value={q}
                   onChange={setQ}
@@ -249,9 +238,11 @@ function Index() {
                 />
                 <button
                   type="submit"
-                  className="h-12 shrink-0 rounded-full bg-[#C9674A] px-7 text-sm font-semibold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#B85C41] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1A0B08] active:scale-95"
+                  aria-label="Search"
+                  className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-[#C9674A] px-4 text-sm font-semibold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#B85C41] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1A0B08] active:scale-95 sm:px-7"
                 >
-                  Search
+                  <Search className="h-4 w-4 sm:hidden" />
+                  <span className="hidden sm:inline">Search</span>
                 </button>
               </form>
 
@@ -267,7 +258,7 @@ function Index() {
                   to="/register"
                   className="inline-flex min-h-[44px] items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-[#E8906E] transition hover:bg-white/8 hover:text-[#F0A283] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1A0B08] active:scale-95"
                 >
-                  <Store className="h-3.5 w-3.5" /> Sell on Sutura
+                  <Store className="h-3.5 w-3.5" /> Sell on ZANGO
                 </Link>
               </div>
             </>
@@ -282,6 +273,7 @@ function Index() {
             <div className="grid auto-cols-[minmax(6.75rem,1fr)] grid-flow-col gap-3 overflow-x-auto py-5 scrollbar-hide sm:auto-cols-fr sm:grid-flow-row sm:grid-cols-4 sm:gap-4 md:grid-cols-7">
               {(categories ?? []).map((cat: any) => {
                 const icon = iconFor(cat.name);
+                const subtitle = cat.custom_subtitle || hausaFor(cat.name);
                 return (
                   <Link
                     key={cat.id}
@@ -289,13 +281,17 @@ function Index() {
                     params={{ slug: cat.slug }}
                     className="group flex min-h-[118px] flex-col items-center justify-center gap-2 rounded-3xl border border-border-warm bg-background px-4 py-4 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-white hover:shadow-warm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:scale-95"
                   >
-                    <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${icon.containerClass} ring-1 ring-inset ring-espresso/5 transition group-hover:scale-105 sm:h-16 sm:w-16`}>
-                      <icon.Component size={34} />
+                    <div className={`flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl ${cat.image_url ? "" : icon.containerClass} ring-1 ring-inset ring-espresso/5 transition group-hover:scale-105 sm:h-16 sm:w-16`}>
+                      {cat.image_url ? (
+                        <img src={cat.image_url} alt={cat.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <icon.Component size={34} />
+                      )}
                     </div>
                     <span className="max-w-full truncate text-xs font-semibold leading-tight text-espresso sm:text-sm">{cat.name}</span>
-                    {hausaFor(cat.name) && (
+                    {subtitle && (
                       <span className="max-w-full truncate text-[10px] font-semibold uppercase tracking-wide text-sage-deep/75">
-                        {hausaFor(cat.name)}
+                        {subtitle}
                       </span>
                     )}
                   </Link>
@@ -451,13 +447,8 @@ function Index() {
               Ready to reach more customers?
             </h2>
             <p className="mt-3 max-w-md text-sm leading-relaxed text-white/60">
-              List your products, get discovered by thousands of buyers, and connect directly over WhatsApp — all for free.
+              A digital storefront to showcase and sell your products, with orders coming straight to you on WhatsApp.
             </p>
-            {sellerCount && sellerCount > 0 && (
-              <p className="mt-2 text-xs text-white/40">
-                Join {sellerCount.toLocaleString()} verified sellers already on Sutura
-              </p>
-            )}
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
               <Link
                 to="/register"

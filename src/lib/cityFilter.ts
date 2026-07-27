@@ -9,7 +9,7 @@
 
 import { useState, useEffect } from "react";
 
-const STORAGE_KEY = "sutura-city-filter";
+const STORAGE_KEY = "zango-city-filter";
 export const ALL_CITIES = "All cities";
 
 // ── in-memory pub/sub so React components re-render across the tree ──

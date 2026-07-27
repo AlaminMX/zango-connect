@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { ShoppingBag, Store, X } from "lucide-react";
 
-const STORAGE_KEY = "sutura-visitor-role";
+const STORAGE_KEY = "zango-visitor-role";
 
 export function WelcomeModal() {
   const [open, setOpen] = useState(false);

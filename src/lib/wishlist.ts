@@ -5,7 +5,7 @@
  */
 import { useEffect, useState, useSyncExternalStore } from "react";
 
-const KEY = "sutura_wishlist";
+const KEY = "zango_wishlist";
 
 export interface WishlistItem {
   id: string;

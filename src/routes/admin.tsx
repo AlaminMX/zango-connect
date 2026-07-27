@@ -80,7 +80,7 @@ interface SellerRow {
   onboarding_status: string;
   profile_photo_url?: string | null; whatsapp_number?: string;
 }
-interface Category   { id: string; name: string; slug: string; icon_emoji: string; image_url: string | null; sort_order: number; }
+interface Category   { id: string; name: string; slug: string; icon_emoji: string; image_url: string | null; custom_subtitle: string | null; sort_order: number; }
 interface ProductRow {
   id: string; name: string; price: number; image_url: string | null;
   is_featured: boolean; featured_order: number; status: string;
@@ -149,8 +149,47 @@ function AdminPage() {
   const [editingCat, setEditingCat] = useState<Category | null>(null);
   const [catName,    setCatName]    = useState("");
   const [catImage,   setCatImage]   = useState<string | null>(null);
+  const [catSubtitle, setCatSubtitle] = useState("");
   const [catSaving,  setCatSaving]  = useState(false);
   const [newCatOpen, setNewCatOpen] = useState(false);
+
+  // WhatsApp click detail modal (Task 7)
+  const [waDetailOpen, setWaDetailOpen] = useState(false);
+  const [waDetailLoading, setWaDetailLoading] = useState(false);
+  const [waDetail, setWaDetail] = useState<{
+    seller_id: string;
+    business_name: string;
+    total: number;
+    recent: { created_at: string; product_id: string | null }[];
+  }[]>([]);
+
+  const openWaDetail = async () => {
+    setWaDetailOpen(true);
+    setWaDetailLoading(true);
+    const { data, error } = await supabase
+      .from("whatsapp_clicks")
+      .select("seller_id, product_id, created_at, sellers(business_name)")
+      .order("created_at", { ascending: false })
+      .limit(2000);
+    if (error) { toast.error(error.message); setWaDetailLoading(false); return; }
+    const bySeller = new Map<string, { seller_id: string; business_name: string; total: number; recent: { created_at: string; product_id: string | null }[] }>();
+    for (const row of (data ?? []) as any[]) {
+      const existing = bySeller.get(row.seller_id);
+      if (existing) {
+        existing.total += 1;
+        if (existing.recent.length < 10) existing.recent.push({ created_at: row.created_at, product_id: row.product_id });
+      } else {
+        bySeller.set(row.seller_id, {
+          seller_id: row.seller_id,
+          business_name: row.sellers?.business_name ?? "Unknown vendor",
+          total: 1,
+          recent: [{ created_at: row.created_at, product_id: row.product_id }],
+        });
+      }
+    }
+    setWaDetail(Array.from(bySeller.values()).sort((a, b) => b.total - a.total));
+    setWaDetailLoading(false);
+  };
 
   // Section editor state
   const [editingSec,  setEditingSec]  = useState<Section | null>(null);
@@ -504,20 +543,20 @@ function AdminPage() {
 
 
   // ── Categories ──
-  const openNewCat  = () => { setCatName(""); setCatImage(null); setEditingCat(null); setNewCatOpen(true); };
-  const openEditCat = (c: Category) => { setCatName(c.name); setCatImage(c.image_url); setEditingCat(c); setNewCatOpen(true); };
+  const openNewCat  = () => { setCatName(""); setCatImage(null); setCatSubtitle(""); setEditingCat(null); setNewCatOpen(true); };
+  const openEditCat = (c: Category) => { setCatName(c.name); setCatImage(c.image_url); setCatSubtitle(c.custom_subtitle ?? ""); setEditingCat(c); setNewCatOpen(true); };
 
   const saveCat = async () => {
     if (!catName.trim()) { toast.error("Category name required"); return; }
     setCatSaving(true);
     if (editingCat) {
-      const { error } = await supabase.from("categories").update({ name: catName.trim(), image_url: catImage }).eq("id", editingCat.id);
+      const { error } = await supabase.from("categories").update({ name: catName.trim(), image_url: catImage, custom_subtitle: catSubtitle.trim() || null }).eq("id", editingCat.id);
       if (error) { toast.error(error.message); setCatSaving(false); return; }
       toast.success("Category updated");
     } else {
       const newSlug = slugify(catName);
       const maxOrder = Math.max(0, ...categories.map((c) => c.sort_order));
-      const { error } = await supabase.from("categories").insert({ name: catName.trim(), slug: newSlug, icon_emoji: "🛍️", image_url: catImage, sort_order: maxOrder + 1 });
+      const { error } = await supabase.from("categories").insert({ name: catName.trim(), slug: newSlug, icon_emoji: "🛍️", image_url: catImage, custom_subtitle: catSubtitle.trim() || null, sort_order: maxOrder + 1 });
       if (error) { toast.error(error.message); setCatSaving(false); return; }
       toast.success("Category created");
     }
@@ -861,12 +900,18 @@ function AdminPage() {
           {[
             { label: "Sellers",   value: stats.sellers },
             { label: "Products",  value: stats.products },
-            { label: "WA clicks", value: stats.clicks },
+            { label: "WA clicks", value: stats.clicks, onClick: openWaDetail },
           ].map((s) => (
-            <div key={s.label} className="rounded-2xl border bg-card p-3 shadow-warm sm:p-4">
+            <button
+              key={s.label}
+              type="button"
+              onClick={s.onClick}
+              disabled={!s.onClick}
+              className="rounded-2xl border bg-card p-3 text-left shadow-warm transition sm:p-4 disabled:cursor-default enabled:hover:-translate-y-0.5 enabled:hover:border-primary/40 enabled:cursor-pointer"
+            >
               <p className="text-xs text-muted-foreground">{s.label}</p>
               <p className="mt-1 font-serif text-2xl text-primary sm:text-3xl">{s.value}</p>
-            </div>
+            </button>
           ))}
         </div>
 
@@ -1421,7 +1466,7 @@ function AdminPage() {
           <DialogHeader>
             <DialogTitle>{editingCat ? "Edit category" : "New category"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-[600px] overflow-y-auto pr-1">
             <div><Label>Name *</Label><Input value={catName} onChange={(e) => setCatName(e.target.value)} placeholder="e.g. Electronics" /></div>
             <div>
               <Label>Category image</Label>
@@ -1436,9 +1481,47 @@ function AdminPage() {
                 label=""
               />
             </div>
+            <div>
+              <Label>Subtitle (optional)</Label>
+              <p className="mb-2 text-xs text-muted-foreground">Shown under the category name on the homepage. Leave blank to use the default Hausa translation, if one exists.</p>
+              <Input value={catSubtitle} onChange={(e) => setCatSubtitle(e.target.value)} placeholder="e.g. Kayan lantarki" />
+            </div>
             <Button onClick={saveCat} disabled={catSaving} className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
               {catSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : "Save"}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── WhatsApp click detail modal ── */}
+      <Dialog open={waDetailOpen} onOpenChange={setWaDetailOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>WhatsApp clicks by vendor</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[600px] space-y-3 overflow-y-auto pr-1">
+            {waDetailLoading ? (
+              <div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+            ) : waDetail.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">No WhatsApp clicks yet.</p>
+            ) : (
+              waDetail.map((v) => (
+                <details key={v.seller_id} className="rounded-xl border bg-background p-3">
+                  <summary className="flex cursor-pointer items-center justify-between text-sm font-medium">
+                    <span>{v.business_name}</span>
+                    <span className="text-primary">{v.total}</span>
+                  </summary>
+                  <ul className="mt-2 space-y-1 border-t pt-2 text-xs text-muted-foreground">
+                    {v.recent.map((c, i) => (
+                      <li key={i} className="flex justify-between">
+                        <span>{c.product_id ? "Product click" : "Store click"}</span>
+                        <span>{new Date(c.created_at).toLocaleString()}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ))
+            )}
           </div>
         </DialogContent>
       </Dialog>

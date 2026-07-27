@@ -35,7 +35,7 @@ export function PageLoader({ label = "Loading…" }: { label?: string }) {
             key={i}
             className="h-2.5 w-2.5 rounded-full bg-primary"
             style={{
-              animation: `sutura-bounce 1.1s ease-in-out infinite`,
+              animation: `zango-bounce 1.1s ease-in-out infinite`,
               animationDelay: `${i * 0.18}s`,
             }}
           />
@@ -45,7 +45,7 @@ export function PageLoader({ label = "Loading…" }: { label?: string }) {
 
       {/* Keyframes injected inline so they work without a separate CSS file */}
       <style>{`
-        @keyframes sutura-bounce {
+        @keyframes zango-bounce {
           0%, 80%, 100% { transform: translateY(0);   opacity: 0.4; }
           40%           { transform: translateY(-10px); opacity: 1;   }
         }
@@ -124,7 +124,7 @@ export function StepTransition({ label = "Saving…" }: { label?: string }) {
             key={i}
             className="h-2 w-2 rounded-full bg-primary"
             style={{
-              animation: `sutura-bounce 1.1s ease-in-out infinite`,
+              animation: `zango-bounce 1.1s ease-in-out infinite`,
               animationDelay: `${i * 0.18}s`,
             }}
           />
@@ -132,7 +132,7 @@ export function StepTransition({ label = "Saving…" }: { label?: string }) {
       </div>
       <p className="text-sm text-muted-foreground">{label}</p>
       <style>{`
-        @keyframes sutura-bounce {
+        @keyframes zango-bounce {
           0%, 80%, 100% { transform: translateY(0);   opacity: 0.4; }
           40%           { transform: translateY(-10px); opacity: 1;   }
         }

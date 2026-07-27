@@ -9,12 +9,12 @@ const LangCtx = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({
 export function LangProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>("en");
   useEffect(() => {
-    const saved = typeof window !== "undefined" ? (localStorage.getItem("sutura_lang") as Lang) : null;
+    const saved = typeof window !== "undefined" ? (localStorage.getItem("zango_lang") as Lang) : null;
     if (saved) setLangState(saved);
   }, []);
   const setLang = (l: Lang) => {
     setLangState(l);
-    if (typeof window !== "undefined") localStorage.setItem("sutura_lang", l);
+    if (typeof window !== "undefined") localStorage.setItem("zango_lang", l);
   };
   return <LangCtx.Provider value={{ lang, setLang }}>{children}</LangCtx.Provider>;
 }

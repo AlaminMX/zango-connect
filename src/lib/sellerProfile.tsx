@@ -15,6 +15,8 @@ export interface SellerProfile {
   is_blocked: boolean;
   city: string;
   whatsapp_number: string;
+  instagram: string | null;
+  snapchat: string | null;
   profile_photo_url: string | null;
   cover_photo_url: string | null;
   bio: string | null;

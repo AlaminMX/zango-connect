@@ -454,7 +454,7 @@ function Index() {
                 to="/register"
                 className="inline-flex min-h-[48px] items-center gap-2 rounded-full bg-[#C9674A] px-7 py-3.5 text-sm font-semibold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#B85C41] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1A0B08] active:scale-95"
               >
-                <Store className="h-4 w-4" /> Open your store — it's free
+                <Store className="h-4 w-4" /> Open your store
               </Link>
               {!user && (
                 <Link

@@ -42,6 +42,8 @@ import {
   Trash2, Pencil, Loader2, AlertCircle, Save,
   Package, Eye, MousePointerClick, TrendingUp, Clock,
 } from "lucide-react";
+import { VendorCard } from "@/components/vendor-card/VendorCard";
+import { vendorCardFormats } from "@/lib/vendor-card/themes";
 
 export const Route = createFileRoute("/admin_/vendor/$id")({ component: VendorDetailPage });
 
@@ -53,6 +55,7 @@ interface Seller {
   category: string; city: string; whatsapp_number: string;
   is_verified: boolean; is_blocked: boolean; verification_status: string;
   created_at: string; rejection_reason: string | null;
+  bio: string | null; profile_photo_url: string | null; cover_photo_url: string | null; rating: number | null;
 }
 interface Product {
   id: string; name: string; price: number | null; status: string;
@@ -121,7 +124,7 @@ function VendorDetailPage() {
     try {
       const { data: sellerRow, error: sellerErr } = await supabase
         .from("sellers")
-        .select("id, user_id, name, business_name, slug, category, city, whatsapp_number, is_verified, is_blocked, verification_status, created_at, rejection_reason")
+        .select("id, user_id, name, business_name, slug, category, city, whatsapp_number, is_verified, is_blocked, verification_status, created_at, rejection_reason, bio, profile_photo_url, cover_photo_url, rating")
         .eq("id", id)
         .single();
       if (sellerErr) throw sellerErr;
@@ -371,6 +374,24 @@ function VendorDetailPage() {
               <div className="sm:col-span-2"><dt className="text-xs text-rose-600">Rejection reason</dt><dd className="text-rose-700">{seller.rejection_reason}</dd></div>
             )}
           </dl>
+        </section>
+
+        {/* ── Vendor card preview (read-only) ── */}
+        <section className="mt-6 rounded-2xl border bg-card p-4 shadow-warm">
+          <h2 className="mb-3 font-serif text-lg">Vendor Card</h2>
+          <div className="overflow-auto rounded-2xl bg-[#2A1B16] p-4">
+            {(() => {
+              const dims = vendorCardFormats["business-card"];
+              const scale = Math.min(1, 480 / dims.width);
+              return (
+                <div style={{ width: dims.width * scale, height: dims.height * scale }}>
+                  <div style={{ transform: `scale(${scale})`, transformOrigin: "top left" }}>
+                    <VendorCard vendor={seller} products={products} format="business-card" />
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
         </section>
 
         {/* ── C. Contact actions ── */}

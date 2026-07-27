@@ -44,7 +44,7 @@ function VerifyEmailPage() {
 
       <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-6 py-12 text-center">
         <Link to="/" className="mb-10 flex items-center gap-2">
-          <span className="font-serif text-2xl font-semibold tracking-tight text-primary">Sutura</span>
+          <span className="font-serif text-2xl font-semibold tracking-tight text-primary">ZANGO</span>
           <span className="font-serif text-2xl text-foreground/80">Market</span>
         </Link>
 
@@ -55,7 +55,7 @@ function VerifyEmailPage() {
         <h1 className="font-serif text-3xl">Confirm your email</h1>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
           We sent a verification link to {email ? <span className="font-medium text-foreground">{email}</span> : "your inbox"}.
-          Open it to activate your account and start trading on Sutura Market.
+          Open it to activate your account and start trading on ZANGO.
         </p>
         <p className="mt-2 text-xs text-muted-foreground">
           Didn't see it? Check your spam folder, or resend below.

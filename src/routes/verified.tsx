@@ -42,7 +42,7 @@ function VerifiedPage() {
 
       <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-6 py-12 text-center">
         <Link to="/" className="mb-10 flex items-center gap-2">
-          <span className="font-serif text-2xl font-semibold tracking-tight text-primary">Sutura</span>
+          <span className="font-serif text-2xl font-semibold tracking-tight text-primary">ZANGO</span>
           <span className="font-serif text-2xl text-foreground/80">Market</span>
         </Link>
 
@@ -63,7 +63,7 @@ function VerifiedPage() {
 
         {status === "ready" && (
           <>
-            <h1 className="font-serif text-3xl">Welcome to Sutura Market 🎉</h1>
+            <h1 className="font-serif text-3xl">Welcome to ZANGO 🎉</h1>
             <p className="mt-3 text-sm text-muted-foreground">
               Your email has been verified successfully. You're all set to start exploring the kasuwa.
             </p>
@@ -71,7 +71,7 @@ function VerifiedPage() {
               onClick={handleContinue}
               className="mt-8 h-12 w-full rounded-full bg-primary text-base font-medium text-primary-foreground shadow-warm-lg hover:bg-primary/90"
             >
-              Continue to Sutura Market
+              Continue to ZANGO
             </Button>
           </>
         )}

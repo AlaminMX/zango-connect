@@ -23,14 +23,14 @@ function naira(n: number) { return `₦${n.toLocaleString()}`; }
 function buildOrderUrl(item: WishlistItem) {
   const phone = (item.whatsapp_number ?? "").replace(/\D/g, "").replace(/^0/, "234");
   const priceLine = item.price > 0 ? ` (${naira(Number(item.price))})` : "";
-  const msg = `Hi! I'd like to order ${item.name}${priceLine} from your store on Sutura Market. Is it available?`;
+  const msg = `Hi! I'd like to order ${item.name}${priceLine} from your store on ZANGO. Is it available?`;
   return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
 }
 
 function buildOrderAllUrl(sellerItems: WishlistItem[]) {
   const phone = (sellerItems[0].whatsapp_number ?? "").replace(/\D/g, "").replace(/^0/, "234");
   const lines = sellerItems.map((i) => `• ${i.name}${i.price > 0 ? ` — ${naira(Number(i.price))}` : ""}`).join("\n");
-  const msg = `Hi! I'd like to order these items from your Sutura Market store:\n\n${lines}\n\nAre they available?`;
+  const msg = `Hi! I'd like to order these items from your ZANGO store:\n\n${lines}\n\nAre they available?`;
   return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
 }
 

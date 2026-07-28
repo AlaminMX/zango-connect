@@ -13,6 +13,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { PageLoader } from "@/components/LoadingSpinner";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { MediaViewer } from "@/components/MediaViewer";
+import { ProductShareDialog } from "@/components/product-share-card/ProductShareDialog";
 import { Button } from "@/components/ui/button";
 import { buildWhatsAppUrl, trackClick } from "@/lib/whatsapp";
 import { toggleWishlist, useIsWishlisted } from "@/lib/wishlist";
@@ -244,6 +245,10 @@ function ProductDetail() {
                 <Heart className={`h-4 w-4 ${saved ? "fill-primary" : ""}`} />
                 {saved ? "Saved" : "Save"}
               </button>
+              <ProductShareDialog
+                product={{ id: p.id, name: p.name, price: p.price, image_url: mainImg ?? null }}
+                vendor={{ business_name: seller.business_name, slug: seller.slug, city: seller.city, is_verified: seller.is_verified }}
+              />
             </div>
           </div>
         </div>

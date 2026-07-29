@@ -21,6 +21,7 @@ import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
 import { BackButton } from "@/components/BackButton";
 import { VerificationBanner, ApprovedBanner } from "@/components/VerificationBanner";
+import { SocialLinksAnnouncement } from "@/components/SocialLinksAnnouncement";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { ImageUploader } from "@/components/ImageUploader";
 import { SectionLoader } from "@/components/LoadingSpinner";
@@ -248,7 +249,7 @@ function StorePage() {
         setEBusiness(seller.business_name);
         setECity(seller.city);
         setECityId(seller.city_id ?? null);
-        setECategory(seller.category);
+        setECategory(seller.category ?? "");
         setEBio(seller.bio ?? "");
         setEWhatsapp(seller.whatsapp_number);
         setEInstagram(seller.instagram ?? "");
@@ -478,6 +479,15 @@ function StorePage() {
         {isOwner && seller.verification_status === "approved" && (
           <div className="pt-4">
             <ApprovedBanner productCount={activeProducts.length} clicks7d={clicks} />
+          </div>
+        )}
+        {isOwner && !editMode && (
+          <div className="pt-4">
+            <SocialLinksAnnouncement
+              sellerId={seller.id}
+              hasSocialLinks={Boolean(seller.instagram || seller.snapchat)}
+              onAddNow={() => setEditMode(true)}
+            />
           </div>
         )}
 

@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Loader2, Plus, X } from "lucide-react";
 import { toast } from "sonner";
+import { humanizeError } from "@/lib/error-messages";
 
 interface Props {
   value: string[];
@@ -34,8 +35,12 @@ export function MultiImageUploader({
     if (list.length === 0) { toast.error(`Max ${max} images`); return; }
     setBusy(true);
     try {
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u.user?.id ?? "anon";
+      const { data: u, error: userErr } = await supabase.auth.getUser();
+      if (userErr || !u.user) {
+        toast.error("Your session hasn't finished loading. Please wait a second and try again.");
+        return;
+      }
+      const uid = u.user.id;
       const uploaded: string[] = [];
       for (const file of list) {
         if (!file.type.startsWith("image/")) { toast.error("Only images allowed"); continue; }
@@ -47,7 +52,7 @@ export function MultiImageUploader({
         const { error } = await supabase.storage.from(bucket).upload(path, compressed, {
           upsert: true, contentType: "image/jpeg",
         });
-        if (error) { toast.error(error.message); continue; }
+        if (error) { toast.error(humanizeError(error.message)); continue; }
         uploaded.push(supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl);
       }
       if (uploaded.length) onChange([...value, ...uploaded]);

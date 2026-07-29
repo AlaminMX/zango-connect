@@ -483,12 +483,13 @@ export type Database = {
           blocked_at: string | null
           blocked_reason: string | null
           business_name: string
-          category: string
+          category: string | null
           city: string
           city_id: string | null
           cover_photo_url: string | null
           created_at: string
           id: string
+          instagram: string | null
           is_blocked: boolean
           is_verified: boolean
           name: string
@@ -497,6 +498,7 @@ export type Database = {
           rating: number
           rejection_reason: string | null
           slug: string
+          snapchat: string | null
           state: string | null
           state_id: string | null
           status: string
@@ -513,12 +515,13 @@ export type Database = {
           blocked_at?: string | null
           blocked_reason?: string | null
           business_name: string
-          category: string
+          category?: string | null
           city: string
           city_id?: string | null
           cover_photo_url?: string | null
           created_at?: string
           id?: string
+          instagram?: string | null
           is_blocked?: boolean
           is_verified?: boolean
           name: string
@@ -527,6 +530,7 @@ export type Database = {
           rating?: number
           rejection_reason?: string | null
           slug: string
+          snapchat?: string | null
           state?: string | null
           state_id?: string | null
           status?: string
@@ -543,12 +547,13 @@ export type Database = {
           blocked_at?: string | null
           blocked_reason?: string | null
           business_name?: string
-          category?: string
+          category?: string | null
           city?: string
           city_id?: string | null
           cover_photo_url?: string | null
           created_at?: string
           id?: string
+          instagram?: string | null
           is_blocked?: boolean
           is_verified?: boolean
           name?: string
@@ -557,6 +562,7 @@ export type Database = {
           rating?: number
           rejection_reason?: string | null
           slug?: string
+          snapchat?: string | null
           state?: string | null
           state_id?: string | null
           status?: string

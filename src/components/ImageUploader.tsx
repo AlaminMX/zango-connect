@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Slider } from "@/components/ui/slider";
 import { Loader2, Upload, X, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { humanizeError } from "@/lib/error-messages";
 
 interface Props {
   value?: string | null;
@@ -46,7 +47,7 @@ export function ImageUploader({
   bucket = "sutura",
   pathPrefix = "uploads",
   aspect = 1,
-  maxSizeMb = 5,
+  maxSizeMb = 20,
   label,
   shape = "rect",
   className = "",
@@ -86,13 +87,17 @@ export function ImageUploader({
     if (!srcDataUrl || !pixels) return;
     setBusy(true);
     try {
+      const { data: u, error: userErr } = await supabase.auth.getUser();
+      if (userErr || !u.user) {
+        toast.error("Your session hasn't finished loading. Please wait a second and try again.");
+        return;
+      }
+      const uid = u.user.id;
       const cropped = await getCroppedBlob(srcDataUrl, pixels);
       const file = new File([cropped], "image.jpg", { type: "image/jpeg" });
       const compressed = await imageCompression(file, {
         maxSizeMB: 1, maxWidthOrHeight: 1600, useWebWorker: true, fileType: "image/jpeg",
       });
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u.user?.id ?? "anon";
       const path = `${uid}/${pathPrefix}-${Date.now()}.jpg`;
       const { error } = await supabase.storage.from(bucket).upload(path, compressed, {
         upsert: true, contentType: "image/jpeg",
@@ -103,7 +108,7 @@ export function ImageUploader({
       toast.success("Uploaded");
       setCropOpen(false); setSrcDataUrl(null);
     } catch (e: any) {
-      toast.error(e.message ?? "Upload failed");
+      toast.error(humanizeError(e?.message ?? e));
     } finally {
       setBusy(false);
     }

@@ -2,6 +2,7 @@ import * as React from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { CheckCircle2, Heart, MapPin, Phone, ShoppingBag, Sparkles, Star } from "lucide-react";
 
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { cn } from "@/lib/utils";
 import { getVendorStoreUrl, resolveVendorCardTheme, vendorCardFormats } from "@/lib/vendor-card/themes";
 import type { VendorCardProps, VendorCardProduct } from "@/lib/vendor-card/types";
@@ -55,7 +56,10 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
               </div>
               <div className="min-w-0">
                 <p className="inline-flex rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[.18em] text-white" style={{ backgroundColor: resolvedTheme.accent }}>{vendor.category || resolvedTheme.badge}</p>
-                <h1 className="mt-3 font-display text-5xl leading-[.88] tracking-[-.04em] text-[#3E2723]">{vendor.business_name}</h1>
+                <h1 className="mt-3 flex items-center gap-2 font-display text-5xl leading-[.88] tracking-[-.04em] text-[#3E2723]">
+                  {vendor.business_name}
+                  {vendor.is_verified && <VerifiedBadge className="h-8 w-8 shrink-0" />}
+                </h1>
               </div>
             </div>
 

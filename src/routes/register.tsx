@@ -17,12 +17,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ImageUploader } from "@/components/ImageUploader";
 import { toast } from "sonner";
 import { slugify, validateNigerianPhone } from "@/lib/whatsapp";
 import { humanizeError } from "@/lib/error-messages";
-import { ChevronLeft, ChevronRight, Loader2, AlertCircle, Check, MessageCircle } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  AlertCircle,
+  Check,
+  MessageCircle,
+} from "lucide-react";
 import { listActiveStates, listCitiesForState } from "@/lib/states.functions";
 
 export const Route = createFileRoute("/register")({ component: Register });
@@ -103,9 +116,12 @@ function Register() {
         }
       }
     });
-    listActiveStates().then((rows) => setStates((rows ?? []).map((s: any) => ({ id: s.id, name: s.name, slug: s.slug })))).catch(() => toast.error("Could not load states."));
+    listActiveStates()
+      .then((rows) =>
+        setStates((rows ?? []).map((s: any) => ({ id: s.id, name: s.name, slug: s.slug }))),
+      )
+      .catch(() => toast.error("Could not load states."));
   }, []);
-
 
   useEffect(() => {
     const state = states.find((s) => s.name === selectedState);
@@ -118,7 +134,11 @@ function Register() {
     if (!state) return;
     setAreasLoading(true);
     listCitiesForState({ data: { slug: state.slug } })
-      .then((result) => setAreas((result?.cities ?? []).map((a: any) => ({ id: a.id, name: a.name, slug: a.slug }))))
+      .then((result) =>
+        setAreas(
+          (result?.cities ?? []).map((a: any) => ({ id: a.id, name: a.name, slug: a.slug })),
+        ),
+      )
       .catch(() => toast.error("Could not load areas for this state."))
       .finally(() => setAreasLoading(false));
   }, [selectedState, states]);
@@ -134,7 +154,10 @@ function Register() {
     if (!businessName.trim()) e.businessName = "Business name is required";
     if (!name.trim()) e.name = "Your name is required";
     if (!whatsapp.trim()) e.whatsapp = "WhatsApp number is required";
-    else { const c = validateNigerianPhone(whatsapp); if (!c.valid) e.whatsapp = c.error ?? "Invalid phone number"; }
+    else {
+      const c = validateNigerianPhone(whatsapp);
+      if (!c.valid) e.whatsapp = c.error ?? "Invalid phone number";
+    }
     if (!selectedState) e.state = "Please choose a state";
     if (!effectiveArea()) e.area = isOtherArea ? "Please type your area" : "Please choose an area";
     return e;
@@ -142,7 +165,10 @@ function Register() {
 
   const submitStep1 = async () => {
     const errs = validateStep1();
-    if (Object.keys(errs).length) { setErrors(errs); return; }
+    if (Object.keys(errs).length) {
+      setErrors(errs);
+      return;
+    }
     setErrors({});
     setBusy(true);
 
@@ -154,7 +180,10 @@ function Register() {
         password,
       });
       if (signErr) {
-        if (signErr.message.toLowerCase().includes("registered") || signErr.message.toLowerCase().includes("exists")) {
+        if (
+          signErr.message.toLowerCase().includes("registered") ||
+          signErr.message.toLowerCase().includes("exists")
+        ) {
           const { data: signIn, error: inErr } = await supabase.auth.signInWithPassword({
             email: email.trim(),
             password,
@@ -200,7 +229,11 @@ function Register() {
     const baseSlug = slugify(businessName);
     let slug = baseSlug;
     for (let i = 0; i < 5; i++) {
-      const { data: clash } = await supabase.from("sellers").select("id").eq("slug", slug).maybeSingle();
+      const { data: clash } = await supabase
+        .from("sellers")
+        .select("id")
+        .eq("slug", slug)
+        .maybeSingle();
       if (!clash) break;
       slug = `${baseSlug}-${Math.floor(Math.random() * 999)}`;
     }
@@ -211,7 +244,8 @@ function Register() {
       // New area typed by the vendor and not in our curated list — create it
       // (or find it if another vendor already typed the same name/state).
       const { data: newAreaId, error: ensureErr } = await supabase.rpc("ensure_area", {
-        _name: finalArea, _state: selectedState,
+        _name: finalArea,
+        _state: selectedState,
       });
       if (ensureErr || !newAreaId) {
         setBusy(false);
@@ -228,35 +262,56 @@ function Register() {
         .maybeSingle();
       resolvedAreaId = areaRow?.id ?? null;
     }
-    const { data, error } = await supabase.from("sellers").insert({
-      user_id: uid!, name, business_name: businessName.trim(), slug,
-      whatsapp_number: whatsapp, city: finalArea, state: selectedState, city_id: resolvedAreaId, bio,
-      verification_status: "pending",
-      onboarding_status: "step1_complete",
-      is_blocked: false,
-    }).select().single();
+    const { data, error } = await supabase
+      .from("sellers")
+      .insert({
+        user_id: uid!,
+        name,
+        business_name: businessName.trim(),
+        slug,
+        whatsapp_number: whatsapp,
+        city: finalArea,
+        state: selectedState,
+        city_id: resolvedAreaId,
+        bio,
+        verification_status: "pending",
+        onboarding_status: "step1_complete",
+        is_blocked: false,
+      })
+      .select()
+      .single();
 
     setBusy(false);
-    if (error) { toast.error(humanizeError(error.message)); return; }
+    if (error) {
+      toast.error(humanizeError(error.message));
+      return;
+    }
     setSellerId(data.id);
     toast.success("Business information saved.");
     setStep(2);
   };
 
   const submitStep2 = async () => {
-    if (!profileUrl) { setErrors({ profileUrl: "A profile photo is required" }); return; }
+    if (!profileUrl) {
+      setErrors({ profileUrl: "A profile photo is required" });
+      return;
+    }
     setErrors({});
     if (!sellerId) return;
     setBusy(true);
-    const { error } = await supabase.from("sellers")
-      .update({ 
-        profile_photo_url: profileUrl, 
+    const { error } = await supabase
+      .from("sellers")
+      .update({
+        profile_photo_url: profileUrl,
         cover_photo_url: coverUrl,
-        onboarding_status: "step2_complete"
+        onboarding_status: "step2_complete",
       })
       .eq("id", sellerId);
     setBusy(false);
-    if (error) { toast.error(humanizeError(error.message)); return; }
+    if (error) {
+      toast.error(humanizeError(error.message));
+      return;
+    }
     toast.success("Photos uploaded. Your store is now under review.");
     setStep(3);
   };
@@ -267,18 +322,22 @@ function Register() {
   const pillCls = (n: number) => {
     const s = stepState(n);
     return `flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition ${
-      s === "current" ? "bg-primary text-primary-foreground" :
-      s === "done" ? "bg-sage/15 text-sage-deep" :
-      "bg-muted text-muted-foreground"
+      s === "current"
+        ? "bg-primary text-primary-foreground"
+        : s === "done"
+          ? "bg-sage/15 text-sage-deep"
+          : "bg-muted text-muted-foreground"
     }`;
   };
 
   const dotCls = (n: number) => {
     const s = stepState(n);
     return `flex h-4.5 w-4.5 items-center justify-center rounded-full text-[10px] font-semibold ${
-      s === "current" ? "bg-primary-foreground text-primary" :
-      s === "done" ? "bg-sage-deep text-white" :
-      "bg-border-warm text-muted-foreground"
+      s === "current"
+        ? "bg-primary-foreground text-primary"
+        : s === "done"
+          ? "bg-sage-deep text-white"
+          : "bg-border-warm text-muted-foreground"
     }`;
   };
 
@@ -286,7 +345,11 @@ function Register() {
     <div className="min-h-screen bg-background">
       <TopBar />
       <div className="mx-auto max-w-xl px-5 py-8">
-        {step === 1 && <div className="mb-6"><BackButton fallback="/" /></div>}
+        {step === 1 && (
+          <div className="mb-6">
+            <BackButton fallback="/" />
+          </div>
+        )}
 
         {step < 3 && (
           <>
@@ -307,12 +370,18 @@ function Register() {
 
             <div className="mt-4 flex items-center gap-2">
               <div className={pillCls(1)}>
-                <span className={dotCls(1)}>{stepState(1) === "done" ? <Check className="h-3 w-3" /> : "1"}</span>
+                <span className={dotCls(1)}>
+                  {stepState(1) === "done" ? <Check className="h-3 w-3" /> : "1"}
+                </span>
                 Business info
               </div>
-              <div className={`h-px flex-1 ${stepState(1) === "done" ? "bg-sage-deep/40" : "bg-border"}`} />
+              <div
+                className={`h-px flex-1 ${stepState(1) === "done" ? "bg-sage-deep/40" : "bg-border"}`}
+              />
               <div className={pillCls(2)}>
-                <span className={dotCls(2)}>{stepState(2) === "done" ? <Check className="h-3 w-3" /> : "2"}</span>
+                <span className={dotCls(2)}>
+                  {stepState(2) === "done" ? <Check className="h-3 w-3" /> : "2"}
+                </span>
                 Photos
               </div>
             </div>
@@ -320,7 +389,6 @@ function Register() {
         )}
 
         <div className="mt-8 rounded-2xl border bg-card p-6 shadow-warm">
-
           {step === 1 && (
             <div className="space-y-4">
               {!hasAccount && (
@@ -331,7 +399,10 @@ function Register() {
                     We'll create your seller account so you can manage your store later.
                   </p>
                   <div>
-                    <Label>Email<Req /></Label>
+                    <Label>
+                      Email
+                      <Req />
+                    </Label>
                     <Input
                       type="email"
                       autoComplete="email"
@@ -342,7 +413,10 @@ function Register() {
                     <FieldError msg={errors.email} />
                   </div>
                   <div>
-                    <Label>Password<Req /></Label>
+                    <Label>
+                      Password
+                      <Req />
+                    </Label>
                     <PasswordInput
                       minLength={6}
                       autoComplete="new-password"
@@ -360,26 +434,50 @@ function Register() {
               <h2 className="-mt-1 font-serif text-xl">Business info</h2>
 
               <div>
-                <Label>Business name<Req /></Label>
-                <Input value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="e.g. Zainab's Kitchen" />
+                <Label>
+                  Business name
+                  <Req />
+                </Label>
+                <Input
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  placeholder="e.g. Zainab's Kitchen"
+                />
                 <FieldError msg={errors.businessName} />
               </div>
 
               <div>
-                <Label>Your name<Req /></Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Zainab Musa" />
+                <Label>
+                  Your name
+                  <Req />
+                </Label>
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Zainab Musa"
+                />
                 <FieldError msg={errors.name} />
               </div>
 
               <div>
-                <Label>WhatsApp number<Req /></Label>
-                <Input placeholder="+234… or 0801…" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
+                <Label>
+                  WhatsApp number
+                  <Req />
+                </Label>
+                <Input
+                  placeholder="+234… or 0801…"
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(e.target.value)}
+                />
                 <FieldError msg={errors.whatsapp} />
               </div>
 
               {/* State → Area two-level selector */}
               <div>
-                <Label>State of Business<Req /></Label>
+                <Label>
+                  State of Business
+                  <Req />
+                </Label>
                 <Select
                   value={selectedState}
                   onValueChange={(v) => {
@@ -393,14 +491,19 @@ function Register() {
                   </SelectTrigger>
                   <SelectContent>
                     {states.map((s) => (
-                      <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+                      <SelectItem key={s.id} value={s.name}>
+                        {s.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <Label>Area of Business<Req /></Label>
+                <Label>
+                  Area of Business
+                  <Req />
+                </Label>
                 <Select
                   value={areaSelectValue}
                   disabled={!selectedState || areasLoading}
@@ -419,11 +522,21 @@ function Register() {
                   }}
                 >
                   <SelectTrigger className={errors.area ? "border-destructive" : ""}>
-                    <SelectValue placeholder={!selectedState ? "Choose a state first" : areasLoading ? "Loading areas…" : "Choose your area"} />
+                    <SelectValue
+                      placeholder={
+                        !selectedState
+                          ? "Choose a state first"
+                          : areasLoading
+                            ? "Loading areas…"
+                            : "Choose your area"
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {areas.map((a) => (
-                      <SelectItem key={a.id} value={a.name}>{a.name}</SelectItem>
+                      <SelectItem key={a.id} value={a.name}>
+                        {a.name}
+                      </SelectItem>
                     ))}
                     <SelectItem value="__other__">Other — my area isn't listed</SelectItem>
                   </SelectContent>
@@ -442,16 +555,29 @@ function Register() {
 
               <div>
                 <Label>Short bio (max 150 chars)</Label>
-                <Textarea maxLength={150} value={bio} onChange={(e) => setBio(e.target.value)}
-                  placeholder="Tell customers what you sell…" />
+                <Textarea
+                  maxLength={150}
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="Tell customers what you sell…"
+                />
                 <p className="mt-1 text-right text-xs text-muted-foreground">{bio.length}/150</p>
               </div>
 
-              <Button onClick={submitStep1} disabled={busy}
-                className="w-full rounded-full bg-primary py-6 text-base text-primary-foreground hover:bg-primary/90">
-                {busy
-                  ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…</>
-                  : <>Next — Upload photos <ChevronRight className="ml-1.5 h-4 w-4" /></>}
+              <Button
+                onClick={submitStep1}
+                disabled={busy}
+                className="w-full rounded-full bg-primary py-6 text-base text-primary-foreground hover:bg-primary/90"
+              >
+                {busy ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…
+                  </>
+                ) : (
+                  <>
+                    Next — Upload photos <ChevronRight className="ml-1.5 h-4 w-4" />
+                  </>
+                )}
               </Button>
             </div>
           )}
@@ -469,7 +595,9 @@ function Register() {
                   pathPrefix="profile"
                   label="Profile photo *"
                 />
-                <p className="mt-1.5 text-xs text-muted-foreground">This is the first thing buyers see.</p>
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  This is the first thing buyers see.
+                </p>
                 <FieldError msg={errors.profileUrl} />
               </div>
 
@@ -482,13 +610,27 @@ function Register() {
               />
 
               <div className="flex gap-2 pt-2">
-                <Button variant="outline" onClick={() => setStep(1)} className="flex-1 rounded-full">
+                <Button
+                  variant="outline"
+                  onClick={() => setStep(1)}
+                  className="flex-1 rounded-full"
+                >
                   <ChevronLeft className="mr-1 h-4 w-4" /> Previous
                 </Button>
-                <Button onClick={submitStep2} disabled={busy} className="flex-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
-                  {busy
-                    ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting…</>
-                    : <>Submit application <ChevronRight className="ml-1 h-4 w-4" /></>}
+                <Button
+                  onClick={submitStep2}
+                  disabled={busy}
+                  className="flex-1 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  {busy ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting…
+                    </>
+                  ) : (
+                    <>
+                      Submit application <ChevronRight className="ml-1 h-4 w-4" />
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
@@ -516,8 +658,9 @@ function Register() {
                 <div>
                   <h2 className="font-serif text-2xl text-espresso">You're on the list</h2>
                   <p className="mt-2 text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed">
-                    {businessName ? <strong>{businessName}</strong> : "Your store"} has been submitted.
-                    Every application gets a real look from our team — we'll be in touch soon.
+                    {businessName ? <strong>{businessName}</strong> : "Your store"} has been
+                    submitted. Every application gets a real look from our team — we'll be in touch
+                    soon.
                   </p>
                 </div>
 
@@ -552,16 +695,17 @@ function Register() {
                     <div>
                       <p className="font-semibold">What happens next?</p>
                       <p className="mt-1 leading-relaxed">
-                        Once your registration has been fully reviewed and approved, you will receive a
-                        <strong> WhatsApp notification</strong> from the admin. Please ensure your
-                        WhatsApp number is active and reachable.
+                        Once your registration has been fully reviewed and approved, you will
+                        receive a<strong> WhatsApp notification</strong> from the admin. Please
+                        ensure your WhatsApp number is active and reachable.
                       </p>
                     </div>
                   </div>
                 </div>
 
                 <p className="text-xs text-muted-foreground">
-                  You're free to close this tab — we'll reach you on WhatsApp the moment there's an update.
+                  You're free to close this tab — we'll reach you on WhatsApp the moment there's an
+                  update.
                 </p>
               </div>
             </div>

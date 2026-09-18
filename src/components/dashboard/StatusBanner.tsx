@@ -8,7 +8,9 @@ export function StatusBanner({ status }: { status: string }) {
         <Clock className="mt-0.5 h-5 w-5 shrink-0" />
         <div>
           <p className="font-semibold">Your subscription has expired</p>
-          <p className="text-sm">Your store is hidden from buyers. Please contact support to renew your subscription.</p>
+          <p className="text-sm">
+            Your store is hidden from buyers. Please contact support to renew your subscription.
+          </p>
         </div>
       </div>
     );
@@ -19,7 +21,10 @@ export function StatusBanner({ status }: { status: string }) {
       <AlertOctagon className="mt-0.5 h-5 w-5 shrink-0" />
       <div>
         <p className="font-semibold">Your store is currently inactive</p>
-        <p className="text-sm">Please contact support for assistance. Your products are hidden from buyers until your store is reactivated.</p>
+        <p className="text-sm">
+          Please contact support for assistance. Your products are hidden from buyers until your
+          store is reactivated.
+        </p>
       </div>
     </div>
   );

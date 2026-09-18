@@ -42,7 +42,8 @@ function SellerVendorCardPage() {
     },
   });
 
-  if (!isReady || sellerLoading || isLoading) return <PageLoader label="Preparing your vendor card…" />;
+  if (!isReady || sellerLoading || isLoading)
+    return <PageLoader label="Preparing your vendor card…" />;
   if (!seller) return null;
 
   return (

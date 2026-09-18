@@ -15,7 +15,9 @@ interface Props {
 export function MediaViewer({ images, open, onOpenChange, initialIndex = 0 }: Props) {
   const [idx, setIdx] = useState(initialIndex);
 
-  useEffect(() => { setIdx(initialIndex); }, [initialIndex, open]);
+  useEffect(() => {
+    setIdx(initialIndex);
+  }, [initialIndex, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -34,16 +36,25 @@ export function MediaViewer({ images, open, onOpenChange, initialIndex = 0 }: Pr
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl border-0 bg-black/95 p-0">
         <div className="relative flex h-[80vh] items-center justify-center">
-          <button onClick={() => onOpenChange(false)} className="absolute right-3 top-3 z-10 rounded-full bg-white/10 p-2 text-white hover:bg-white/20">
+          <button
+            onClick={() => onOpenChange(false)}
+            className="absolute right-3 top-3 z-10 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+          >
             <X className="h-5 w-5" />
           </button>
           {idx > 0 && (
-            <button onClick={() => setIdx(idx - 1)} className="absolute left-3 z-10 rounded-full bg-white/10 p-2 text-white hover:bg-white/20">
+            <button
+              onClick={() => setIdx(idx - 1)}
+              className="absolute left-3 z-10 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+            >
               <ChevronLeft className="h-6 w-6" />
             </button>
           )}
           {idx < images.length - 1 && (
-            <button onClick={() => setIdx(idx + 1)} className="absolute right-3 z-10 rounded-full bg-white/10 p-2 text-white hover:bg-white/20">
+            <button
+              onClick={() => setIdx(idx + 1)}
+              className="absolute right-3 z-10 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+            >
               <ChevronRight className="h-6 w-6" />
             </button>
           )}

@@ -7,12 +7,21 @@ import { Footer } from "@/components/Footer";
 import { SellerCard } from "@/components/SellerCard";
 import { ProductCard } from "@/components/ProductCard";
 import { BackButton } from "@/components/BackButton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { hausaFor, iconFor } from "@/lib/categories";
 import { useCity } from "@/lib/cityContext";
 
 function prettifySlug(slug: string) {
-  return slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  return slug
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 }
 
 import { assertLaunchGate } from "@/lib/launchGate";
@@ -36,16 +45,18 @@ export const Route = createFileRoute("/category/$slug")({
         { name: "twitter:description", content: description },
       ],
       links: [{ rel: "canonical", href: url }],
-      scripts: [{
-        type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "CollectionPage",
-          name: `${name} on ZANGO`,
-          url,
-          description,
-        }),
-      }],
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            name: `${name} on ZANGO`,
+            url,
+            description,
+          }),
+        },
+      ],
     };
   },
 });
@@ -58,7 +69,11 @@ function CategoryPage() {
   const { data: category } = useQuery({
     queryKey: ["category", slug],
     queryFn: async () => {
-      const { data, error } = await supabase.from("categories").select("*").eq("slug", slug).maybeSingle();
+      const { data, error } = await supabase
+        .from("categories")
+        .select("*")
+        .eq("slug", slug)
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -70,7 +85,9 @@ function CategoryPage() {
     queryFn: async () => {
       let q = supabase
         .from("products")
-        .select("sellers!inner(id, slug, business_name, city, profile_photo_url, is_verified, rating, is_blocked, verification_status)")
+        .select(
+          "sellers!inner(id, slug, business_name, city, profile_photo_url, is_verified, rating, is_blocked, verification_status)",
+        )
         .eq("category", category!.name)
         .eq("status", "active")
         .eq("sellers.is_blocked", false)
@@ -79,8 +96,12 @@ function CategoryPage() {
       const { data, error } = await q.limit(100);
       if (error) throw error;
       const byId = new Map<string, any>();
-      (data ?? []).forEach((row: any) => { if (row.sellers?.id) byId.set(row.sellers.id, row.sellers); });
-      return Array.from(byId.values()).sort((a, b) => Number(b.is_verified) - Number(a.is_verified));
+      (data ?? []).forEach((row: any) => {
+        if (row.sellers?.id) byId.set(row.sellers.id, row.sellers);
+      });
+      return Array.from(byId.values()).sort(
+        (a, b) => Number(b.is_verified) - Number(a.is_verified),
+      );
     },
   });
 
@@ -90,7 +111,9 @@ function CategoryPage() {
     queryFn: async () => {
       let qb = supabase
         .from("products")
-        .select("id, name, price, image_url, stock_status, status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, category, is_blocked, verification_status)")
+        .select(
+          "id, name, price, image_url, stock_status, status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, category, is_blocked, verification_status, is_verified)",
+        )
         .eq("category", category!.name)
         .eq("status", "active")
         .eq("sellers.is_blocked", false)
@@ -118,9 +141,15 @@ function CategoryPage() {
             const { Component: IconComponent, containerClass } = iconFor(category?.name);
             const imageUrl = (category as any)?.image_url;
             return (
-              <div className={`flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl ${imageUrl ? "" : containerClass}`}>
+              <div
+                className={`flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl ${imageUrl ? "" : containerClass}`}
+              >
                 {imageUrl ? (
-                  <img src={imageUrl} alt={category?.name} className="h-full w-full object-cover rounded-2xl" />
+                  <img
+                    src={imageUrl}
+                    alt={category?.name}
+                    className="h-full w-full object-cover rounded-2xl"
+                  />
                 ) : (
                   <IconComponent size={42} />
                 )}
@@ -135,10 +164,16 @@ function CategoryPage() {
 
         <div className="mt-6">
           <Select value={city} onValueChange={setCity}>
-            <SelectTrigger className="w-44 rounded-full"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-44 rounded-full">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="All cities">All cities</SelectItem>
-              {activeCities.map((c) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+              {activeCities.map((c) => (
+                <SelectItem key={c.id} value={c.name}>
+                  {c.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -163,6 +198,7 @@ function CategoryPage() {
                     seller_city={s?.city}
                     seller_slug={s?.slug}
                     whatsapp_number={s?.whatsapp_number ?? ""}
+                    seller_is_verified={s?.is_verified}
                   />
                 );
               })}
@@ -174,7 +210,9 @@ function CategoryPage() {
           <h2 className="mb-3 font-serif text-xl">Sellers</h2>
           <div className="grid gap-3 sm:grid-cols-2">
             {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
-            {sellers?.map((s) => <SellerCard key={s.id} {...s} />)}
+            {sellers?.map((s) => (
+              <SellerCard key={s.id} {...s} />
+            ))}
             {sellers && sellers.length === 0 && (
               <div className="col-span-full rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">
                 No sellers in this category yet.

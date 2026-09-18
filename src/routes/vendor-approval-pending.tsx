@@ -29,7 +29,8 @@ function VendorApprovalPendingPage() {
         <Clock className="h-16 w-16 text-primary mb-4" />
         <h1 className="font-serif text-3xl mb-2">Approval In Progress</h1>
         <p className="text-muted-foreground mb-6">
-          Thank you for registering your store. Our team is reviewing your application. We'll notify you once your store is approved.
+          Thank you for registering your store. Our team is reviewing your application. We'll notify
+          you once your store is approved.
         </p>
         <div className="space-y-2 w-full">
           <Link to="/">

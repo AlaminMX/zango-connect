@@ -1,82 +1,488 @@
 import * as React from "react";
-import { Download, RefreshCw, Smartphone } from "lucide-react";
+import { Download, RefreshCw, Smartphone, Share2, Copy, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { VendorCard } from "@/components/vendor-card/VendorCard";
 import { downloadVendorCard } from "@/lib/vendor-card/export";
-import { resolveVendorCardTheme, vendorCardFormats, vendorCardThemes } from "@/lib/vendor-card/themes";
-import type { VendorCardFormat, VendorCardProduct, VendorCardThemeName, VendorCardVendor } from "@/lib/vendor-card/types";
+import { shareVendorStore, getVendorStoreUrl, openSocialShare } from "@/lib/vendor-card/share";
+import { cn } from "@/lib/utils";
+import {
+  resolveVendorCardTheme,
+  vendorCardFormats,
+  vendorCardThemes,
+} from "@/lib/vendor-card/themes";
+import type {
+  VendorCardFormat,
+  VendorCardProduct,
+  VendorCardThemeName,
+  VendorCardVendor,
+} from "@/lib/vendor-card/types";
 
-export function VendorCardStudio({ vendor, products, canRegenerate = false }: { vendor: VendorCardVendor; products: VendorCardProduct[]; canRegenerate?: boolean }) {
-  const [format, setFormat] = React.useState<VendorCardFormat>("instagram-portrait");
-  const [theme, setTheme] = React.useState<VendorCardThemeName>(() => resolveVendorCardTheme(vendor.category).name);
+export function VendorCardStudio({
+  vendor,
+  products = [],
+  canRegenerate = false,
+}: {
+  vendor: VendorCardVendor;
+  products: VendorCardProduct[];
+  canRegenerate?: boolean;
+}) {
+  const [format, setFormat] = React.useState<VendorCardFormat>("landscape");
+  const [theme, setTheme] = React.useState<VendorCardThemeName>(
+    () => resolveVendorCardTheme(vendor.category).name,
+  );
+  const [selectedProductIndex, setSelectedProductIndex] = React.useState<number>(0);
   const [isExporting, setIsExporting] = React.useState(false);
+  const [isSharing, setIsSharing] = React.useState(false);
+  const [hasCopied, setHasCopied] = React.useState(false);
   const cardRef = React.useRef<HTMLDivElement>(null);
+  const previewBoxRef = React.useRef<HTMLDivElement>(null);
+  const [boxWidth, setBoxWidth] = React.useState<number>(() => {
+    if (typeof window !== "undefined") {
+      return Math.max(280, Math.min(window.innerWidth - 48, 1100));
+    }
+    return 360;
+  });
+
+  // Available showcase items: products + cover photo
+  const showcaseItems = React.useMemo(() => {
+    const items: { id: string; name: string; image: string; tag: string }[] = [];
+    products.forEach((p, idx) => {
+      const img = p.image_urls?.[0] || p.image_url;
+      if (img) {
+        items.push({
+          id: p.id,
+          name: p.name || `Product #${idx + 1}`,
+          image: img,
+          tag: `Product ${idx + 1}`,
+        });
+      }
+    });
+    if (vendor.cover_photo_url) {
+      items.push({
+        id: "cover-photo",
+        name: "Store Cover Photo",
+        image: vendor.cover_photo_url,
+        tag: "Cover",
+      });
+    }
+    return items;
+  }, [products, vendor.cover_photo_url]);
+
+  // Handle dynamic responsive scale for mobile and desktop screens
+  React.useEffect(() => {
+    const update = () => {
+      if (previewBoxRef.current) {
+        const w = previewBoxRef.current.clientWidth;
+        if (w > 0) {
+          setBoxWidth(w);
+        }
+      }
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    if (previewBoxRef.current) {
+      observer.observe(previewBoxRef.current);
+    }
+    window.addEventListener("resize", update);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+
   const dimensions = vendorCardFormats[format];
-  const scale = Math.min(1, 860 / dimensions.width);
+  // Calculate proportional scale so card fits completely inside mobile screen with comfortable margins and ZERO horizontal scrolling
+  const paddingAllowance = boxWidth < 480 ? 24 : 48;
+  const availableWidth = Math.max(140, boxWidth - paddingAllowance);
+  const scale = Math.min(1, availableWidth / dimensions.width);
+  const scaledWidth = Math.round(dimensions.width * scale);
+  const scaledHeight = Math.round(dimensions.height * scale);
 
   const exportCard = async (targetFormat = format) => {
     if (!cardRef.current) return;
     setIsExporting(true);
     try {
       await downloadVendorCard(cardRef.current, vendor.slug, targetFormat);
-      toast.success("Vendor card downloaded", { description: vendorCardFormats[targetFormat].label });
+      toast.success("Vendor card downloaded", {
+        description: vendorCardFormats[targetFormat].label,
+      });
     } catch (error) {
       console.error(error);
-      toast.error("Could not export the card", { description: "Check image permissions or try again." });
+      toast.error("Could not export the card", {
+        description: "Check image permissions or try again.",
+      });
     } finally {
       setIsExporting(false);
     }
   };
 
+  const storeUrl = getVendorStoreUrl(vendor.slug);
+
+  const handleShareStore = async () => {
+    setIsSharing(true);
+    try {
+      await shareVendorStore({
+        businessName: vendor.business_name,
+        slug: vendor.slug,
+      });
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleCopyStoreUrl = async () => {
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(storeUrl);
+        setHasCopied(true);
+        toast.success("Store link copied to clipboard!");
+        setTimeout(() => setHasCopied(false), 2500);
+      }
+    } catch {
+      toast.error("Could not copy store link");
+    }
+  };
+
+  const nextShowcaseProduct = () => {
+    if (showcaseItems.length <= 1) return;
+    setSelectedProductIndex((prev) => (prev + 1) % showcaseItems.length);
+  };
+
+  const prevShowcaseProduct = () => {
+    if (showcaseItems.length <= 1) return;
+    setSelectedProductIndex((prev) => (prev - 1 + showcaseItems.length) % showcaseItems.length);
+  };
+
+  const primaryFormats: VendorCardFormat[] = [
+    "landscape",
+    "profile-picture",
+    "square",
+    "instagram-portrait",
+    "story",
+    "whatsapp-status",
+    "business-card",
+  ];
+
+  const currentShowcase = showcaseItems[selectedProductIndex];
+
   return (
     <section className="rounded-[2rem] border border-border-warm bg-card p-4 shadow-warm-lg sm:p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-bold uppercase tracking-[.18em] text-primary">Marketing asset studio</p>
-          <h2 className="mt-3 font-display text-3xl text-espresso">Premium Vendor Card</h2>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Automatically composed from your store profile, products, QR code, verification status and ZANGO category theme.</p>
+          <p className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-bold uppercase tracking-[.18em] text-primary">
+            Marketing asset studio
+          </p>
+          <h2 className="mt-3 font-display text-2xl text-espresso sm:text-3xl">
+            Premium Vendor Card
+          </h2>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+            Custom branded card with your store profile, changeable product showcase, Zango logo,
+            and QR code.
+          </p>
         </div>
         <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[520px]">
           <Select value={theme} onValueChange={(value) => setTheme(value as VendorCardThemeName)}>
-            <SelectTrigger className="rounded-full"><SelectValue placeholder="Theme" /></SelectTrigger>
-            <SelectContent>{Object.values(vendorCardThemes).map((item) => <SelectItem key={item.name} value={item.name}>{item.label}</SelectItem>)}</SelectContent>
+            <SelectTrigger className="rounded-full">
+              <SelectValue placeholder="Theme" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.values(vendorCardThemes).map((item) => (
+                <SelectItem key={item.name} value={item.name}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
           </Select>
           <Select value={format} onValueChange={(value) => setFormat(value as VendorCardFormat)}>
-            <SelectTrigger className="rounded-full"><SelectValue placeholder="Format" /></SelectTrigger>
-            <SelectContent>{Object.entries(vendorCardFormats).map(([key, item]) => <SelectItem key={key} value={key}>{item.label}</SelectItem>)}</SelectContent>
+            <SelectTrigger className="rounded-full">
+              <SelectValue placeholder="Format / Size" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(vendorCardFormats).map(([key, item]) => (
+                <SelectItem key={key} value={key}>
+                  {item.label} ({item.width}×{item.height})
+                </SelectItem>
+              ))}
+            </SelectContent>
           </Select>
-          <Button disabled={isExporting} onClick={() => exportCard()} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
-            <Download className="mr-2 h-4 w-4" /> {isExporting ? "Exporting…" : "Download"}
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isSharing}
+            onClick={handleShareStore}
+            className="rounded-full border-primary/40 text-primary hover:bg-primary/10 font-medium"
+          >
+            <Share2 className="mr-2 h-4 w-4" /> {isSharing ? "Sharing…" : "Share Store"}
+          </Button>
+          <Button
+            disabled={isExporting}
+            onClick={() => exportCard()}
+            className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
+          >
+            {isExporting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <span>Generating & Downloading…</span>
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                <span>Download</span>
+              </>
+            )}
           </Button>
         </div>
       </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-4">
-        {(Object.keys(vendorCardFormats) as VendorCardFormat[]).slice(0, 4).map((item) => (
-          <button key={item} onClick={() => exportCard(item)} className="rounded-2xl border border-border-warm bg-background p-3 text-left transition hover:border-primary/40 hover:shadow-warm">
-            <p className="text-sm font-semibold text-espresso">{vendorCardFormats[item].label}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{vendorCardFormats[item].width}×{vendorCardFormats[item].height}</p>
+      {/* Format Switcher Pills */}
+      <div className="mt-5 flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+        {primaryFormats.map((item) => (
+          <button
+            key={item}
+            onClick={() => setFormat(item)}
+            className={cn(
+              "shrink-0 rounded-xl border px-3.5 py-2 text-left transition hover:border-primary/40",
+              format === item
+                ? "border-primary bg-primary/10 shadow-sm"
+                : "border-border-warm bg-background",
+            )}
+          >
+            <p className="text-xs font-semibold text-espresso">{vendorCardFormats[item].label}</p>
+            <p className="text-[11px] text-muted-foreground">
+              {vendorCardFormats[item].width}×{vendorCardFormats[item].height}
+            </p>
           </button>
         ))}
       </div>
 
-      <div className="mt-6 overflow-auto rounded-[2rem] bg-[#2A1B16] p-5">
-        <div className="origin-top-left transition-transform duration-300" style={{ width: dimensions.width * scale, height: dimensions.height * scale }}>
-          <div style={{ transform: `scale(${scale})`, transformOrigin: "top left" }}>
-            <VendorCard ref={cardRef} vendor={vendor} products={products} theme={theme} format={format} />
+      {/* Product Showcase Switcher Controls */}
+      {showcaseItems.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-3 sm:p-4">
+          <div className="flex items-center gap-3 min-w-0">
+            {currentShowcase?.image && (
+              <img
+                src={currentShowcase.image}
+                alt=""
+                className="h-11 w-11 rounded-lg object-cover border border-primary/30 shrink-0"
+              />
+            )}
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-wider text-primary">
+                Right-Hand Showcase Product
+              </p>
+              <p className="text-sm font-semibold text-espresso truncate">
+                {currentShowcase?.name || "Featured Product"}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Showing {selectedProductIndex + 1} of {showcaseItems.length} available items
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={prevShowcaseProduct}
+              disabled={showcaseItems.length <= 1}
+              className="rounded-full text-xs h-8 px-3"
+            >
+              ← Prev
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={nextShowcaseProduct}
+              disabled={showcaseItems.length <= 1}
+              className="rounded-full text-xs h-8 px-3"
+            >
+              Next Product →
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={nextShowcaseProduct}
+              disabled={showcaseItems.length <= 1}
+              className="rounded-full bg-espresso text-white hover:bg-espresso/90 text-xs h-8 px-3.5"
+            >
+              <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+              Change Showcase
+            </Button>
+          </div>
+
+          {/* Quick thumbnail strip if multiple products */}
+          {showcaseItems.length > 1 && (
+            <div className="w-full flex items-center gap-2 overflow-x-auto pt-1 scrollbar-none">
+              {showcaseItems.map((item, idx) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setSelectedProductIndex(idx)}
+                  className={cn(
+                    "flex items-center gap-1.5 shrink-0 rounded-lg border px-2 py-1 text-xs transition",
+                    selectedProductIndex === idx
+                      ? "border-primary bg-primary text-white font-medium"
+                      : "border-border-warm bg-white text-muted-foreground hover:bg-muted/50",
+                  )}
+                >
+                  <img src={item.image} alt="" className="h-5 w-5 rounded object-cover" />
+                  <span className="max-w-[110px] truncate">{item.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Scaled Preview Canvas Container - Centered, Mobile-Responsive with ZERO horizontal scroll */}
+      <div
+        ref={previewBoxRef}
+        className="mt-5 w-full min-w-0 max-w-full overflow-hidden rounded-2xl sm:rounded-[2rem] bg-[#2A1B16] px-3 py-4 sm:p-6 flex flex-col items-center justify-center min-h-[220px]"
+      >
+        <div
+          className="relative mx-auto flex items-center justify-center transition-all duration-200"
+          style={{
+            width: `${scaledWidth}px`,
+            height: `${scaledHeight}px`,
+            maxWidth: "100%",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              width: `${dimensions.width}px`,
+              height: `${dimensions.height}px`,
+              transform: `translate(-50%, -50%) scale(${scale})`,
+              transformOrigin: "center center",
+            }}
+          >
+            <VendorCard
+              ref={cardRef}
+              vendor={vendor}
+              products={products}
+              theme={theme}
+              format={format}
+              selectedProductIndex={selectedProductIndex}
+            />
           </div>
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 text-sm text-muted-foreground sm:grid-cols-3">
-        <p className="flex items-center gap-2"><Smartphone className="h-4 w-4 text-primary" /> Exports for Instagram, WhatsApp, square, landscape, business card and A4.</p>
-        <p className="flex items-center gap-2"><RefreshCw className="h-4 w-4 text-primary" /> Regenerate after updating store profile, logo, location or products.</p>
-        <p className="flex items-center gap-2"><Download className="h-4 w-4 text-primary" /> Cached browser image export keeps quality high without server setup.</p>
+      {/* Share Store Card with Web Share & Social Platforms */}
+      <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <Share2 className="h-4 w-4 text-primary" />
+              <h3 className="font-serif text-base font-bold text-espresso">Share Your Store</h3>
+            </div>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Share your store link directly via Web Share, WhatsApp, or copy for your social bios.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleShareStore}
+              disabled={isSharing}
+              className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-xs h-8 px-3.5 flex items-center gap-1.5 shadow-xs"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+              <span>{isSharing ? "Sharing…" : "Share Store"}</span>
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                openSocialShare("whatsapp", {
+                  businessName: vendor.business_name,
+                  slug: vendor.slug,
+                })
+              }
+              className="rounded-full border-emerald-600/30 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 text-xs h-8 px-3"
+            >
+              WhatsApp
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                openSocialShare("twitter", {
+                  businessName: vendor.business_name,
+                  slug: vendor.slug,
+                })
+              }
+              className="rounded-full border-border-warm bg-white text-xs h-8 px-3 hover:bg-muted/50"
+            >
+              X / Twitter
+            </Button>
+          </div>
+        </div>
+
+        {/* Store URL input with one-click copy */}
+        <div className="mt-3 flex items-center gap-2 rounded-xl border border-border-warm bg-white p-1.5 pl-3 shadow-2xs">
+          <span className="text-xs text-muted-foreground font-mono truncate flex-1 select-all">
+            {storeUrl}
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={handleCopyStoreUrl}
+            className="h-7 rounded-lg text-xs font-medium px-2.5 flex items-center gap-1.5 shrink-0 hover:bg-primary/10 hover:text-primary"
+          >
+            {hasCopied ? (
+              <>
+                <Check className="h-3.5 w-3.5 text-emerald-600" />
+                <span className="text-emerald-700 font-semibold">Copied!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="h-3.5 w-3.5" />
+                <span>Copy Link</span>
+              </>
+            )}
+          </Button>
+        </div>
       </div>
-      {canRegenerate ? <p className="mt-3 text-xs font-medium text-primary">Admin/vendor regeneration is available by changing theme or format and exporting a fresh card.</p> : null}
+
+      <div className="mt-4 grid gap-3 text-sm text-muted-foreground sm:grid-cols-3">
+        <p className="flex items-center gap-2">
+          <Smartphone className="h-4 w-4 text-primary" /> Multi-format export: Profile picture,
+          Instagram, WhatsApp, and posters.
+        </p>
+        <p className="flex items-center gap-2">
+          <RefreshCw className="h-4 w-4 text-primary" /> Use the showcase switcher to display any of
+          your store items.
+        </p>
+        <p className="flex items-center gap-2">
+          <Download className="h-4 w-4 text-primary" /> High-resolution crisp export with instant
+          PNG download.
+        </p>
+      </div>
+      {canRegenerate ? (
+        <p className="mt-3 text-xs font-medium text-primary">
+          Admin/vendor regeneration is available by changing theme or format and exporting a fresh
+          card.
+        </p>
+      ) : null}
     </section>
   );
 }

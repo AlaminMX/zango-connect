@@ -42,7 +42,10 @@ export function NoticeCard({ notice, onRead }: { notice: Notice; onRead: (id: st
       .update({ read_at: new Date().toISOString() })
       .eq("id", notice.id);
     setMarking(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Marked as read");
     onRead(notice.id);
   };

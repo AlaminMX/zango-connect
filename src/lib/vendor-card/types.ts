@@ -1,6 +1,23 @@
-export type VendorCardThemeName = "fashion" | "beauty" | "food" | "electronics" | "automotive" | "home" | "books" | "services" | "default";
+export type VendorCardThemeName =
+  | "fashion"
+  | "beauty"
+  | "food"
+  | "electronics"
+  | "automotive"
+  | "home"
+  | "books"
+  | "services"
+  | "default";
 
-export type VendorCardFormat = "instagram-portrait" | "story" | "whatsapp-status" | "square" | "landscape" | "business-card" | "a4-flyer";
+export type VendorCardFormat =
+  | "landscape"
+  | "profile-picture"
+  | "square"
+  | "instagram-portrait"
+  | "story"
+  | "whatsapp-status"
+  | "business-card"
+  | "a4-flyer";
 
 export interface VendorCardVendor {
   id: string;
@@ -37,6 +54,9 @@ export interface VendorCardTheme {
   badge: string;
   lifestylePrompt: string;
   motif: string;
+  lifestyleImage?: string;
+  defaultOfferings?: string[];
+  defaultTagline?: string;
 }
 
 export interface VendorCardProps {
@@ -45,6 +65,8 @@ export interface VendorCardProps {
   theme?: VendorCardThemeName;
   format?: VendorCardFormat;
   className?: string;
+  selectedProductIndex?: number;
+  selectedImageUrl?: string;
 }
 
 export interface VendorCardExportOptions {

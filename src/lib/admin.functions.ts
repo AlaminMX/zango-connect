@@ -14,7 +14,13 @@ async function assertAdmin(supabase: any, userId: string) {
   if (!data) throw new Error("Forbidden: admin only");
 }
 
-async function audit(adminId: string, action: string, targetType: string, targetId: string | null, metadata: Record<string, unknown> = {}) {
+async function audit(
+  adminId: string,
+  action: string,
+  targetType: string,
+  targetId: string | null,
+  metadata: Record<string, unknown> = {},
+) {
   await supabaseAdmin.from("admin_audit_log").insert({
     admin_id: adminId,
     action,
@@ -43,9 +49,14 @@ export const setSellerStatus = createServerFn({ method: "POST" })
       updates.blocked_at = null;
       updates.blocked_reason = null;
     }
-    const { error } = await supabaseAdmin.from("sellers").update(updates as never).eq("id", data.sellerId);
+    const { error } = await supabaseAdmin
+      .from("sellers")
+      .update(updates as never)
+      .eq("id", data.sellerId);
     if (error) throw new Error(error.message);
-    await audit(context.userId, `seller.${data.status}`, "seller", data.sellerId, { reason: data.reason });
+    await audit(context.userId, `seller.${data.status}`, "seller", data.sellerId, {
+      reason: data.reason,
+    });
     return { ok: true };
   });
 
@@ -64,7 +75,9 @@ export const setSubscriptionExpiry = createServerFn({ method: "POST" })
       .update({ subscription_expires_at: data.expiresAt })
       .eq("id", data.sellerId);
     if (error) throw new Error(error.message);
-    await audit(context.userId, "subscription.change", "seller", data.sellerId, { expiresAt: data.expiresAt });
+    await audit(context.userId, "subscription.change", "seller", data.sellerId, {
+      expiresAt: data.expiresAt,
+    });
     return { ok: true };
   });
 
@@ -77,10 +90,16 @@ export const deleteSeller = createServerFn({ method: "POST" })
     await assertAdmin(context.supabase, context.userId);
     // Capture user_id BEFORE deleting so we can hard-delete the auth account.
     const { data: sellerRow } = await supabaseAdmin
-      .from("sellers").select("user_id").eq("id", data.sellerId).maybeSingle();
+      .from("sellers")
+      .select("user_id")
+      .eq("id", data.sellerId)
+      .maybeSingle();
     await supabaseAdmin.from("products").delete().eq("seller_id", data.sellerId);
     await supabaseAdmin.from("seller_notices").delete().eq("seller_id", data.sellerId);
-    await supabaseAdmin.from("vouches").delete().or(`vouched_seller_id.eq.${data.sellerId},voucher_seller_id.eq.${data.sellerId}`);
+    await supabaseAdmin
+      .from("vouches")
+      .delete()
+      .or(`vouched_seller_id.eq.${data.sellerId},voucher_seller_id.eq.${data.sellerId}`);
     await supabaseAdmin.from("whatsapp_clicks").delete().eq("seller_id", data.sellerId);
     const { error } = await supabaseAdmin.from("sellers").delete().eq("id", data.sellerId);
     if (error) throw new Error(error.message);
@@ -111,9 +130,14 @@ export const setProductStatus = createServerFn({ method: "POST" })
       updates.blocked_at = null;
       updates.blocked_reason = null;
     }
-    const { error } = await supabaseAdmin.from("products").update(updates as never).eq("id", data.productId);
+    const { error } = await supabaseAdmin
+      .from("products")
+      .update(updates as never)
+      .eq("id", data.productId);
     if (error) throw new Error(error.message);
-    await audit(context.userId, `product.${data.status}`, "product", data.productId, { reason: data.reason });
+    await audit(context.userId, `product.${data.status}`, "product", data.productId, {
+      reason: data.reason,
+    });
     return { ok: true };
   });
 
@@ -151,7 +175,9 @@ export const getVendorAuthInfo = createServerFn({ method: "POST" })
     if (sellerError) throw new Error(sellerError.message);
     if (!seller) throw new Error("Seller not found");
 
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(seller.user_id);
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(
+      seller.user_id,
+    );
     if (authError) throw new Error(authError.message);
 
     return {

@@ -22,11 +22,14 @@ export default defineTool({
     const supabase = supabaseForUser(ctx);
     const { data, error } = await supabase
       .from("sellers")
-      .select("id, business_name, slug, category, city, whatsapp_number, verification_status, onboarding_status, status, is_verified, created_at")
+      .select(
+        "id, business_name, slug, category, city, whatsapp_number, verification_status, onboarding_status, status, is_verified, created_at",
+      )
       .eq("user_id", ctx.getUserId()!)
       .maybeSingle();
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    if (!data) return { content: [{ type: "text", text: "You do not have a ZANGO seller profile yet." }] };
+    if (!data)
+      return { content: [{ type: "text", text: "You do not have a ZANGO seller profile yet." }] };
     return {
       content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
       structuredContent: { seller: data },

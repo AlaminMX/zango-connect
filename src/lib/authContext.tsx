@@ -12,7 +12,12 @@
  *   - signOut()        : clears session
  */
 import {
-  createContext, useContext, useEffect, useRef, useState, useCallback,
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
   type ReactNode,
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
@@ -29,7 +34,9 @@ interface AuthState {
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
 const DEV = import.meta.env.DEV;
-const log = (...args: unknown[]) => { if (DEV) console.debug("[auth]", ...args); };
+const log = (...args: unknown[]) => {
+  if (DEV) console.debug("[auth]", ...args);
+};
 
 // Hard timeout on the role lookup so isReady can never hang
 const ROLE_TIMEOUT_MS = 3000;
@@ -85,21 +92,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     // 1. Read initial session from localStorage
-    supabase.auth.getSession().then(({ data }) => {
-      if (cancelled) return;
-      log("getSession resolved", !!data.session);
-      void applySession(data.session);
-    }).catch((err) => {
-      if (cancelled) return;
-      console.error("[auth] getSession failed:", err);
-      setIsReady(true); // never block forever
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (cancelled) return;
+        log("getSession resolved", !!data.session);
+        void applySession(data.session);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("[auth] getSession failed:", err);
+        setIsReady(true); // never block forever
+      });
 
     // 2. Subscribe to subsequent auth events
     const { data: listener } = supabase.auth.onAuthStateChange((event, s) => {
       log("event:", event, "session?", !!s);
       // Only react to identity transitions. INITIAL_SESSION is handled by getSession() above.
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
+      if (
+        event === "SIGNED_IN" ||
+        event === "SIGNED_OUT" ||
+        event === "TOKEN_REFRESHED" ||
+        event === "USER_UPDATED"
+      ) {
         void applySession(s);
       }
     });

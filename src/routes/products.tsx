@@ -14,7 +14,13 @@ import { ProductCard } from "@/components/ProductCard";
 import { BackButton } from "@/components/BackButton";
 import { ProductSkeleton } from "@/components/LoadingSpinner";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useCity } from "@/lib/cityContext";
 import { MarketplaceSearchBox } from "@/components/search/MarketplaceSearchBox";
 import { useMarketplaceSearch } from "@/hooks/use-marketplace-search";
@@ -24,7 +30,7 @@ const PAGE_SIZE = 16;
 
 const schema = z.object({
   category: z.string().optional().catch(undefined),
-  city:     z.string().optional().catch(undefined),
+  city: z.string().optional().catch(undefined),
 });
 
 import { assertLaunchGate } from "@/lib/launchGate";
@@ -39,11 +45,13 @@ function ProductsPage() {
   const nav = useNavigate();
   const { selectedCity: globalCity, activeCities } = useCity();
 
-  const [filterCat,  setFilterCat]  = useState(initCat  ?? "All");
+  const [filterCat, setFilterCat] = useState(initCat ?? "All");
   // Use URL city param first, then global context city, then "All"
-  const [filterCity, setFilterCity] = useState(initCity ?? (globalCity !== "All" ? globalCity : "All"));
-  const [q, setQ]                   = useState("");
-  const [page, setPage]             = useState(1);
+  const [filterCity, setFilterCity] = useState(
+    initCity ?? (globalCity !== "All" ? globalCity : "All"),
+  );
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
@@ -53,7 +61,7 @@ function ProductsPage() {
     },
   });
 
-  const activeCat  = filterCat  !== "All" ? filterCat  : undefined;
+  const activeCat = filterCat !== "All" ? filterCat : undefined;
   const activeCity = filterCity !== "All" ? filterCity : undefined;
 
   const catalogQuery = useQuery({
@@ -62,14 +70,16 @@ function ProductsPage() {
     queryFn: async () => {
       let qb = supabase
         .from("products")
-        .select("id, name, price, image_url, stock_status, status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, category, is_blocked, verification_status)")
+        .select(
+          "id, name, price, image_url, stock_status, status, seller_id, sellers!inner(business_name, city, slug, whatsapp_number, category, is_blocked, verification_status, is_verified)",
+        )
         .eq("status", "active")
         .eq("sellers.is_blocked", false)
         .eq("sellers.verification_status", "approved")
         .order("created_at", { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
-      if (activeCat)  qb = qb.eq("category", activeCat);
+      if (activeCat) qb = qb.eq("category", activeCat);
       if (activeCity) qb = qb.eq("sellers.city", activeCity);
 
       const { data, error } = await qb.abortSignal(AbortSignal.timeout(10000));
@@ -87,11 +97,13 @@ function ProductsPage() {
   });
 
   const products = q.trim() ? liveSearch.data?.products : catalogQuery.data;
-  const isLoading = q.trim() ? liveSearch.isLoading || liveSearch.isFetching : catalogQuery.isLoading;
+  const isLoading = q.trim()
+    ? liveSearch.isLoading || liveSearch.isFetching
+    : catalogQuery.isLoading;
 
   const applyFilter = (type: "cat" | "city", val: string) => {
     setPage(1);
-    if (type === "cat")  setFilterCat(val);
+    if (type === "cat") setFilterCat(val);
     if (type === "city") setFilterCity(val);
   };
 
@@ -100,7 +112,9 @@ function ProductsPage() {
     if (q.trim()) nav({ to: "/search", search: { q: q.trim() } });
   };
 
-  const hasMore = q.trim() ? (products?.length ?? 0) >= PAGE_SIZE * page : (products?.length ?? 0) === PAGE_SIZE;
+  const hasMore = q.trim()
+    ? (products?.length ?? 0) >= PAGE_SIZE * page
+    : (products?.length ?? 0) === PAGE_SIZE;
 
   return (
     <div className="min-h-screen bg-background">
@@ -116,10 +130,16 @@ function ProductsPage() {
 
         {/* Filters bar */}
         <div className="mt-5 flex flex-wrap gap-3">
-          <form onSubmit={handleSearch} className="flex flex-1 min-w-[180px] items-center gap-2 rounded-full border border-border bg-card px-4 py-2 shadow-warm">
+          <form
+            onSubmit={handleSearch}
+            className="flex flex-1 min-w-[180px] items-center gap-2 rounded-full border border-border bg-card px-4 py-2 shadow-warm"
+          >
             <MarketplaceSearchBox
               value={q}
-              onChange={(value) => { setQ(value); setPage(1); }}
+              onChange={(value) => {
+                setQ(value);
+                setPage(1);
+              }}
               onSubmit={(value) => setQ(value)}
               isSearching={liveSearch.isFetching}
               placeholder="Search products…"
@@ -133,7 +153,9 @@ function ProductsPage() {
             <SelectContent>
               <SelectItem value="All">All categories</SelectItem>
               {(categories ?? []).map((c) => (
-                <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
+                <SelectItem key={c.name} value={c.name}>
+                  {c.name}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -145,7 +167,9 @@ function ProductsPage() {
             <SelectContent>
               <SelectItem value="All">All cities</SelectItem>
               {activeCities.map((c) => (
-                <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                <SelectItem key={c.id} value={c.name}>
+                  {c.name}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -153,41 +177,55 @@ function ProductsPage() {
 
         {/* Grid */}
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {isLoading
-            ? Array.from({ length: PAGE_SIZE }).map((_, i) => <ProductSkeleton key={i} />)
-            : products && products.length > 0
-            ? products.map((p, i) => {
-                const s = (p as any).sellers;
-                return (
-                  <div key={p.id} className="card-enter" style={{ animationDelay: `${i * 0.03}s` }}>
-                    <ProductCard
-                      id={p.id} name={p.name} price={Number(p.price)}
-                      image_url={p.image_url} stock_status={p.stock_status}
-                      status={(p as any).status}
-                      seller_id={p.seller_id}
-                      seller_name={s?.business_name} seller_city={s?.city}
-                      seller_slug={s?.slug} whatsapp_number={s?.whatsapp_number ?? ""}
-                    />
-                  </div>
-                );
-              })
-            : (
-              <div className="col-span-full py-16 text-center">
-                <p className="font-serif text-xl text-muted-foreground">No products found</p>
-                <p className="mt-2 text-sm text-muted-foreground">Try clearing your filters.</p>
-              </div>
-            )}
+          {isLoading ? (
+            Array.from({ length: PAGE_SIZE }).map((_, i) => <ProductSkeleton key={i} />)
+          ) : products && products.length > 0 ? (
+            products.map((p, i) => {
+              const s = (p as any).sellers;
+              return (
+                <div key={p.id} className="card-enter" style={{ animationDelay: `${i * 0.03}s` }}>
+                  <ProductCard
+                    id={p.id}
+                    name={p.name}
+                    price={Number(p.price)}
+                    image_url={p.image_url}
+                    stock_status={p.stock_status}
+                    status={(p as any).status}
+                    seller_id={p.seller_id}
+                    seller_name={s?.business_name}
+                    seller_city={s?.city}
+                    seller_slug={s?.slug}
+                    whatsapp_number={s?.whatsapp_number ?? ""}
+                    seller_is_verified={s?.is_verified}
+                  />
+                </div>
+              );
+            })
+          ) : (
+            <div className="col-span-full py-16 text-center">
+              <p className="font-serif text-xl text-muted-foreground">No products found</p>
+              <p className="mt-2 text-sm text-muted-foreground">Try clearing your filters.</p>
+            </div>
+          )}
         </div>
 
         {/* Pagination */}
         <div className="mt-8 flex items-center justify-center gap-3">
           {page > 1 && (
-            <Button variant="outline" className="rounded-full" onClick={() => setPage((p) => p - 1)}>
+            <Button
+              variant="outline"
+              className="rounded-full"
+              onClick={() => setPage((p) => p - 1)}
+            >
               ← Previous
             </Button>
           )}
           {hasMore && (
-            <Button variant="outline" className="rounded-full" onClick={() => setPage((p) => p + 1)}>
+            <Button
+              variant="outline"
+              className="rounded-full"
+              onClick={() => setPage((p) => p + 1)}
+            >
               Load more →
             </Button>
           )}

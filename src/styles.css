@@ -8,9 +8,9 @@
    (never @import a remote URL here — Lightning CSS breaks the build). */
 
 @theme inline {
-  --font-serif: 'DM Serif Display', 'Cormorant Garamond', serif;
-  --font-display: 'DM Serif Display', serif;
-  --font-sans: 'Fira Sans', 'DM Sans', system-ui, sans-serif;
+  --font-serif: "DM Serif Display", "Cormorant Garamond", serif;
+  --font-display: "DM Serif Display", serif;
+  --font-sans: "Fira Sans", "DM Sans", system-ui, sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -51,80 +51,88 @@
   --radius: 1.25rem;
 
   /* Warm bone page background */
-  --background: #FCF9F5;
-  --foreground: #3E2723;
-  --ivory: #FCF9F5;
+  --background: #fcf9f5;
+  --foreground: #3e2723;
+  --ivory: #fcf9f5;
 
   /* Tile surfaces */
-  --card: #FFFFFF;
-  --card-foreground: #3E2723;
-  --popover: #FFFFFF;
-  --popover-foreground: #3E2723;
-  --surface-warm: #F2EDE7;
-  --border-warm: #E5D5C5;
+  --card: #ffffff;
+  --card-foreground: #3e2723;
+  --popover: #ffffff;
+  --popover-foreground: #3e2723;
+  --surface-warm: #f2ede7;
+  --border-warm: #e5d5c5;
 
   /* Terracotta primary */
-  --primary: #C05A3F;
-  --primary-foreground: #FCF9F5;
+  --primary: #c05a3f;
+  --primary-foreground: #fcf9f5;
 
   /* Soft warm secondary (used for chips/avatars) */
-  --secondary: #F2EDE7;
-  --secondary-foreground: #3E2723;
+  --secondary: #f2ede7;
+  --secondary-foreground: #3e2723;
 
-  --muted: #F2EDE7;
-  --muted-foreground: #7A6B5D;
+  --muted: #f2ede7;
+  --muted-foreground: #7a6b5d;
 
   /* Sage accent */
-  --accent: #8A9A5B;
-  --accent-foreground: #FCF9F5;
-  --sage: #8A9A5B;
-  --sage-deep: #7A8A4B;
+  --accent: #8a9a5b;
+  --accent-foreground: #fcf9f5;
+  --sage: #8a9a5b;
+  --sage-deep: #7a8a4b;
 
-  --espresso: #3E2723;
-  --plum: #3E2723;
-  --rose: #E8C8B8;
+  --espresso: #3e2723;
+  --plum: #3e2723;
+  --rose: #e8c8b8;
 
-  --destructive: #B43A2A;
-  --destructive-foreground: #FCF9F5;
+  --destructive: #b43a2a;
+  --destructive-foreground: #fcf9f5;
 
-  --border: #E5D5C5;
-  --input: #E5D5C5;
-  --ring: #C05A3F;
+  --border: #e5d5c5;
+  --input: #e5d5c5;
+  --ring: #c05a3f;
 
   /* WhatsApp green */
-  --whatsapp: #25D366;
-  --whatsapp-foreground: #FFFFFF;
+  --whatsapp: #25d366;
+  --whatsapp-foreground: #ffffff;
 }
 
 .dark {
-  --background: #1F1410;
-  --foreground: #FCF9F5;
-  --card: #2A1B16;
-  --card-foreground: #FCF9F5;
-  --primary: #D87159;
-  --primary-foreground: #1F1410;
-  --secondary: #34221C;
-  --secondary-foreground: #FCF9F5;
-  --muted: #34221C;
-  --muted-foreground: #C9B8AC;
-  --accent: #9DAE6B;
-  --accent-foreground: #1F1410;
-  --border: #4A332B;
-  --input: #4A332B;
-  --ring: #D87159;
-  --whatsapp: #25D366;
-  --whatsapp-foreground: #FFFFFF;
+  --background: #1f1410;
+  --foreground: #fcf9f5;
+  --card: #2a1b16;
+  --card-foreground: #fcf9f5;
+  --primary: #d87159;
+  --primary-foreground: #1f1410;
+  --secondary: #34221c;
+  --secondary-foreground: #fcf9f5;
+  --muted: #34221c;
+  --muted-foreground: #c9b8ac;
+  --accent: #9dae6b;
+  --accent-foreground: #1f1410;
+  --border: #4a332b;
+  --input: #4a332b;
+  --ring: #d87159;
+  --whatsapp: #25d366;
+  --whatsapp-foreground: #ffffff;
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
+  * {
+    border-color: var(--color-border);
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
     font-weight: 400;
   }
-  h1, h2, h3, h4, h5, .font-serif, .font-display {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  .font-serif,
+  .font-display {
     font-family: var(--font-display);
     letter-spacing: -0.01em;
     font-weight: 400;
@@ -133,56 +141,106 @@
 
 @layer utilities {
   .shadow-warm {
-    box-shadow: 0 4px 18px -10px rgba(62, 39, 35, 0.18), 0 1px 3px rgba(62, 39, 35, 0.06);
+    box-shadow:
+      0 4px 18px -10px rgba(62, 39, 35, 0.18),
+      0 1px 3px rgba(62, 39, 35, 0.06);
   }
   .shadow-warm-lg {
-    box-shadow: 0 24px 48px -16px rgba(62, 39, 35, 0.22), 0 4px 12px rgba(62, 39, 35, 0.08);
+    box-shadow:
+      0 24px 48px -16px rgba(62, 39, 35, 0.22),
+      0 4px 12px rgba(62, 39, 35, 0.08);
   }
   .gradient-warm {
-    background: linear-gradient(135deg, #F2EDE7, #FCF9F5);
+    background: linear-gradient(135deg, #f2ede7, #fcf9f5);
   }
   .gradient-terracotta {
-    background: linear-gradient(135deg, #C05A3F 0%, #B04A2F 100%);
+    background: linear-gradient(135deg, #c05a3f 0%, #b04a2f 100%);
   }
 
   @keyframes float {
-    0%, 100% { transform: translate(0, 0); }
-    33% { transform: translate(10px, -20px); }
-    66% { transform: translate(-8px, 10px); }
+    0%,
+    100% {
+      transform: translate(0, 0);
+    }
+    33% {
+      transform: translate(10px, -20px);
+    }
+    66% {
+      transform: translate(-8px, 10px);
+    }
   }
-  .animate-float { animation: float 12s ease-in-out infinite; will-change: transform; }
+  .animate-float {
+    animation: float 12s ease-in-out infinite;
+    will-change: transform;
+  }
 
   @keyframes card-enter {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
-  .card-enter { animation: card-enter 0.5s ease-out; animation-fill-mode: both; }
+  .card-enter {
+    animation: card-enter 0.5s ease-out;
+    animation-fill-mode: both;
+  }
 
-  .shimmer { position: relative; overflow: hidden; isolation: isolate; }
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
   .shimmer::before {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%);
+    background: linear-gradient(
+      115deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.18) 50%,
+      transparent 70%
+    );
     transform: translateX(-100%);
     transition: transform 0.8s ease;
     pointer-events: none;
     z-index: 1;
   }
-  .shimmer:hover::before { transform: translateX(100%); }
+  .shimmer:hover::before {
+    transform: translateX(100%);
+  }
 
   @keyframes border-shift {
-    0% { background-position: 0% 50%; }
-    100% { background-position: 200% 50%; }
+    0% {
+      background-position: 0% 50%;
+    }
+    100% {
+      background-position: 200% 50%;
+    }
   }
   .border-shift {
-    background: linear-gradient(90deg, transparent, var(--color-primary), transparent, var(--color-sage), transparent);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--color-primary),
+      transparent,
+      var(--color-sage),
+      transparent
+    );
     background-size: 200% 100%;
     animation: border-shift 6s linear infinite;
   }
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
 }

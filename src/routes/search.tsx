@@ -18,16 +18,22 @@ import { SellerCard } from "@/components/SellerCard";
 import { BackButton } from "@/components/BackButton";
 import { ProductSkeleton, SellerSkeleton } from "@/components/LoadingSpinner";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { SlidersHorizontal } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { SlidersHorizontal, MapPin } from "lucide-react";
 import { useCity } from "@/lib/cityContext";
 import { MarketplaceSearchBox } from "@/components/search/MarketplaceSearchBox";
 import { useMarketplaceSearch } from "@/hooks/use-marketplace-search";
 import { z } from "zod";
 
 const schema = z.object({
-  q:        z.string().catch("").default(""),
-  city:     z.string().optional().catch(undefined),
+  q: z.string().catch("").default(""),
+  city: z.string().optional().catch(undefined),
   category: z.string().optional().catch(undefined),
 });
 
@@ -42,22 +48,26 @@ function SearchPage() {
   const { q, city: initialCity, category: initialCategory } = Route.useSearch();
   const nav = useNavigate();
 
-  const [localQ, setLocalQ]         = useState(q);
+  const [localQ, setLocalQ] = useState(q);
   const [debouncedQ, setDebouncedQ] = useState(q);
   const { activeCities } = useCity();
   const [filterCity, setFilterCity] = useState(initialCity ?? "All cities");
-  const [filterCat, setFilterCat]   = useState(initialCategory ?? "All categories");
+  const [filterCat, setFilterCat] = useState(initialCategory ?? "All categories");
   const [showFilters, setShowFilters] = useState(false);
 
   // Keep the route in sync with live typing so the heading and shareable URL never go stale.
   useEffect(() => {
     setDebouncedQ(localQ);
     const timer = window.setTimeout(() => {
-      nav({ to: "/search", search: {
-        q: localQ.trim(),
-        city: filterCity !== "All cities" ? filterCity : undefined,
-        category: filterCat !== "All categories" ? filterCat : undefined,
-      }, replace: true });
+      nav({
+        to: "/search",
+        search: {
+          q: localQ.trim(),
+          city: filterCity !== "All cities" ? filterCity : undefined,
+          category: filterCat !== "All categories" ? filterCat : undefined,
+        },
+        replace: true,
+      });
     }, 350);
     return () => window.clearTimeout(timer);
   }, [localQ, filterCity, filterCat, nav]);
@@ -71,13 +81,17 @@ function SearchPage() {
   });
 
   const activeCity = filterCity !== "All cities" ? filterCity : undefined;
-  const activeCat  = filterCat  !== "All categories" ? filterCat : undefined;
+  const activeCat = filterCat !== "All categories" ? filterCat : undefined;
 
-  const { data: searchResults, isLoading, isFetching } = useMarketplaceSearch({
+  const {
+    data: searchResults,
+    isLoading,
+    isFetching,
+  } = useMarketplaceSearch({
     query: debouncedQ,
     city: activeCity,
     category: activeCat,
-    limit: 40,
+    limit: 120,
     includeSellers: true,
   });
 
@@ -89,11 +103,14 @@ function SearchPage() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!localQ.trim()) return;
-    nav({ to: "/search", search: {
-      q: localQ.trim(),
-      city:     filterCity !== "All cities"     ? filterCity : undefined,
-      category: filterCat  !== "All categories" ? filterCat  : undefined,
-    }});
+    nav({
+      to: "/search",
+      search: {
+        q: localQ.trim(),
+        city: filterCity !== "All cities" ? filterCity : undefined,
+        category: filterCat !== "All categories" ? filterCat : undefined,
+      },
+    });
   };
 
   const totalResults = (products?.length ?? 0) + (sellers?.length ?? 0);
@@ -116,11 +133,20 @@ function SearchPage() {
             className="rounded-full border border-border bg-card py-2.5 shadow-warm"
             inputClassName="pr-10"
           />
-          <Button type="button" variant="outline" size="icon" className="rounded-full"
-            onClick={() => setShowFilters((v) => !v)} aria-label="Filters">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="rounded-full"
+            onClick={() => setShowFilters((v) => !v)}
+            aria-label="Filters"
+          >
             <SlidersHorizontal className="h-4 w-4" />
           </Button>
-          <Button type="submit" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-5">
+          <Button
+            type="submit"
+            className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-5"
+          >
             Search
           </Button>
         </form>
@@ -131,11 +157,15 @@ function SearchPage() {
             <div className="flex-1 min-w-[140px]">
               <p className="mb-1 text-xs font-medium text-muted-foreground">City / State</p>
               <Select value={filterCity} onValueChange={setFilterCity}>
-                <SelectTrigger className="rounded-full"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="rounded-full">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="All cities">All cities</SelectItem>
                   {activeCities.map((c) => (
-                    <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                    <SelectItem key={c.id} value={c.name}>
+                      {c.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -143,11 +173,15 @@ function SearchPage() {
             <div className="flex-1 min-w-[140px]">
               <p className="mb-1 text-xs font-medium text-muted-foreground">Category</p>
               <Select value={filterCat} onValueChange={setFilterCat}>
-                <SelectTrigger className="rounded-full"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="rounded-full">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="All categories">All categories</SelectItem>
                   {(categories ?? []).map((c) => (
-                    <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
+                    <SelectItem key={c.name} value={c.name}>
+                      {c.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -157,14 +191,25 @@ function SearchPage() {
 
         {/* Results heading */}
         {localQ.trim() && (
-          <h1 className="mt-6 font-serif text-2xl">
-            Results for <span className="italic text-primary">"{localQ.trim()}"</span>
-            {(activeCity || activeCat) && (
-              <span className="text-base font-normal text-muted-foreground">
-                {activeCity ? ` in ${activeCity}` : ""}{activeCat ? ` · ${activeCat}` : ""}
-              </span>
+          <div className="mt-6">
+            <h1 className="font-serif text-2xl">
+              Results for <span className="italic text-primary">"{localQ.trim()}"</span>
+              {(activeCity || activeCat) && (
+                <span className="text-base font-normal text-muted-foreground">
+                  {activeCity ? ` in ${activeCity}` : ""}
+                  {activeCat ? ` · ${activeCat}` : ""}
+                </span>
+              )}
+            </h1>
+            {searchResults?.matchedState && (
+              <div className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-primary">
+                <MapPin className="h-3.5 w-3.5 text-primary" />
+                <span>
+                  Showing verified vendors in {searchResults.matchedState} State and every product they have listed
+                </span>
+              </div>
             )}
-          </h1>
+          </div>
         )}
 
         {localQ.trim() && !productsLoading && !sellersLoading && totalResults === 0 && (
@@ -172,8 +217,16 @@ function SearchPage() {
             <p className="font-serif text-xl text-muted-foreground">No results found</p>
             <p className="mt-2 text-sm text-muted-foreground">
               Try a different keyword, or{" "}
-              <button onClick={() => { setFilterCity("All cities"); setFilterCat("All categories"); }}
-                className="text-primary underline">clear filters</button>.
+              <button
+                onClick={() => {
+                  setFilterCity("All cities");
+                  setFilterCat("All categories");
+                }}
+                className="text-primary underline"
+              >
+                clear filters
+              </button>
+              .
             </p>
           </div>
         )}
@@ -183,15 +236,23 @@ function SearchPage() {
           <section className="mt-8">
             <h2 className="mb-3 font-serif text-xl">
               Sellers
-              {!sellersLoading && <span className="ml-2 text-sm font-normal text-muted-foreground">({sellers?.length ?? 0})</span>}
+              {!sellersLoading && (
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
+                  ({sellers?.length ?? 0})
+                </span>
+              )}
             </h2>
             {sellersLoading ? (
               <div className="flex flex-wrap gap-3">
-                {Array.from({ length: 3 }).map((_, i) => <SellerSkeleton key={i} />)}
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <SellerSkeleton key={i} />
+                ))}
               </div>
             ) : sellers && sellers.length > 0 ? (
               <div className="grid gap-3 sm:grid-cols-2">
-                {sellers.map((s) => <SellerCard key={s.id} {...s} />)}
+                {sellers.map((s) => (
+                  <SellerCard key={s.id} {...s} />
+                ))}
               </div>
             ) : localQ.trim() ? (
               <p className="text-sm text-muted-foreground">No sellers match.</p>
@@ -204,23 +265,38 @@ function SearchPage() {
           <section className="mt-10">
             <h2 className="mb-3 font-serif text-xl">
               Products
-              {!productsLoading && <span className="ml-2 text-sm font-normal text-muted-foreground">({products?.length ?? 0})</span>}
+              {!productsLoading && (
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
+                  ({products?.length ?? 0})
+                </span>
+              )}
             </h2>
             {productsLoading ? (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                {Array.from({ length: 4 }).map((_, i) => <ProductSkeleton key={i} />)}
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <ProductSkeleton key={i} />
+                ))}
               </div>
             ) : products && products.length > 0 ? (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {products.map((p) => {
                   const s = (p as any).sellers;
                   return (
-                    <ProductCard key={p.id} id={p.id} name={p.name} price={Number(p.price)}
-                      image_url={p.image_url} stock_status={p.stock_status}
+                    <ProductCard
+                      key={p.id}
+                      id={p.id}
+                      name={p.name}
+                      price={Number(p.price)}
+                      image_url={p.image_url}
+                      stock_status={p.stock_status}
                       status={(p as any).status}
                       seller_id={p.seller_id}
-                      seller_name={s?.business_name} seller_city={s?.city}
-                      seller_slug={s?.slug} whatsapp_number={s?.whatsapp_number ?? ""} />
+                      seller_name={s?.business_name}
+                      seller_city={s?.city}
+                      seller_slug={s?.slug}
+                      whatsapp_number={s?.whatsapp_number ?? ""}
+                      seller_is_verified={s?.is_verified}
+                    />
                   );
                 })}
               </div>

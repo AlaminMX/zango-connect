@@ -83,7 +83,9 @@ if (typeof window !== "undefined") {
 
 function subscribe(cb: () => void) {
   listeners.add(cb);
-  return () => { listeners.delete(cb); };
+  return () => {
+    listeners.delete(cb);
+  };
 }
 
 let lastRaw = "";

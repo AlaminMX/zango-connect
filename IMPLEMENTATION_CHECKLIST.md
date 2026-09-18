@@ -3,6 +3,7 @@
 ## Pre-Deployment Verification
 
 ### Database & Migrations
+
 - [ ] Run migration: `supabase/migrations/20260703140000_add_cms_and_vendor_workflow.sql`
 - [ ] Verify `featured_products_admin` table created
 - [ ] Verify `trending_sellers_admin` table created
@@ -12,6 +13,7 @@
 - [ ] Verify indexes created for performance
 
 ### Code Changes
+
 - [ ] `src/routes/register.tsx` - Updated onboarding_status logic
 - [ ] `src/routes/admin.tsx` - Updated seller filtering
 - [ ] `src/routes/explore.tsx` - Integrated CMS trending sellers
@@ -21,6 +23,7 @@
 - [ ] `src/lib/audit-log.ts` - Created (new file)
 
 ### TypeScript & Linting
+
 - [ ] No TypeScript errors in console
 - [ ] No ESLint warnings
 - [ ] All imports resolve correctly
@@ -29,6 +32,7 @@
 ## Feature Testing
 
 ### Vendor Onboarding Workflow
+
 - [ ] Start vendor registration, complete step 1, stop
   - Expected: Does NOT appear in admin approval queue
   - Expected: Vendor can resume onboarding later
@@ -43,6 +47,7 @@
 ### Featured Products Page
 
 #### Basic Operations
+
 - [ ] Navigate to `/admin/featured-products`
   - Expected: Page loads without errors
   - Expected: Shows "Current Featured" section (empty if none)
@@ -60,6 +65,7 @@
   - Expected: Homepage no longer shows product
 
 #### Drag-Drop & Ordering
+
 - [ ] Add 3+ featured products
 - [ ] Drag first product to third position
   - Expected: Order updates in UI
@@ -72,6 +78,7 @@
   - Expected: Works with touch
 
 #### Edge Cases
+
 - [ ] Try adding duplicate product
   - Expected: Can't add (either disabled or shows error)
 - [ ] Add maximum products (no limit currently)
@@ -82,6 +89,7 @@
 ### Trending Sellers Page
 
 #### Basic Operations
+
 - [ ] Navigate to `/admin/trending-sellers`
   - Expected: Page loads without errors
   - Expected: Shows max 12 limit
@@ -103,6 +111,7 @@
   - Expected: Homepage updates
 
 #### Drag-Drop & Ordering
+
 - [ ] Add 3+ trending sellers
 - [ ] Reorder via drag-drop
 - [ ] Click "Save order"
@@ -114,6 +123,7 @@
   - Expected: Correct order shown
 
 #### Mobile Testing
+
 - [ ] View on mobile browser
   - Expected: Two-column layout responsive
   - Expected: Drag-drop works with touch
@@ -123,6 +133,7 @@
 ### Homepage Display
 
 #### Trending Sellers Section
+
 - [ ] With 0 trending sellers
   - Expected: Section not visible
 - [ ] With 1-3 trending sellers
@@ -137,6 +148,7 @@
   - Expected: Correct order maintained
 
 #### Featured Products (if integrated)
+
 - [ ] Featured products display on homepage
 - [ ] Order correct per admin settings
 - [ ] Update immediately after admin changes
@@ -144,6 +156,7 @@
 ### Admin Dashboard
 
 #### Vendor Approval Queue
+
 - [ ] Only step2_complete vendors appear
 - [ ] Incomplete onboarding vendors hidden
 - [ ] Approve vendor functionality works
@@ -164,18 +177,21 @@
 ## Performance Testing
 
 ### Load Times
+
 - [ ] Featured products page loads <2s
 - [ ] Trending sellers page loads <2s
 - [ ] Homepage loads <3s
 - [ ] Search responds instantly (<200ms)
 
 ### Database Queries
+
 - [ ] No N+1 queries in featured products load
 - [ ] No N+1 queries in trending sellers load
 - [ ] Indexes used for sorting/filtering
 - [ ] RLS policies don't slow queries
 
 ### Frontend Caching
+
 - [ ] Trending sellers cached 5 minutes
 - [ ] Hard refresh (Ctrl+F5) shows fresh data
 - [ ] Subsequent visits hit cache (fast load)
@@ -183,6 +199,7 @@
 ## Security Testing
 
 ### Admin Access Control
+
 - [ ] Non-admin cannot access `/admin/featured-products`
   - Expected: Redirects to home or auth
 - [ ] Non-admin cannot access `/admin/trending-sellers`
@@ -191,6 +208,7 @@
   - Expected: Redirects or shows error
 
 ### RLS Policies
+
 - [ ] Public can read featured_products_admin
   - Expected: SELECT works without auth
 - [ ] Non-admin cannot insert to featured_products_admin
@@ -214,6 +232,7 @@
 ## Regression Testing
 
 ### Existing Features (No Breaking)
+
 - [ ] User can still browse products
 - [ ] Search functionality works
 - [ ] Vendor onboarding flow complete (step 1 + 2)
@@ -224,6 +243,7 @@
 - [ ] Wishlist works
 
 ### Admin Functions
+
 - [ ] Admin can block vendors
 - [ ] Admin can view products
 - [ ] Admin can manage categories
@@ -283,4 +303,4 @@ Once deployed:
 
 **Deployment Date:** _________________
 **Deployed By:** _________________
-**Notes:** 
+**Notes:**

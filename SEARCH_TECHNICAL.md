@@ -7,6 +7,7 @@
 **File**: `src/lib/search-metadata.functions.ts`
 
 Core Functions:
+
 - `generateSearchKeywords()` - Extracts keywords from product data
 - `generateSearchIndex()` - Creates full-text search index
 - `generateProductMetadata()` - Server function to save metadata
@@ -20,11 +21,12 @@ await generateProductMetadata({
   description: "Beautiful handmade dress",
   category: "Fashion & Clothing",
   condition: "New",
-  attributes: { Size: "M", Color: "Blue", Material: "Cotton" }
+  attributes: { Size: "M", Color: "Blue", Material: "Cotton" },
 });
 ```
 
 **Keyword Extraction Algorithm:**
+
 1. Split title into words (>2 chars)
 2. Create bigrams (two-word phrases)
 3. Add category as keyword
@@ -37,6 +39,7 @@ await generateProductMetadata({
 **File**: `src/lib/advanced-search.ts`
 
 **Scoring System:**
+
 ```
 Exact title match:        100 points
 Title starts with query:   90 points
@@ -47,6 +50,7 @@ Synonym match:            40 points (bonus)
 ```
 
 **Features:**
+
 - Relevance scoring
 - Synonym expansion via `expandQueryWithSynonyms()`
 - Price range filtering
@@ -55,12 +59,10 @@ Synonym match:            40 points (bonus)
 
 ```typescript
 // Example
-const results = await performAdvancedSearch(
-  "blue dress",
-  productsArray,
-  synonymGroups,
-  { category: "Fashion & Clothing", maxResults: 50 }
-);
+const results = await performAdvancedSearch("blue dress", productsArray, synonymGroups, {
+  category: "Fashion & Clothing",
+  maxResults: 50,
+});
 ```
 
 ### 3. Server-Side Search
@@ -68,6 +70,7 @@ const results = await performAdvancedSearch(
 **File**: `src/lib/search.functions.ts`
 
 Handles:
+
 - Full product queries with metadata
 - Scoring based on search index
 - Filtering by city and category
@@ -75,6 +78,7 @@ Handles:
 - Performance optimization
 
 **Database Query Strategy:**
+
 ```sql
 SELECT * FROM products
 WHERE status = 'active'
@@ -93,6 +97,7 @@ LIMIT 200  -- Get more for scoring, return top N
 **File**: `src/components/AdminMetadataManager.tsx`
 
 Features:
+
 - View all products with metadata
 - Filter by category
 - Edit keywords manually
@@ -101,6 +106,7 @@ Features:
 - Manage synonym groups
 
 **State Management:**
+
 - Products: List of all products
 - Metadata: Map of product_id → metadata
 - Synonyms: Array of synonym groups
@@ -111,6 +117,7 @@ Features:
 **File**: `src/lib/search-cache.ts`
 
 **Caching Strategy:**
+
 ```typescript
 // 5-minute TTL cache
 const searchCache = new TTLCache<any>(300);
@@ -123,6 +130,7 @@ const cached = searchCache.get("query:blue-dress:fashion");
 ```
 
 **Request Debouncing:**
+
 ```typescript
 // Search input debounced by 300ms
 const debouncedSearch = debounce((query) => {
@@ -188,6 +196,7 @@ input.addEventListener("input", (e) => {
 ## Category Attributes System
 
 **Structure:**
+
 ```typescript
 export const CATEGORY_ATTRIBUTES: Record<string, { name: string; values?: string[] }[]> = {
   "Fashion & Clothing": [
@@ -201,14 +210,17 @@ export const CATEGORY_ATTRIBUTES: Record<string, { name: string; values?: string
 ```
 
 **Dropdowns (with predefined values):**
+
 - Size, Color, Type, Condition
 - Predefined lists improve consistency
 
 **Text inputs (open-ended):**
+
 - Brand, Material, Weight, Ingredients
 - Allow custom values
 
 **Benefits:**
+
 - Structured data for filtering
 - Better search relevance
 - Consistent product information
@@ -217,6 +229,7 @@ export const CATEGORY_ATTRIBUTES: Record<string, { name: string; values?: string
 ## Synonym System
 
 **Storage:**
+
 ```sql
 CREATE TABLE synonym_groups (
   id UUID,
@@ -227,12 +240,10 @@ CREATE TABLE synonym_groups (
 ```
 
 **Usage:**
+
 ```typescript
 // Query expansion
-const expandedQueries = expandQueryWithSynonyms(
-  "perfume",
-  synonymGroups
-);
+const expandedQueries = expandQueryWithSynonyms("perfume", synonymGroups);
 // Returns: ["perfume", "fragrance", "scent", "cologne", "spray"]
 
 // Search all variants
@@ -247,6 +258,7 @@ for (const query of expandedQueries) {
 ## Database Schema
 
 ### product_metadata table
+
 ```sql
 CREATE TABLE product_metadata (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -264,6 +276,7 @@ CREATE INDEX idx_product_metadata_index ON product_metadata USING GIN(search_ind
 ```
 
 ### synonym_groups table
+
 ```sql
 CREATE TABLE synonym_groups (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -278,21 +291,25 @@ CREATE INDEX idx_synonym_primary ON synonym_groups(primary_term);
 ## Performance Considerations
 
 ### Database Optimization
+
 1. **Index GIN for arrays**: Fast keyword matching
 2. **Index product_id**: Foreign key lookups
 3. **Limit query size**: Get top 200, score, return top 40
 
 ### Caching Strategy
+
 1. **Search results**: 5-minute TTL
 2. **Synonym groups**: Cache in memory
 3. **Category attributes**: Hardcoded (no DB query)
 
 ### Request Optimization
+
 1. **Debounce search input**: 300ms delay
 2. **Batch metadata generation**: Process 100+ at once
 3. **Lazy load metadata**: Only when needed
 
 ### Typical Performance
+
 - Search query: 100-300ms (including cache hit/miss)
 - Metadata generation: 5-10ms per product
 - Batch regenerate: 50-100ms for 100 products

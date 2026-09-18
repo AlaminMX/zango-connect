@@ -24,12 +24,22 @@ function VerifiedPage() {
         setStatus("no-session");
       }
     }, 400);
-    return () => { mounted = false; clearTimeout(t); };
+    return () => {
+      mounted = false;
+      clearTimeout(t);
+    };
   }, []);
 
   const handleContinue = async () => {
-    if (!userId) { nav({ to: "/auth" }); return; }
-    const { data: s } = await supabase.from("sellers").select("id").eq("user_id", userId).maybeSingle();
+    if (!userId) {
+      nav({ to: "/auth" });
+      return;
+    }
+    const { data: s } = await supabase
+      .from("sellers")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
     nav({ to: s ? "/dashboard" : "/register" });
   };
 
@@ -42,7 +52,9 @@ function VerifiedPage() {
 
       <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-6 py-12 text-center">
         <Link to="/" className="mb-10 flex items-center gap-2">
-          <span className="font-serif text-2xl font-semibold tracking-tight text-primary">ZANGO</span>
+          <span className="font-serif text-2xl font-semibold tracking-tight text-primary">
+            ZANGO
+          </span>
           <span className="font-serif text-2xl text-foreground/80">Market</span>
         </Link>
 
@@ -65,7 +77,8 @@ function VerifiedPage() {
           <>
             <h1 className="font-serif text-3xl">Welcome to ZANGO 🎉</h1>
             <p className="mt-3 text-sm text-muted-foreground">
-              Your email has been verified successfully. You're all set to start exploring the kasuwa.
+              Your email has been verified successfully. You're all set to start exploring the
+              kasuwa.
             </p>
             <Button
               onClick={handleContinue}

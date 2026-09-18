@@ -14,6 +14,7 @@ async function toPngDataUrl(node: HTMLElement, pixelRatio = 2) {
   const { toPng } = await import("html-to-image");
   return toPng(node, {
     cacheBust: true,
+    skipFonts: true,
     pixelRatio,
     width: PRODUCT_SHARE_CARD_WIDTH,
     height: PRODUCT_SHARE_CARD_HEIGHT,
@@ -28,6 +29,7 @@ async function toPngBlob(node: HTMLElement, pixelRatio = 2) {
   const { toBlob } = await import("html-to-image");
   const blob = await toBlob(node, {
     cacheBust: true,
+    skipFonts: true,
     pixelRatio,
     width: PRODUCT_SHARE_CARD_WIDTH,
     height: PRODUCT_SHARE_CARD_HEIGHT,
@@ -41,7 +43,10 @@ async function toPngBlob(node: HTMLElement, pixelRatio = 2) {
 }
 
 /** Downloads the card as a PNG file (desktop, or mobile browsers without Web Share support). */
-export async function downloadProductShareCard({ node, filename = "zango-product" }: ProductShareCardExportOptions) {
+export async function downloadProductShareCard({
+  node,
+  filename = "zango-product",
+}: ProductShareCardExportOptions) {
   const dataUrl = await toPngDataUrl(node);
   const link = document.createElement("a");
   link.download = `${filename}.png`;
@@ -62,7 +67,10 @@ export function canNativeShareImage() {
 }
 
 /** Opens the OS share sheet (Instagram, WhatsApp, etc.) with the card image attached. */
-export async function nativeShareProductCard({ node, filename = "zango-product" }: ProductShareCardExportOptions, shareText: string) {
+export async function nativeShareProductCard(
+  { node, filename = "zango-product" }: ProductShareCardExportOptions,
+  shareText: string,
+) {
   const blob = await toPngBlob(node);
   const file = new File([blob], `${filename}.png`, { type: "image/png" });
   await navigator.share({ files: [file], text: shareText });

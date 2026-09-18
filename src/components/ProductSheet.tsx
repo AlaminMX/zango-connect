@@ -11,7 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { MultiImageUploader } from "@/components/MultiImageUploader";
 import { Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
@@ -40,7 +46,12 @@ export interface ProductSheetProps {
 }
 
 export function ProductSheet({
-  open, onOpenChange, mode, sellerId, product, onSaved,
+  open,
+  onOpenChange,
+  mode,
+  sellerId,
+  product,
+  onSaved,
 }: ProductSheetProps) {
   const qc = useQueryClient();
   const [name, setName] = useState("");
@@ -59,15 +70,22 @@ export function ProductSheet({
       setName(product.name);
       setPrice(product.price != null ? String(product.price) : "");
       setDesc(product.description ?? "");
-      const existing = product.image_urls && product.image_urls.length > 0
-        ? product.image_urls
-        : product.image_url ? [product.image_url] : [];
+      const existing =
+        product.image_urls && product.image_urls.length > 0
+          ? product.image_urls
+          : product.image_url
+            ? [product.image_url]
+            : [];
       setImages(existing);
       setStock((product.stock_status as any) ?? "available");
       setCategory(product.category || "");
       setAttributes({});
     } else {
-      setName(""); setPrice(""); setDesc(""); setImages([]); setStock("available");
+      setName("");
+      setPrice("");
+      setDesc("");
+      setImages([]);
+      setStock("available");
       setCategory("");
       setAttributes({});
     }
@@ -75,7 +93,11 @@ export function ProductSheet({
 
   useEffect(() => {
     if (!open) return;
-    supabase.from("categories").select("name").order("sort_order").then(({ data }) => setCategories(data ?? []));
+    supabase
+      .from("categories")
+      .select("name")
+      .order("sort_order")
+      .then(({ data }) => setCategories(data ?? []));
   }, [open]);
 
   // Price lock: only on edit, only when there was a previously set price
@@ -93,11 +115,18 @@ export function ProductSheet({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) { toast.error("Product name is required"); return; }
-    if (!category.trim()) { toast.error("Product category is required"); return; }
+    if (!name.trim()) {
+      toast.error("Product name is required");
+      return;
+    }
+    if (!category.trim()) {
+      toast.error("Product category is required");
+      return;
+    }
     const priceVal = price.trim() === "" ? null : Number(price);
     if (priceVal !== null && (!Number.isFinite(priceVal) || priceVal <= 0)) {
-      toast.error("Enter a valid price or leave blank for 'Price on request'"); return;
+      toast.error("Enter a valid price or leave blank for 'Price on request'");
+      return;
     }
     setSaving(true);
     try {
@@ -118,15 +147,16 @@ export function ProductSheet({
         payload.price = priceVal;
       }
 
-      const op = mode === "add"
-        ? supabase.from("products").insert(payload).select("id").single()
-        : supabase.from("products").update(payload).eq("id", product!.id).select("id").single();
+      const op =
+        mode === "add"
+          ? supabase.from("products").insert(payload).select("id").single()
+          : supabase.from("products").update(payload).eq("id", product!.id).select("id").single();
       const { data, error } = await op;
-      
-      if (error) { toast.error(error.message); return; }
 
-
-
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
 
       toast.success(mode === "add" ? "Product added" : "Product updated");
       qc.invalidateQueries({ queryKey: ["seller-products"] });
@@ -158,8 +188,11 @@ export function ProductSheet({
           <div>
             <Label htmlFor="prod-name">Product name *</Label>
             <Input
-              id="prod-name" required maxLength={120}
-              value={name} onChange={(e) => setName(e.target.value)}
+              id="prod-name"
+              required
+              maxLength={120}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Hand-dyed Atampa"
               className="mt-1 min-h-[44px] rounded-full"
             />
@@ -167,15 +200,17 @@ export function ProductSheet({
 
           {/* Category - optional but helps with search */}
           <div>
-            <Label htmlFor="prod-category">
-              Category *
-            </Label>
+            <Label htmlFor="prod-category">Category *</Label>
             <Select value={category} onValueChange={setCategory}>
               <SelectTrigger id="prod-category" className="mt-1 min-h-[44px] rounded-full">
                 <SelectValue placeholder="Choose product category" />
               </SelectTrigger>
               <SelectContent>
-                {categories.map((c) => <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>)}
+                {categories.map((c) => (
+                  <SelectItem key={c.name} value={c.name}>
+                    {c.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -185,8 +220,12 @@ export function ProductSheet({
               Price (₦) <span className="text-xs text-muted-foreground">— optional</span>
             </Label>
             <Input
-              id="prod-price" type="number" min="0" inputMode="decimal"
-              value={price} onChange={(e) => setPrice(e.target.value)}
+              id="prod-price"
+              type="number"
+              min="0"
+              inputMode="decimal"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
               placeholder="Leave blank for 'Price on request'"
               disabled={!!priceLock}
               className="mt-1 min-h-[44px] rounded-full"
@@ -195,8 +234,8 @@ export function ProductSheet({
               <div className="mt-2 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
                 <Lock className="mt-0.5 h-4 w-4 shrink-0" />
                 <p>
-                  Price was last changed on <strong>{priceLock.lastChanged}</strong>.
-                  You can update it again on <strong>{priceLock.unlockOn}</strong>.
+                  Price was last changed on <strong>{priceLock.lastChanged}</strong>. You can update
+                  it again on <strong>{priceLock.unlockOn}</strong>.
                 </p>
               </div>
             )}
@@ -205,8 +244,10 @@ export function ProductSheet({
           <div>
             <Label htmlFor="prod-desc">Description</Label>
             <Textarea
-              id="prod-desc" maxLength={1000}
-              value={desc} onChange={(e) => setDesc(e.target.value)}
+              id="prod-desc"
+              maxLength={1000}
+              value={desc}
+              onChange={(e) => setDesc(e.target.value)}
               placeholder="What makes this product special?"
               className="mt-1 rounded-2xl"
               rows={3}
@@ -227,13 +268,20 @@ export function ProductSheet({
             </Select>
           </div>
 
-
           <Button
-            type="submit" disabled={saving}
+            type="submit"
+            disabled={saving}
             className="min-h-[48px] w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
           >
-            {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…</>
-                    : mode === "add" ? "Add product" : "Save changes"}
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…
+              </>
+            ) : mode === "add" ? (
+              "Add product"
+            ) : (
+              "Save changes"
+            )}
           </Button>
         </form>
       </SheetContent>

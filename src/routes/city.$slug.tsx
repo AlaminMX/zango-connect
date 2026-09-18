@@ -60,17 +60,30 @@ export const Route = createFileRoute("/city/$slug")({
     };
   },
   notFoundComponent: () => (
-    <div className="min-h-screen bg-background"><TopBar /><div className="mx-auto max-w-3xl p-10 text-center">
-      <h1 className="font-serif text-3xl">City not found</h1>
-      <p className="mt-2 text-muted-foreground">This marketplace doesn't exist or is no longer available.</p>
-      <Link to="/" className="mt-6 inline-block rounded-full bg-primary px-5 py-2 text-sm text-primary-foreground">Back home</Link>
-    </div></div>
+    <div className="min-h-screen bg-background">
+      <TopBar />
+      <div className="mx-auto max-w-3xl p-10 text-center">
+        <h1 className="font-serif text-3xl">City not found</h1>
+        <p className="mt-2 text-muted-foreground">
+          This marketplace doesn't exist or is no longer available.
+        </p>
+        <Link
+          to="/"
+          className="mt-6 inline-block rounded-full bg-primary px-5 py-2 text-sm text-primary-foreground"
+        >
+          Back home
+        </Link>
+      </div>
+    </div>
   ),
   errorComponent: ({ error }) => (
-    <div className="min-h-screen bg-background"><TopBar /><div className="mx-auto max-w-3xl p-10 text-center">
-      <h1 className="font-serif text-2xl">Couldn't load this marketplace</h1>
-      <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
-    </div></div>
+    <div className="min-h-screen bg-background">
+      <TopBar />
+      <div className="mx-auto max-w-3xl p-10 text-center">
+        <h1 className="font-serif text-2xl">Couldn't load this marketplace</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
+      </div>
+    </div>
   ),
   component: CityPage,
 });
@@ -97,8 +110,8 @@ function CityPage() {
           </div>
           <h1 className="font-serif text-4xl sm:text-5xl">{city.name} Marketplace</h1>
           <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-            Discover {sellers.length} {sellers.length === 1 ? "seller" : "sellers"} and {products.length} products
-            available in {city.name}. Order on WhatsApp.
+            Discover {sellers.length} {sellers.length === 1 ? "seller" : "sellers"} and{" "}
+            {products.length} products available in {city.name}. Order on WhatsApp.
           </p>
         </div>
       </section>
@@ -111,8 +124,12 @@ function CityPage() {
             {cityCategories.map((c: any) => {
               const { Component: Icon } = iconFor(c.name);
               return (
-                <Link key={c.id} to="/category/$slug" params={{ slug: c.slug }}
-                  className="group flex flex-col items-center gap-2 rounded-2xl border bg-card p-3 transition hover:-translate-y-0.5 hover:shadow-md">
+                <Link
+                  key={c.id}
+                  to="/category/$slug"
+                  params={{ slug: c.slug }}
+                  className="group flex flex-col items-center gap-2 rounded-2xl border bg-card p-3 transition hover:-translate-y-0.5 hover:shadow-md"
+                >
                   <div className="flex h-14 w-14 items-center justify-center rounded-full bg-secondary/40">
                     <Icon size={40} />
                   </div>
@@ -130,12 +147,18 @@ function CityPage() {
         {sellers.length === 0 ? (
           <div className="rounded-2xl border bg-card p-8 text-center">
             <Store className="mx-auto h-10 w-10 text-muted-foreground/50" />
-            <p className="mt-3 text-sm text-muted-foreground">No approved sellers in {city.name} yet.</p>
-            <Link to="/register"><Button className="mt-4 rounded-full">Be the first</Button></Link>
+            <p className="mt-3 text-sm text-muted-foreground">
+              No approved sellers in {city.name} yet.
+            </p>
+            <Link to="/register">
+              <Button className="mt-4 rounded-full">Be the first</Button>
+            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {sellers.map((s: any) => <SellerCard key={s.id} {...s} />)}
+            {sellers.map((s: any) => (
+              <SellerCard key={s.id} {...s} />
+            ))}
           </div>
         )}
       </section>
@@ -146,18 +169,31 @@ function CityPage() {
           <h2 className="mb-4 font-serif text-2xl">Products in {city.name}</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {products.map((p: any) => (
-              <ProductCard key={p.id} id={p.id} name={p.name} price={Number(p.price)}
-                image_url={p.image_url} stock_status={p.stock_status}
+              <ProductCard
+                key={p.id}
+                id={p.id}
+                name={p.name}
+                price={Number(p.price)}
+                image_url={p.image_url}
+                stock_status={p.stock_status}
                 seller_id={p.sellers?.id}
-                seller_name={p.sellers?.business_name} seller_city={city.name}
-                seller_slug={p.sellers?.slug} whatsapp_number="" />
+                seller_name={p.sellers?.business_name}
+                seller_city={city.name}
+                seller_slug={p.sellers?.slug}
+                whatsapp_number=""
+                seller_is_verified={p.sellers?.is_verified}
+              />
             ))}
           </div>
         </section>
       )}
 
       <section className="mx-auto max-w-5xl px-5 py-10 text-center">
-        <Link to="/"><Button variant="ghost" className="rounded-full"><ArrowRight className="mr-1 h-4 w-4 rotate-180" /> Back to all cities</Button></Link>
+        <Link to="/">
+          <Button variant="ghost" className="rounded-full">
+            <ArrowRight className="mr-1 h-4 w-4 rotate-180" /> Back to all cities
+          </Button>
+        </Link>
       </section>
 
       <Footer />

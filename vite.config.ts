@@ -8,11 +8,5 @@ import path from "node:path";
 
 export default defineConfig({
   resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
-  plugins: [
-    tsConfigPaths(),
-    tailwindcss(),
-    tanstackStart(),
-    mcpPlugin(),
-    viteReact(),
-  ],
+  plugins: [tsConfigPaths(), tailwindcss(), tanstackStart(), mcpPlugin(), viteReact()],
 });

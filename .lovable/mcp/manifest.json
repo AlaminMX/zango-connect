@@ -5,9 +5,7 @@
   "auth": {
     "type": "oauth",
     "issuer": "https://pozputxlgfbqywlvxfot.supabase.co/auth/v1",
-    "accepted_audiences": [
-      "authenticated"
-    ]
+    "accepted_audiences": ["authenticated"]
   },
   "mcp": {
     "server": {
@@ -47,9 +45,7 @@
               "maximum": 20
             }
           },
-          "required": [
-            "query"
-          ]
+          "required": ["query"]
         },
         "outputSchema": null
       },

@@ -21,7 +21,8 @@ export interface HomepageTrendingSeller {
 export async function getTrendingSellers(limit: number = 3): Promise<HomepageTrendingSeller[]> {
   const { data, error } = await supabase
     .from("trending_sellers_admin")
-    .select(`
+    .select(
+      `
       id,
       seller_id,
       display_order,
@@ -34,7 +35,8 @@ export async function getTrendingSellers(limit: number = 3): Promise<HomepageTre
         verification_status,
         is_blocked
       )
-    `)
+    `,
+    )
     .order("display_order")
     .limit(limit);
 
@@ -44,7 +46,8 @@ export async function getTrendingSellers(limit: number = 3): Promise<HomepageTre
     .filter((row: any) => {
       const s = row.sellers;
       if (!s) return false;
-      if (s.is_blocked || s.verification_status !== "approved" || s.status !== "active") return false;
+      if (s.is_blocked || s.verification_status !== "approved" || s.status !== "active")
+        return false;
       return true;
     })
     .map((row: any) => ({

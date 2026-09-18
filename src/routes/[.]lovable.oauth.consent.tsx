@@ -61,9 +61,17 @@ function Consent() {
     const { data, error } = approve
       ? await oauthNs().approveAuthorization(authorization_id)
       : await oauthNs().denyAuthorization(authorization_id);
-    if (error) { setBusy(false); setError(error.message ?? "Something went wrong."); return; }
+    if (error) {
+      setBusy(false);
+      setError(error.message ?? "Something went wrong.");
+      return;
+    }
     const target = data?.redirect_url ?? data?.redirect_to;
-    if (!target) { setBusy(false); setError("No redirect returned by the authorization server."); return; }
+    if (!target) {
+      setBusy(false);
+      setError("No redirect returned by the authorization server.");
+      return;
+    }
     window.location.href = target;
   }
 
@@ -77,14 +85,18 @@ function Consent() {
           <p className="mt-2 text-sm text-muted-foreground">Signed in as {userEmail}</p>
         )}
         <p className="mt-4 text-sm">
-          This lets <strong>{clientName}</strong> use ZANGO as you — searching listings and
-          reading your own bookmarks, seller profile, and product inventory.
+          This lets <strong>{clientName}</strong> use ZANGO as you — searching listings and reading
+          your own bookmarks, seller profile, and product inventory.
         </p>
         <p className="mt-3 text-xs text-muted-foreground">
-          This does not bypass ZANGO's permissions. The app can only see and do what your
-          account is already allowed to.
+          This does not bypass ZANGO's permissions. The app can only see and do what your account is
+          already allowed to.
         </p>
-        {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
+        {error && (
+          <p role="alert" className="mt-3 text-sm text-destructive">
+            {error}
+          </p>
+        )}
         <div className="mt-6 flex gap-3">
           <button
             disabled={busy}

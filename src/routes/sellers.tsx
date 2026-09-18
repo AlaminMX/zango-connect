@@ -7,13 +7,22 @@ import { Footer } from "@/components/Footer";
 import { SellerCard } from "@/components/SellerCard";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Search, Users } from "lucide-react";
 import { BackButton } from "@/components/BackButton";
 import { useCity } from "@/lib/cityContext";
 
 import { assertLaunchGate } from "@/lib/launchGate";
-export const Route = createFileRoute("/sellers")({ beforeLoad: assertLaunchGate, component: SellersPage });
+export const Route = createFileRoute("/sellers")({
+  beforeLoad: assertLaunchGate,
+  component: SellersPage,
+});
 
 function SellersPage() {
   const [search, setSearch] = useState("");
@@ -26,7 +35,7 @@ function SellersPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("sellers")
-        .select("id, slug, business_name, category, city, profile_photo_url, is_verified, rating")
+        .select("id, slug, business_name, category, city, state, profile_photo_url, is_verified, rating")
         .eq("is_blocked", false)
         .eq("verification_status", "approved")
         .order("is_verified", { ascending: false })
@@ -48,11 +57,15 @@ function SellersPage() {
   const filtered = useMemo(() => {
     if (!sellers) return [];
     return sellers.filter((s) => {
+      const q = search.trim().toLowerCase();
       const matchSearch =
-        !search.trim() ||
-        s.business_name.toLowerCase().includes(search.toLowerCase()) ||
-        (s.city ?? "").toLowerCase().includes(search.toLowerCase()) ||
-        (s.category ?? "").toLowerCase().includes(search.toLowerCase());
+        !q ||
+        s.business_name.toLowerCase().includes(q) ||
+        (s.city ?? "").toLowerCase().includes(q) ||
+        (s.state ?? "").toLowerCase().includes(q) ||
+        (q === "abuja" && (s.state ?? "").toLowerCase() === "fct") ||
+        (q === "fct" && (s.city ?? "").toLowerCase() === "abuja") ||
+        (s.category ?? "").toLowerCase().includes(q);
       const matchCity = city === "All cities" || s.city === city;
       const matchCat = category === "All categories" || s.category === category;
       return matchSearch && matchCity && matchCat;
@@ -90,17 +103,29 @@ function SellersPage() {
             />
           </div>
           <Select value={city} onValueChange={setCity}>
-            <SelectTrigger className="w-full rounded-full sm:w-44"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full rounded-full sm:w-44">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="All cities">All cities</SelectItem>
-              {activeCities.map((c) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+              {activeCities.map((c) => (
+                <SelectItem key={c.id} value={c.name}>
+                  {c.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger className="w-full rounded-full sm:w-48"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full rounded-full sm:w-48">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="All categories">All categories</SelectItem>
-              {(categoryOptions ?? []).map((c) => <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>)}
+              {(categoryOptions ?? []).map((c) => (
+                <SelectItem key={c.name} value={c.name}>
+                  {c.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -134,13 +159,20 @@ function SellersPage() {
             <p className="mt-1 text-sm text-muted-foreground">
               Try adjusting your filters or{" "}
               <button
-                onClick={() => { setSearch(""); setCity("All cities"); setCategory("All categories"); }}
+                onClick={() => {
+                  setSearch("");
+                  setCity("All cities");
+                  setCategory("All categories");
+                }}
                 className="text-primary underline underline-offset-2"
               >
                 clear all
               </button>
             </p>
-            <Link to="/register" className="mt-5 text-sm font-medium text-primary underline underline-offset-2">
+            <Link
+              to="/register"
+              className="mt-5 text-sm font-medium text-primary underline underline-offset-2"
+            >
               Be the first to open a store →
             </Link>
           </div>

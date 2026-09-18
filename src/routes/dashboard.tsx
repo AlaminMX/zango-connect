@@ -12,13 +12,19 @@ function Dashboard() {
 
   useEffect(() => {
     if (!isReady) return;
-    if (!user) { nav({ to: "/auth", replace: true }); return; }
+    if (!user) {
+      nav({ to: "/auth", replace: true });
+      return;
+    }
 
     let cancelled = false;
     (async () => {
       try {
         const { data: s } = await supabase
-          .from("sellers").select("slug").eq("user_id", user.id).maybeSingle();
+          .from("sellers")
+          .select("slug")
+          .eq("user_id", user.id)
+          .maybeSingle();
         if (cancelled) return;
         nav({
           to: s ? "/store/$slug" : "/register",
@@ -31,7 +37,9 @@ function Dashboard() {
         nav({ to: "/", replace: true });
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [isReady, user, nav]);
 
   return <PageLoader label="Loading your store…" />;

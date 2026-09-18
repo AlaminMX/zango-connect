@@ -29,14 +29,42 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
-  BadgeCheck, Plus, Pencil, Trash2, ChevronUp, ChevronDown,
-  Star, StarOff, Eye, EyeOff, Loader2, GripVertical, Search,
-  ShieldOff, ShieldCheck, Users, CheckCircle2, XCircle, Clock,
-  AlertCircle, RefreshCw, MapPin, Save, Phone, Copy, MessageCircle,
+  BadgeCheck,
+  Plus,
+  Pencil,
+  Trash2,
+  ChevronUp,
+  ChevronDown,
+  Star,
+  StarOff,
+  Eye,
+  EyeOff,
+  Loader2,
+  GripVertical,
+  Search,
+  ShieldOff,
+  ShieldCheck,
+  Users,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  AlertCircle,
+  RefreshCw,
+  MapPin,
+  Save,
+  Phone,
+  Copy,
+  MessageCircle,
 } from "lucide-react";
 import { PageLoader } from "@/components/LoadingSpinner";
 import { normaliseNigerianPhone, buildWhatsAppUrl } from "@/lib/whatsapp";
@@ -74,39 +102,96 @@ function SectionSkeleton() {
 }
 
 interface SellerRow {
-  id: string; business_name: string; slug: string;
-  category: string; city: string; is_verified: boolean; is_blocked: boolean;
-  verification_status: string; rejection_reason?: string | null;
+  id: string;
+  business_name: string;
+  slug: string;
+  category: string;
+  city: string;
+  is_verified: boolean;
+  is_blocked: boolean;
+  verification_status: string;
+  rejection_reason?: string | null;
   onboarding_status: string;
-  profile_photo_url?: string | null; whatsapp_number?: string;
+  profile_photo_url?: string | null;
+  whatsapp_number?: string;
 }
-interface Category   { id: string; name: string; slug: string; icon_emoji: string; image_url: string | null; custom_subtitle: string | null; sort_order: number; }
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  icon_emoji: string;
+  image_url: string | null;
+  custom_subtitle: string | null;
+  sort_order: number;
+}
 interface ProductRow {
-  id: string; name: string; price: number; image_url: string | null;
-  is_featured: boolean; featured_order: number; status: string;
+  id: string;
+  name: string;
+  price: number;
+  image_url: string | null;
+  is_featured: boolean;
+  featured_order: number;
+  status: string;
   sellers: { business_name: string; city: string } | null;
 }
-interface Section    { id: string; key: string; title: string; subtitle: string | null; content: string | null; sort_order: number; is_visible: boolean; }
-interface VouchRow   { seller_id: string; seller_name: string; vouch_count: number; }
-interface VoucherDetail { voucher_seller_id: string; business_name: string; created_at: string; }
-interface StateRow   { id: string; name: string; slug: string; is_active: boolean; sort_order: number; }
-interface CityRow    { id: string; name: string; state: string; state_id: string; slug: string; is_active: boolean; sort_order: number; }
+interface Section {
+  id: string;
+  key: string;
+  title: string;
+  subtitle: string | null;
+  content: string | null;
+  sort_order: number;
+  is_visible: boolean;
+}
+interface VouchRow {
+  seller_id: string;
+  seller_name: string;
+  vouch_count: number;
+}
+interface VoucherDetail {
+  voucher_seller_id: string;
+  business_name: string;
+  created_at: string;
+}
+interface StateRow {
+  id: string;
+  name: string;
+  slug: string;
+  is_active: boolean;
+  sort_order: number;
+}
+interface CityRow {
+  id: string;
+  name: string;
+  state: string;
+  state_id: string;
+  slug: string;
+  is_active: boolean;
+  sort_order: number;
+}
 
 function slugify(s: string) {
-  return s.toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
+  return s
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
 }
 
 /** Badge colour for verification_status */
 function VerifBadge({ status }: { status: string }) {
   const cfg: Record<string, { label: string; cls: string }> = {
-    pending:  { label: "Pending",  cls: "bg-amber-100 text-amber-700" },
+    pending: { label: "Pending", cls: "bg-amber-100 text-amber-700" },
     approved: { label: "Approved", cls: "bg-emerald-100 text-emerald-700" },
     rejected: { label: "Rejected", cls: "bg-rose-100 text-rose-700" },
-    suspended:{ label: "Suspended",cls: "bg-gray-100 text-gray-600" },
+    suspended: { label: "Suspended", cls: "bg-gray-100 text-gray-600" },
   };
   const { label, cls } = cfg[status] ?? { label: status, cls: "bg-muted text-muted-foreground" };
   return (
-    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${cls}`}>
+    <span
+      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${cls}`}
+    >
       {label}
     </span>
   );
@@ -120,48 +205,58 @@ function AdminPage() {
   // Auth gate — runs after auth resolves. Never blocks indefinitely.
   useEffect(() => {
     if (!isReady) return;
-    if (!user) { nav({ to: "/auth", replace: true }); return; }
-    if (!isAdmin) { nav({ to: "/", replace: true }); return; }
+    if (!user) {
+      nav({ to: "/auth", replace: true });
+      return;
+    }
+    if (!isAdmin) {
+      nav({ to: "/", replace: true });
+      return;
+    }
   }, [isReady, user, isAdmin, nav]);
 
   // ── Per-section state (independent loading + error per dataset) ──
-  const [sellers,    setSellers]    = useState<SellerRow[]>([]);
+  const [sellers, setSellers] = useState<SellerRow[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [products,   setProducts]   = useState<ProductRow[]>([]);
-  const [sections,   setSections]   = useState<Section[]>([]);
-  const [vouches,    setVouches]    = useState<VouchRow[]>([]);
-  const [states,     setStates]     = useState<StateRow[]>([]);
-  const [cities,     setCities]     = useState<CityRow[]>([]);
-  const [stats,      setStats]      = useState({ sellers: 0, products: 0, clicks: 0 });
+  const [products, setProducts] = useState<ProductRow[]>([]);
+  const [sections, setSections] = useState<Section[]>([]);
+  const [vouches, setVouches] = useState<VouchRow[]>([]);
+  const [states, setStates] = useState<StateRow[]>([]);
+  const [cities, setCities] = useState<CityRow[]>([]);
+  const [stats, setStats] = useState({ sellers: 0, products: 0, clicks: 0 });
 
-  const [sellersState,    setSellersState]    = useState<LoadState>("loading");
+  const [sellersState, setSellersState] = useState<LoadState>("loading");
   const [categoriesState, setCategoriesState] = useState<LoadState>("loading");
-  const [productsState,   setProductsState]   = useState<LoadState>("loading");
-  const [sectionsState,   setSectionsState]   = useState<LoadState>("loading");
-  const [vouchesState,    setVouchesState]    = useState<LoadState>("loading");
-  const [statesState,     setStatesState]     = useState<LoadState>("loading");
-  const [citiesState,     setCitiesState]     = useState<LoadState>("loading");
-  const [statsState,      setStatsState]      = useState<LoadState>("loading");
+  const [productsState, setProductsState] = useState<LoadState>("loading");
+  const [sectionsState, setSectionsState] = useState<LoadState>("loading");
+  const [vouchesState, setVouchesState] = useState<LoadState>("loading");
+  const [statesState, setStatesState] = useState<LoadState>("loading");
+  const [citiesState, setCitiesState] = useState<LoadState>("loading");
+  const [statsState, setStatsState] = useState<LoadState>("loading");
 
-  const [activeTab, setActiveTab] = useState<"sellers"|"categories"|"products"|"vouches"|"homepage"|"cities"|"cms">("sellers");
+  const [activeTab, setActiveTab] = useState<
+    "sellers" | "categories" | "products" | "vouches" | "homepage" | "cities" | "cms"
+  >("sellers");
 
   // Category editor state
   const [editingCat, setEditingCat] = useState<Category | null>(null);
-  const [catName,    setCatName]    = useState("");
-  const [catImage,   setCatImage]   = useState<string | null>(null);
+  const [catName, setCatName] = useState("");
+  const [catImage, setCatImage] = useState<string | null>(null);
   const [catSubtitle, setCatSubtitle] = useState("");
-  const [catSaving,  setCatSaving]  = useState(false);
+  const [catSaving, setCatSaving] = useState(false);
   const [newCatOpen, setNewCatOpen] = useState(false);
 
   // WhatsApp click detail modal (Task 7)
   const [waDetailOpen, setWaDetailOpen] = useState(false);
   const [waDetailLoading, setWaDetailLoading] = useState(false);
-  const [waDetail, setWaDetail] = useState<{
-    seller_id: string;
-    business_name: string;
-    total: number;
-    recent: { created_at: string; product_id: string | null }[];
-  }[]>([]);
+  const [waDetail, setWaDetail] = useState<
+    {
+      seller_id: string;
+      business_name: string;
+      total: number;
+      recent: { created_at: string; product_id: string | null }[];
+    }[]
+  >([]);
 
   const openWaDetail = async () => {
     setWaDetailOpen(true);
@@ -171,13 +266,26 @@ function AdminPage() {
       .select("seller_id, product_id, created_at, sellers(business_name)")
       .order("created_at", { ascending: false })
       .limit(2000);
-    if (error) { toast.error(error.message); setWaDetailLoading(false); return; }
-    const bySeller = new Map<string, { seller_id: string; business_name: string; total: number; recent: { created_at: string; product_id: string | null }[] }>();
+    if (error) {
+      toast.error(error.message);
+      setWaDetailLoading(false);
+      return;
+    }
+    const bySeller = new Map<
+      string,
+      {
+        seller_id: string;
+        business_name: string;
+        total: number;
+        recent: { created_at: string; product_id: string | null }[];
+      }
+    >();
     for (const row of (data ?? []) as any[]) {
       const existing = bySeller.get(row.seller_id);
       if (existing) {
         existing.total += 1;
-        if (existing.recent.length < 10) existing.recent.push({ created_at: row.created_at, product_id: row.product_id });
+        if (existing.recent.length < 10)
+          existing.recent.push({ created_at: row.created_at, product_id: row.product_id });
       } else {
         bySeller.set(row.seller_id, {
           seller_id: row.seller_id,
@@ -192,20 +300,23 @@ function AdminPage() {
   };
 
   // Section editor state
-  const [editingSec,  setEditingSec]  = useState<Section | null>(null);
-  const [secTitle,    setSecTitle]    = useState("");
+  const [editingSec, setEditingSec] = useState<Section | null>(null);
+  const [secTitle, setSecTitle] = useState("");
   const [secSubtitle, setSecSubtitle] = useState("");
-  const [secContent,  setSecContent]  = useState("");
-  const [secSaving,   setSecSaving]   = useState(false);
+  const [secContent, setSecContent] = useState("");
+  const [secSaving, setSecSaving] = useState(false);
 
   // Vouch detail modal
-  const [vouchDetail, setVouchDetail] = useState<{ seller_name: string; vouchers: VoucherDetail[] } | null>(null);
+  const [vouchDetail, setVouchDetail] = useState<{
+    seller_name: string;
+    vouchers: VoucherDetail[];
+  } | null>(null);
   const [vouchDetailLoading, setVouchDetailLoading] = useState(false);
 
   // Vouch threshold state
-  const [vouchThreshold,      setVouchThreshold]      = useState(3);
+  const [vouchThreshold, setVouchThreshold] = useState(3);
   const [vouchThresholdInput, setVouchThresholdInput] = useState(3);
-  const [thresholdSaving,     setThresholdSaving]     = useState(false);
+  const [thresholdSaving, setThresholdSaving] = useState(false);
 
   // Reject dialog state
   const [rejectTarget, setRejectTarget] = useState<{ id: string; name: string } | null>(null);
@@ -213,27 +324,35 @@ function AdminPage() {
   const [rejectSaving, setRejectSaving] = useState(false);
 
   // City dialog state
-  const [cityDialogOpen,  setCityDialogOpen]  = useState(false);
-  const [editingCity,     setEditingCity]      = useState<CityRow | null>(null);
-  const [cityName,        setCityName]         = useState("");
-  const [cityState,       setCityState]        = useState("");
+  const [cityDialogOpen, setCityDialogOpen] = useState(false);
+  const [editingCity, setEditingCity] = useState<CityRow | null>(null);
+  const [cityName, setCityName] = useState("");
+  const [cityState, setCityState] = useState("");
   const [stateDialogOpen, setStateDialogOpen] = useState(false);
   const [editingState, setEditingState] = useState<StateRow | null>(null);
   const [stateName, setStateName] = useState("");
   const [stateSlug, setStateSlug] = useState("");
   const [stateIsActive, setStateIsActive] = useState(true);
   const [stateSaving, setStateSaving] = useState(false);
-  const [citySlug,        setCitySlug]         = useState("");
-  const [cityIsActive,    setCityIsActive]     = useState(true);
-  const [citySaving,      setCitySaving]       = useState(false);
+  const [citySlug, setCitySlug] = useState("");
+  const [cityIsActive, setCityIsActive] = useState(true);
+  const [citySaving, setCitySaving] = useState(false);
 
   // CMS — Trending Sellers (homepage/explore "trending" row)
-  type CmsTrendingSeller  = { id: string; seller_id: string; display_order: number; business_name: string; category: string; profile_photo_url: string | null; slug: string; };
-  const [cmsSellers,        setCmsSellers]        = useState<CmsTrendingSeller[]>([]);
-  const [cmsSellersState,   setCmsSellersState]   = useState<LoadState>("loading");
-  const [cmsSellerSearch,   setCmsSellerSearch]   = useState("");
-  const [cmsSellerOptions,  setCmsSellerOptions]  = useState<any[]>([]);
-  const [cmsSellerSearchLoading,  setCmsSellerSearchLoading]  = useState(false);
+  type CmsTrendingSeller = {
+    id: string;
+    seller_id: string;
+    display_order: number;
+    business_name: string;
+    category: string;
+    profile_photo_url: string | null;
+    slug: string;
+  };
+  const [cmsSellers, setCmsSellers] = useState<CmsTrendingSeller[]>([]);
+  const [cmsSellersState, setCmsSellersState] = useState<LoadState>("loading");
+  const [cmsSellerSearch, setCmsSellerSearch] = useState("");
+  const [cmsSellerOptions, setCmsSellerOptions] = useState<any[]>([]);
+  const [cmsSellerSearchLoading, setCmsSellerSearchLoading] = useState(false);
 
   // Featured products — search to reach products beyond the 100 already
   // loaded in `products`. Feeds the real is_featured/featured_order columns
@@ -251,7 +370,9 @@ function AdminPage() {
     try {
       const { data, error } = await supabase
         .from("sellers")
-        .select("id, business_name, slug, category, city, is_verified, is_blocked, verification_status, rejection_reason, onboarding_status, profile_photo_url, whatsapp_number")
+        .select(
+          "id, business_name, slug, category, city, is_verified, is_blocked, verification_status, rejection_reason, onboarding_status, profile_photo_url, whatsapp_number",
+        )
         .in("onboarding_status", ["step1_complete", "step2_complete"])
         .order("created_at", { ascending: false })
         .abortSignal(ABORT());
@@ -268,7 +389,10 @@ function AdminPage() {
     setCategoriesState("loading");
     try {
       const { data, error } = await supabase
-        .from("categories").select("*").order("sort_order").abortSignal(ABORT());
+        .from("categories")
+        .select("*")
+        .order("sort_order")
+        .abortSignal(ABORT());
       if (error) throw error;
       setCategories((data ?? []) as Category[]);
       setCategoriesState("ok");
@@ -283,7 +407,9 @@ function AdminPage() {
     try {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, price, image_url, is_featured, featured_order, status, sellers(business_name, city)")
+        .select(
+          "id, name, price, image_url, is_featured, featured_order, status, sellers(business_name, city)",
+        )
         .order("is_featured", { ascending: false })
         .order("featured_order")
         .limit(100)
@@ -301,7 +427,10 @@ function AdminPage() {
     setSectionsState("loading");
     try {
       const { data, error } = await supabase
-        .from("homepage_sections").select("*").order("sort_order").abortSignal(ABORT());
+        .from("homepage_sections")
+        .select("*")
+        .order("sort_order")
+        .abortSignal(ABORT());
       if (error) throw error;
       setSections(data ?? []);
       setSectionsState("ok");
@@ -317,14 +446,17 @@ function AdminPage() {
       const [sellersCount, productsCount, clicksCount] = await Promise.allSettled([
         supabase.from("sellers").select("id", { count: "exact", head: true }).abortSignal(ABORT()),
         supabase.from("products").select("id", { count: "exact", head: true }).abortSignal(ABORT()),
-        supabase.from("whatsapp_clicks").select("id", { count: "exact", head: true }).abortSignal(ABORT()),
+        supabase
+          .from("whatsapp_clicks")
+          .select("id", { count: "exact", head: true })
+          .abortSignal(ABORT()),
       ]);
       const pick = (r: PromiseSettledResult<{ count: number | null }>): number =>
         r.status === "fulfilled" ? (r.value.count ?? 0) : 0;
       setStats({
-        sellers:  pick(sellersCount as any),
+        sellers: pick(sellersCount as any),
         products: pick(productsCount as any),
-        clicks:   pick(clicksCount as any),
+        clicks: pick(clicksCount as any),
       });
       setStatsState("ok");
     } catch (err) {
@@ -348,9 +480,15 @@ function AdminPage() {
         if (!map.has(id)) map.set(id, { name, count: 0 });
         map.get(id)!.count += 1;
       }
-      setVouches(Array.from(map.entries())
-        .map(([seller_id, { name, count }]) => ({ seller_id, seller_name: name, vouch_count: count }))
-        .sort((a, b) => b.vouch_count - a.vouch_count));
+      setVouches(
+        Array.from(map.entries())
+          .map(([seller_id, { name, count }]) => ({
+            seller_id,
+            seller_name: name,
+            vouch_count: count,
+          }))
+          .sort((a, b) => b.vouch_count - a.vouch_count),
+      );
       setVouchesState("ok");
     } catch (err) {
       console.warn("[admin] vouches failed:", err);
@@ -373,7 +511,6 @@ function AdminPage() {
       console.warn("[admin] vouch_threshold load failed:", err);
     }
   }, []);
-
 
   const loadStates = useCallback(async () => {
     setStatesState("loading");
@@ -415,18 +552,22 @@ function AdminPage() {
     try {
       const { data, error } = await supabase
         .from("trending_sellers_admin")
-        .select("id, seller_id, display_order, sellers:seller_id(business_name, category, profile_photo_url, slug)")
+        .select(
+          "id, seller_id, display_order, sellers:seller_id(business_name, category, profile_photo_url, slug)",
+        )
         .order("display_order")
         .abortSignal(ABORT());
       if (error) throw error;
       setCmsSellers(
         (data ?? []).map((r: any) => ({
-          id: r.id, seller_id: r.seller_id, display_order: r.display_order,
+          id: r.id,
+          seller_id: r.seller_id,
+          display_order: r.display_order,
           business_name: r.sellers?.business_name ?? "Unknown",
           category: r.sellers?.category ?? "",
           profile_photo_url: r.sellers?.profile_photo_url ?? null,
           slug: r.sellers?.slug ?? "",
-        }))
+        })),
       );
       setCmsSellersState("ok");
     } catch (err) {
@@ -448,16 +589,44 @@ function AdminPage() {
     void loadStates();
     void loadCities();
     void loadCmsTrendingSellers();
-  }, [allowed, loadSellers, loadCategories, loadProducts, loadSections, loadStats, loadVouches, loadVouchThreshold, loadStates, loadCities, loadCmsTrendingSellers]);
+  }, [
+    allowed,
+    loadSellers,
+    loadCategories,
+    loadProducts,
+    loadSections,
+    loadStats,
+    loadVouches,
+    loadVouchThreshold,
+    loadStates,
+    loadCities,
+    loadCmsTrendingSellers,
+  ]);
 
   // Convenience: reload affected sections after mutations.
   const loadAll = useCallback(async () => {
     await Promise.allSettled([
-      loadSellers(), loadCategories(), loadProducts(), loadSections(), loadStats(), loadVouches(), loadStates(), loadCities(),
+      loadSellers(),
+      loadCategories(),
+      loadProducts(),
+      loadSections(),
+      loadStats(),
+      loadVouches(),
+      loadStates(),
+      loadCities(),
       loadCmsTrendingSellers(),
     ]);
-  }, [loadSellers, loadCategories, loadProducts, loadSections, loadStats, loadVouches, loadStates, loadCities, loadCmsTrendingSellers]);
-
+  }, [
+    loadSellers,
+    loadCategories,
+    loadProducts,
+    loadSections,
+    loadStats,
+    loadVouches,
+    loadStates,
+    loadCities,
+    loadCmsTrendingSellers,
+  ]);
 
   // ── Seller verification approval ──
   const approveSeller = async (id: string, name: string) => {
@@ -465,10 +634,15 @@ function AdminPage() {
       .from("sellers")
       .update({ verification_status: "approved", rejection_reason: null })
       .eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    setSellers((prev) => prev.map((s) =>
-      s.id === id ? { ...s, verification_status: "approved", rejection_reason: null } : s
-    ));
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setSellers((prev) =>
+      prev.map((s) =>
+        s.id === id ? { ...s, verification_status: "approved", rejection_reason: null } : s,
+      ),
+    );
     toast.success(`"${name}" approved ✅ — their store is now live`);
   };
 
@@ -489,12 +663,17 @@ function AdminPage() {
       })
       .eq("id", rejectTarget.id);
     setRejectSaving(false);
-    if (error) { toast.error(error.message); return; }
-    setSellers((prev) => prev.map((s) =>
-      s.id === rejectTarget.id
-        ? { ...s, verification_status: "rejected", rejection_reason: rejectReason.trim() }
-        : s
-    ));
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setSellers((prev) =>
+      prev.map((s) =>
+        s.id === rejectTarget.id
+          ? { ...s, verification_status: "rejected", rejection_reason: rejectReason.trim() }
+          : s,
+      ),
+    );
     toast.success(`"${rejectTarget.name}" rejected`);
     setRejectTarget(null);
   };
@@ -505,32 +684,48 @@ function AdminPage() {
       .from("sellers")
       .update({ verification_status: "pending", rejection_reason: null })
       .eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    setSellers((prev) => prev.map((s) =>
-      s.id === id ? { ...s, verification_status: "pending", rejection_reason: null } : s
-    ));
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setSellers((prev) =>
+      prev.map((s) =>
+        s.id === id ? { ...s, verification_status: "pending", rejection_reason: null } : s,
+      ),
+    );
     toast.success(`"${name}" reset to pending review`);
   };
 
   // ── Seller verification (gold badge) ──
   const toggleVerify = async (id: string, current: boolean) => {
     const { error } = await supabase.from("sellers").update({ is_verified: !current }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    setSellers((prev) => prev.map((s) => s.id === id ? { ...s, is_verified: !current } : s));
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setSellers((prev) => prev.map((s) => (s.id === id ? { ...s, is_verified: !current } : s)));
     toast.success(!current ? "Badge granted ⭐" : "Badge removed");
   };
 
   // ── Seller block/unblock ──
   const toggleBlock = async (id: string, current: boolean) => {
     const { error } = await supabase.from("sellers").update({ is_blocked: !current }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    setSellers((prev) => prev.map((s) => s.id === id ? { ...s, is_blocked: !current } : s));
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setSellers((prev) => prev.map((s) => (s.id === id ? { ...s, is_blocked: !current } : s)));
     toast.success(!current ? "Seller blocked" : "Seller unblocked");
   };
 
   // ── Seller delete ──
   const deleteSeller = async (id: string, name: string) => {
-    if (!confirm(`PERMANENTLY DELETE seller "${name}"?\n\nThis will remove their profile, all products, and their login account. This cannot be undone.`)) return;
+    if (
+      !confirm(
+        `PERMANENTLY DELETE seller "${name}"?\n\nThis will remove their profile, all products, and their login account. This cannot be undone.`,
+      )
+    )
+      return;
     try {
       const { deleteSeller: deleteSellerFn } = await import("@/lib/admin.functions");
       await deleteSellerFn({ data: { sellerId: id } });
@@ -541,33 +736,77 @@ function AdminPage() {
     }
   };
 
-
   // ── Categories ──
-  const openNewCat  = () => { setCatName(""); setCatImage(null); setCatSubtitle(""); setEditingCat(null); setNewCatOpen(true); };
-  const openEditCat = (c: Category) => { setCatName(c.name); setCatImage(c.image_url); setCatSubtitle(c.custom_subtitle ?? ""); setEditingCat(c); setNewCatOpen(true); };
+  const openNewCat = () => {
+    setCatName("");
+    setCatImage(null);
+    setCatSubtitle("");
+    setEditingCat(null);
+    setNewCatOpen(true);
+  };
+  const openEditCat = (c: Category) => {
+    setCatName(c.name);
+    setCatImage(c.image_url);
+    setCatSubtitle(c.custom_subtitle ?? "");
+    setEditingCat(c);
+    setNewCatOpen(true);
+  };
 
   const saveCat = async () => {
-    if (!catName.trim()) { toast.error("Category name required"); return; }
+    if (!catName.trim()) {
+      toast.error("Category name required");
+      return;
+    }
     setCatSaving(true);
     if (editingCat) {
-      const { error } = await supabase.from("categories").update({ name: catName.trim(), image_url: catImage, custom_subtitle: catSubtitle.trim() || null }).eq("id", editingCat.id);
-      if (error) { toast.error(error.message); setCatSaving(false); return; }
+      const { error } = await supabase
+        .from("categories")
+        .update({
+          name: catName.trim(),
+          image_url: catImage,
+          custom_subtitle: catSubtitle.trim() || null,
+        })
+        .eq("id", editingCat.id);
+      if (error) {
+        toast.error(error.message);
+        setCatSaving(false);
+        return;
+      }
       toast.success("Category updated");
     } else {
       const newSlug = slugify(catName);
       const maxOrder = Math.max(0, ...categories.map((c) => c.sort_order));
-      const { error } = await supabase.from("categories").insert({ name: catName.trim(), slug: newSlug, icon_emoji: "🛍️", image_url: catImage, custom_subtitle: catSubtitle.trim() || null, sort_order: maxOrder + 1 });
-      if (error) { toast.error(error.message); setCatSaving(false); return; }
+      const { error } = await supabase
+        .from("categories")
+        .insert({
+          name: catName.trim(),
+          slug: newSlug,
+          icon_emoji: "🛍️",
+          image_url: catImage,
+          custom_subtitle: catSubtitle.trim() || null,
+          sort_order: maxOrder + 1,
+        });
+      if (error) {
+        toast.error(error.message);
+        setCatSaving(false);
+        return;
+      }
       toast.success("Category created");
     }
-    setCatSaving(false); setNewCatOpen(false); await loadAll();
+    setCatSaving(false);
+    setNewCatOpen(false);
+    await loadAll();
   };
 
   const deleteCat = async (id: string, name: string) => {
     if (!confirm(`Delete category "${name}"? Sellers using it won't be affected.`)) return;
     const { error } = await supabase.from("categories").delete().eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Category deleted"); setCategories((prev) => prev.filter((c) => c.id !== id));
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Category deleted");
+    setCategories((prev) => prev.filter((c) => c.id !== id));
   };
 
   const moveCat = async (id: string, dir: "up" | "down") => {
@@ -575,12 +814,21 @@ function AdminPage() {
     const swapIdx = dir === "up" ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= categories.length) return;
     const updated = [...categories];
-    [updated[idx].sort_order, updated[swapIdx].sort_order] = [updated[swapIdx].sort_order, updated[idx].sort_order];
+    [updated[idx].sort_order, updated[swapIdx].sort_order] = [
+      updated[swapIdx].sort_order,
+      updated[idx].sort_order,
+    ];
     [updated[idx], updated[swapIdx]] = [updated[swapIdx], updated[idx]];
     setCategories([...updated]);
     await Promise.all([
-      supabase.from("categories").update({ sort_order: updated[idx].sort_order }).eq("id", updated[idx].id),
-      supabase.from("categories").update({ sort_order: updated[swapIdx].sort_order }).eq("id", updated[swapIdx].id),
+      supabase
+        .from("categories")
+        .update({ sort_order: updated[idx].sort_order })
+        .eq("id", updated[idx].id),
+      supabase
+        .from("categories")
+        .update({ sort_order: updated[swapIdx].sort_order })
+        .eq("id", updated[swapIdx].id),
     ]);
   };
 
@@ -588,29 +836,44 @@ function AdminPage() {
   const toggleProductStatus = async (id: string, current: string) => {
     const newStatus = current === "active" ? "blocked" : "active";
     const { error } = await supabase.from("products").update({ status: newStatus }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    setProducts((prev) => prev.map((p) => p.id === id ? { ...p, status: newStatus } : p));
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, status: newStatus } : p)));
     toast.success(newStatus === "blocked" ? "Product blocked" : "Product unblocked");
   };
 
   // ── Featured products ──
   const toggleFeatured = async (p: ProductRow) => {
-    const maxOrder = Math.max(0, ...products.filter((x) => x.is_featured).map((x) => x.featured_order));
+    const maxOrder = Math.max(
+      0,
+      ...products.filter((x) => x.is_featured).map((x) => x.featured_order),
+    );
     const updates = p.is_featured
       ? { is_featured: false, featured_order: 0 }
-      : { is_featured: true,  featured_order: maxOrder + 1 };
+      : { is_featured: true, featured_order: maxOrder + 1 };
     const { error } = await supabase.from("products").update(updates).eq("id", p.id);
-    if (error) { toast.error(error.message); return; }
-    setProducts((prev) => prev.map((x) => x.id === p.id ? { ...x, ...updates } : x).sort((a, b) => {
-      if (a.is_featured && !b.is_featured) return -1;
-      if (!a.is_featured && b.is_featured) return 1;
-      return a.featured_order - b.featured_order;
-    }));
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setProducts((prev) =>
+      prev
+        .map((x) => (x.id === p.id ? { ...x, ...updates } : x))
+        .sort((a, b) => {
+          if (a.is_featured && !b.is_featured) return -1;
+          if (!a.is_featured && b.is_featured) return 1;
+          return a.featured_order - b.featured_order;
+        }),
+    );
     toast.success(p.is_featured ? "Removed from featured" : "Added to featured ⭐");
   };
 
   const moveFeatured = async (id: string, dir: "up" | "down") => {
-    const feat = products.filter((p) => p.is_featured).sort((a, b) => a.featured_order - b.featured_order);
+    const feat = products
+      .filter((p) => p.is_featured)
+      .sort((a, b) => a.featured_order - b.featured_order);
     const idx = feat.findIndex((p) => p.id === id);
     const swapIdx = dir === "up" ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= feat.length) return;
@@ -626,16 +889,23 @@ function AdminPage() {
   // Server-side search so admins can feature a product even when it isn't
   // among the first 100 rows `loadProducts` keeps in memory.
   const searchProductsToFeature = async (q: string) => {
-    if (!q.trim()) { setProductFeatureResults([]); return; }
+    if (!q.trim()) {
+      setProductFeatureResults([]);
+      return;
+    }
     setProductFeatureSearchLoading(true);
     const { data, error } = await supabase
       .from("products")
-      .select("id, name, price, image_url, is_featured, featured_order, status, sellers(business_name, city)")
+      .select(
+        "id, name, price, image_url, is_featured, featured_order, status, sellers(business_name, city)",
+      )
       .eq("status", "active")
       .ilike("name", `%${q}%`)
       .limit(10)
       .abortSignal(ABORT());
-    if (error) { console.warn("[admin] product feature search failed:", error); }
+    if (error) {
+      console.warn("[admin] product feature search failed:", error);
+    }
     setProductFeatureResults((data ?? []) as any);
     setProductFeatureSearchLoading(false);
   };
@@ -643,32 +913,58 @@ function AdminPage() {
   const addProductToFeatured = async (p: ProductRow) => {
     if (p.is_featured) return;
     await toggleFeatured(p);
-    setProductFeatureSearch(""); setProductFeatureResults([]);
+    setProductFeatureSearch("");
+    setProductFeatureResults([]);
     await loadProducts();
   };
 
   // ── Homepage sections ──
   const openEditSection = (s: Section) => {
-    setEditingSec(s); setSecTitle(s.title); setSecSubtitle(s.subtitle ?? ""); setSecContent(s.content ?? "");
+    setEditingSec(s);
+    setSecTitle(s.title);
+    setSecSubtitle(s.subtitle ?? "");
+    setSecContent(s.content ?? "");
   };
 
   const saveSection = async () => {
     if (!editingSec) return;
     setSecSaving(true);
-    const { error } = await supabase.from("homepage_sections").update({
-      title: secTitle.trim(), subtitle: secSubtitle.trim() || null, content: secContent.trim() || null,
-    }).eq("id", editingSec.id);
+    const { error } = await supabase
+      .from("homepage_sections")
+      .update({
+        title: secTitle.trim(),
+        subtitle: secSubtitle.trim() || null,
+        content: secContent.trim() || null,
+      })
+      .eq("id", editingSec.id);
     setSecSaving(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Section updated");
-    setSections((prev) => prev.map((s) => s.id === editingSec.id ? { ...s, title: secTitle, subtitle: secSubtitle, content: secContent } : s));
+    setSections((prev) =>
+      prev.map((s) =>
+        s.id === editingSec.id
+          ? { ...s, title: secTitle, subtitle: secSubtitle, content: secContent }
+          : s,
+      ),
+    );
     setEditingSec(null);
   };
 
   const toggleSectionVisible = async (s: Section) => {
-    const { error } = await supabase.from("homepage_sections").update({ is_visible: !s.is_visible }).eq("id", s.id);
-    if (error) { toast.error(error.message); return; }
-    setSections((prev) => prev.map((x) => x.id === s.id ? { ...x, is_visible: !s.is_visible } : x));
+    const { error } = await supabase
+      .from("homepage_sections")
+      .update({ is_visible: !s.is_visible })
+      .eq("id", s.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setSections((prev) =>
+      prev.map((x) => (x.id === s.id ? { ...x, is_visible: !s.is_visible } : x)),
+    );
     toast.success(s.is_visible ? "Section hidden" : "Section shown");
   };
 
@@ -677,12 +973,21 @@ function AdminPage() {
     const swapIdx = dir === "up" ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= sections.length) return;
     const updated = [...sections];
-    [updated[idx].sort_order, updated[swapIdx].sort_order] = [updated[swapIdx].sort_order, updated[idx].sort_order];
+    [updated[idx].sort_order, updated[swapIdx].sort_order] = [
+      updated[swapIdx].sort_order,
+      updated[idx].sort_order,
+    ];
     [updated[idx], updated[swapIdx]] = [updated[swapIdx], updated[idx]];
     setSections([...updated]);
     await Promise.all([
-      supabase.from("homepage_sections").update({ sort_order: updated[idx].sort_order }).eq("id", updated[idx].id),
-      supabase.from("homepage_sections").update({ sort_order: updated[swapIdx].sort_order }).eq("id", updated[swapIdx].id),
+      supabase
+        .from("homepage_sections")
+        .update({ sort_order: updated[idx].sort_order })
+        .eq("id", updated[idx].id),
+      supabase
+        .from("homepage_sections")
+        .update({ sort_order: updated[swapIdx].sort_order })
+        .eq("id", updated[swapIdx].id),
     ]);
   };
 
@@ -691,7 +996,9 @@ function AdminPage() {
     setVouchDetailLoading(true);
     const { data } = await supabase
       .from("vouches")
-      .select("voucher_seller_id, created_at, sellers!vouches_voucher_seller_id_fkey(business_name)")
+      .select(
+        "voucher_seller_id, created_at, sellers!vouches_voucher_seller_id_fkey(business_name)",
+      )
       .eq("vouched_seller_id", sellerId)
       .order("created_at", { ascending: false });
     setVouchDetail({
@@ -713,7 +1020,10 @@ function AdminPage() {
       .from("admin_settings")
       .upsert({ key: "vouch_threshold", value: val.toString() }, { onConflict: "key" });
     setThresholdSaving(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     setVouchThreshold(val);
     setVouchThresholdInput(val);
     toast.success("Threshold saved");
@@ -722,40 +1032,89 @@ function AdminPage() {
   // ── Cities ──
   const openNewCity = () => {
     setEditingCity(null);
-    setCityName(""); setCityState(""); setCitySlug(""); setCityIsActive(true);
+    setCityName("");
+    setCityState("");
+    setCitySlug("");
+    setCityIsActive(true);
     setCityDialogOpen(true);
   };
 
   const openEditCity = (c: CityRow) => {
     setEditingCity(c);
-    setCityName(c.name); setCityState(c.state); setCitySlug(c.slug); setCityIsActive(c.is_active);
+    setCityName(c.name);
+    setCityState(c.state);
+    setCitySlug(c.slug);
+    setCityIsActive(c.is_active);
     setCityDialogOpen(true);
   };
 
   const saveCity = async () => {
-    if (!cityName.trim()) { toast.error("Area name required"); return; }
-    if (!cityState.trim()) { toast.error("State required"); return; }
+    if (!cityName.trim()) {
+      toast.error("Area name required");
+      return;
+    }
+    if (!cityState.trim()) {
+      toast.error("State required");
+      return;
+    }
     const slug = citySlug.trim() || slugify(cityName);
     setCitySaving(true);
     if (editingCity) {
       const { error } = await supabase
         .from("cities_of_business")
-        .update({ name: cityName.trim(), state: cityState.trim(), state_id: states.find((st) => st.name === cityState.trim())?.id, slug, is_active: cityIsActive })
+        .update({
+          name: cityName.trim(),
+          state: cityState.trim(),
+          state_id: states.find((st) => st.name === cityState.trim())?.id,
+          slug,
+          is_active: cityIsActive,
+        })
         .eq("id", editingCity.id);
-      if (error) { toast.error(error.message); setCitySaving(false); return; }
+      if (error) {
+        toast.error(error.message);
+        setCitySaving(false);
+        return;
+      }
       toast.success("Area updated");
-      setCities((prev) => prev.map((c) =>
-        c.id === editingCity.id ? { ...c, name: cityName.trim(), state: cityState.trim(), slug, is_active: cityIsActive } : c
-      ));
+      setCities((prev) =>
+        prev.map((c) =>
+          c.id === editingCity.id
+            ? {
+                ...c,
+                name: cityName.trim(),
+                state: cityState.trim(),
+                slug,
+                is_active: cityIsActive,
+              }
+            : c,
+        ),
+      );
     } else {
       const maxOrder = Math.max(0, ...cities.map((c) => c.sort_order));
       // Resolve state_id via ensure_state so admins can add cities under existing or new states.
-      const { data: stateId, error: stErr } = await (supabase as any).rpc("ensure_state", { _name: cityState.trim() });
-      if (stErr || !stateId) { toast.error(stErr?.message ?? "Couldn't resolve state"); setCitySaving(false); return; }
+      const { data: stateId, error: stErr } = await (supabase as any).rpc("ensure_state", {
+        _name: cityState.trim(),
+      });
+      if (stErr || !stateId) {
+        toast.error(stErr?.message ?? "Couldn't resolve state");
+        setCitySaving(false);
+        return;
+      }
       const { error } = await (supabase as any)
         .from("cities_of_business")
-        .insert({ name: cityName.trim(), state: cityState.trim(), slug, is_active: cityIsActive, sort_order: maxOrder + 1, state_id: stateId });
-      if (error) { toast.error(error.message); setCitySaving(false); return; }
+        .insert({
+          name: cityName.trim(),
+          state: cityState.trim(),
+          slug,
+          is_active: cityIsActive,
+          sort_order: maxOrder + 1,
+          state_id: stateId,
+        });
+      if (error) {
+        toast.error(error.message);
+        setCitySaving(false);
+        return;
+      }
       toast.success("Area added");
       await loadCities();
     }
@@ -767,15 +1126,24 @@ function AdminPage() {
   const deleteCity = async (id: string, name: string) => {
     if (!confirm(`Delete area "${name}"? Sellers using it won't be affected.`)) return;
     const { error } = await supabase.from("cities_of_business").delete().eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Area deleted");
     setCities((prev) => prev.filter((c) => c.id !== id));
   };
 
   const toggleCityActive = async (id: string, current: boolean) => {
-    const { error } = await supabase.from("cities_of_business").update({ is_active: !current }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    setCities((prev) => prev.map((c) => c.id === id ? { ...c, is_active: !current } : c));
+    const { error } = await supabase
+      .from("cities_of_business")
+      .update({ is_active: !current })
+      .eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setCities((prev) => prev.map((c) => (c.id === id ? { ...c, is_active: !current } : c)));
     toast.success(!current ? "Area activated" : "Area deactivated");
   };
 
@@ -784,51 +1152,96 @@ function AdminPage() {
     const swapIdx = dir === "up" ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= cities.length) return;
     const updated = [...cities];
-    [updated[idx].sort_order, updated[swapIdx].sort_order] = [updated[swapIdx].sort_order, updated[idx].sort_order];
+    [updated[idx].sort_order, updated[swapIdx].sort_order] = [
+      updated[swapIdx].sort_order,
+      updated[idx].sort_order,
+    ];
     [updated[idx], updated[swapIdx]] = [updated[swapIdx], updated[idx]];
     setCities([...updated]);
     await Promise.all([
-      supabase.from("cities_of_business").update({ sort_order: updated[idx].sort_order }).eq("id", updated[idx].id),
-      supabase.from("cities_of_business").update({ sort_order: updated[swapIdx].sort_order }).eq("id", updated[swapIdx].id),
+      supabase
+        .from("cities_of_business")
+        .update({ sort_order: updated[idx].sort_order })
+        .eq("id", updated[idx].id),
+      supabase
+        .from("cities_of_business")
+        .update({ sort_order: updated[swapIdx].sort_order })
+        .eq("id", updated[swapIdx].id),
     ]);
   };
 
-
-
   // ── States ──
-  const openNewState = () => { setEditingState(null); setStateName(""); setStateSlug(""); setStateIsActive(true); setStateDialogOpen(true); };
-  const openEditState = (st: StateRow) => { setEditingState(st); setStateName(st.name); setStateSlug(st.slug); setStateIsActive(st.is_active); setStateDialogOpen(true); };
+  const openNewState = () => {
+    setEditingState(null);
+    setStateName("");
+    setStateSlug("");
+    setStateIsActive(true);
+    setStateDialogOpen(true);
+  };
+  const openEditState = (st: StateRow) => {
+    setEditingState(st);
+    setStateName(st.name);
+    setStateSlug(st.slug);
+    setStateIsActive(st.is_active);
+    setStateDialogOpen(true);
+  };
   const saveState = async () => {
-    if (!stateName.trim()) { toast.error("State name required"); return; }
+    if (!stateName.trim()) {
+      toast.error("State name required");
+      return;
+    }
     const slug = stateSlug.trim() || slugify(stateName);
     setStateSaving(true);
     const op = editingState
-      ? supabase.from("states").update({ name: stateName.trim(), slug, is_active: stateIsActive }).eq("id", editingState.id)
-      : supabase.from("states").insert({ name: stateName.trim(), slug, is_active: stateIsActive, sort_order: Math.max(0, ...states.map((st) => st.sort_order)) + 1 });
+      ? supabase
+          .from("states")
+          .update({ name: stateName.trim(), slug, is_active: stateIsActive })
+          .eq("id", editingState.id)
+      : supabase
+          .from("states")
+          .insert({
+            name: stateName.trim(),
+            slug,
+            is_active: stateIsActive,
+            sort_order: Math.max(0, ...states.map((st) => st.sort_order)) + 1,
+          });
     const { error } = await op;
     setStateSaving(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success(editingState ? "State updated" : "State added");
     setStateDialogOpen(false);
     await Promise.all([loadStates(), loadCities()]);
   };
   const deleteState = async (id: string, name: string) => {
-    if (!confirm(`Delete state "${name}"? Areas assigned to it must be moved or deleted first.`)) return;
+    if (!confirm(`Delete state "${name}"? Areas assigned to it must be moved or deleted first.`))
+      return;
     const { error } = await supabase.from("states").delete().eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("State deleted");
     await Promise.all([loadStates(), loadCities()]);
   };
   const toggleStateActive = async (id: string, current: boolean) => {
     const { error } = await supabase.from("states").update({ is_active: !current }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    setStates((prev) => prev.map((st) => st.id === id ? { ...st, is_active: !current } : st));
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setStates((prev) => prev.map((st) => (st.id === id ? { ...st, is_active: !current } : st)));
     toast.success(!current ? "State activated" : "State deactivated");
   };
 
   // ── CMS: Trending Sellers ──
   const cmsSearchSellers = async (q: string) => {
-    if (!q.trim()) { setCmsSellerOptions([]); return; }
+    if (!q.trim()) {
+      setCmsSellerOptions([]);
+      return;
+    }
     setCmsSellerSearchLoading(true);
     const { data } = await supabase
       .from("sellers")
@@ -845,16 +1258,27 @@ function AdminPage() {
     const maxOrder = Math.max(0, ...cmsSellers.map((s) => s.display_order));
     const { error } = await supabase
       .from("trending_sellers_admin")
-      .insert({ seller_id: sellerId, display_order: maxOrder + 1, added_by: (await supabase.auth.getUser()).data.user!.id });
-    if (error) { toast.error(error.message); return; }
+      .insert({
+        seller_id: sellerId,
+        display_order: maxOrder + 1,
+        added_by: (await supabase.auth.getUser()).data.user!.id,
+      });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Seller added to trending 🔥");
-    setCmsSellerSearch(""); setCmsSellerOptions([]);
+    setCmsSellerSearch("");
+    setCmsSellerOptions([]);
     await loadCmsTrendingSellers();
   };
 
   const cmsRemoveTrendingSeller = async (id: string) => {
     const { error } = await supabase.from("trending_sellers_admin").delete().eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Removed from trending");
     setCmsSellers((prev) => prev.filter((s) => s.id !== id));
   };
@@ -864,12 +1288,21 @@ function AdminPage() {
     const swapIdx = dir === "up" ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= cmsSellers.length) return;
     const updated = [...cmsSellers];
-    [updated[idx].display_order, updated[swapIdx].display_order] = [updated[swapIdx].display_order, updated[idx].display_order];
+    [updated[idx].display_order, updated[swapIdx].display_order] = [
+      updated[swapIdx].display_order,
+      updated[idx].display_order,
+    ];
     [updated[idx], updated[swapIdx]] = [updated[swapIdx], updated[idx]];
     setCmsSellers([...updated]);
     await Promise.all([
-      supabase.from("trending_sellers_admin").update({ display_order: updated[idx].display_order }).eq("id", updated[idx].id),
-      supabase.from("trending_sellers_admin").update({ display_order: updated[swapIdx].display_order }).eq("id", updated[swapIdx].id),
+      supabase
+        .from("trending_sellers_admin")
+        .update({ display_order: updated[idx].display_order })
+        .eq("id", updated[idx].id),
+      supabase
+        .from("trending_sellers_admin")
+        .update({ display_order: updated[swapIdx].display_order })
+        .eq("id", updated[swapIdx].id),
     ]);
   };
 
@@ -877,17 +1310,20 @@ function AdminPage() {
   if (!isReady) return <PageLoader label="Loading admin…" />;
   if (!allowed) return <PageLoader label="Checking access…" />;
 
-
   const tabCls = (t: typeof activeTab) =>
     `rounded-full px-4 py-1.5 text-sm font-medium transition ${activeTab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`;
 
-  const featuredProducts  = products.filter((p) => p.is_featured).sort((a, b) => a.featured_order - b.featured_order);
+  const featuredProducts = products
+    .filter((p) => p.is_featured)
+    .sort((a, b) => a.featured_order - b.featured_order);
   const unfeaturedProducts = products.filter((p) => !p.is_featured);
 
   // Group sellers by verification status for a cleaner list
-  const pendingSellers   = sellers.filter((s) => s.verification_status === "pending");
-  const approvedSellers  = sellers.filter((s) => s.verification_status === "approved");
-  const otherSellers     = sellers.filter((s) => s.verification_status !== "pending" && s.verification_status !== "approved");
+  const pendingSellers = sellers.filter((s) => s.verification_status === "pending");
+  const approvedSellers = sellers.filter((s) => s.verification_status === "approved");
+  const otherSellers = sellers.filter(
+    (s) => s.verification_status !== "pending" && s.verification_status !== "approved",
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -898,8 +1334,8 @@ function AdminPage() {
         {/* Stats */}
         <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-3">
           {[
-            { label: "Sellers",   value: stats.sellers },
-            { label: "Products",  value: stats.products },
+            { label: "Sellers", value: stats.sellers },
+            { label: "Products", value: stats.products },
             { label: "WA clicks", value: stats.clicks, onClick: openWaDetail },
           ].map((s) => (
             <button
@@ -920,22 +1356,34 @@ function AdminPage() {
           <div className="mt-5 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             <Clock className="h-4 w-4 shrink-0 text-amber-600" />
             <span>
-              <strong>{pendingSellers.length}</strong> seller{pendingSellers.length !== 1 ? "s are" : " is"} waiting for approval.{" "}
-              <button onClick={() => setActiveTab("sellers")} className="underline">Review now →</button>
+              <strong>{pendingSellers.length}</strong> seller
+              {pendingSellers.length !== 1 ? "s are" : " is"} waiting for approval.{" "}
+              <button onClick={() => setActiveTab("sellers")} className="underline">
+                Review now →
+              </button>
             </span>
           </div>
         )}
 
         {/* Tab nav */}
         <div className="-mx-5 mt-8 flex gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
-          {(["sellers","categories","products","vouches","homepage","cities","cms"] as const).map((t) => (
+          {(
+            ["sellers", "categories", "products", "vouches", "homepage", "cities", "cms"] as const
+          ).map((t) => (
             <button key={t} onClick={() => setActiveTab(t)} className={`shrink-0 ${tabCls(t)}`}>
-              {t === "sellers"    ? `Sellers ${pendingSellers.length > 0 ? `(${pendingSellers.length} pending)` : ""}` :
-               t === "categories" ? "Categories" :
-               t === "products"   ? "Products" :
-               t === "vouches"    ? "Vouches" :
-               t === "homepage"   ? "Homepage" :
-               t === "cities"     ? "Cities" : "CMS ✦"}
+              {t === "sellers"
+                ? `Sellers ${pendingSellers.length > 0 ? `(${pendingSellers.length} pending)` : ""}`
+                : t === "categories"
+                  ? "Categories"
+                  : t === "products"
+                    ? "Products"
+                    : t === "vouches"
+                      ? "Vouches"
+                      : t === "homepage"
+                        ? "Homepage"
+                        : t === "cities"
+                          ? "Cities"
+                          : "CMS ✦"}
             </button>
           ))}
         </div>
@@ -957,7 +1405,8 @@ function AdminPage() {
                     <div className="space-y-2">
                       {pendingSellers.map((s) => (
                         <SellerRow
-                          key={s.id} s={s}
+                          key={s.id}
+                          s={s}
                           onApprove={() => approveSeller(s.id, s.business_name)}
                           onReject={() => openRejectDialog(s.id, s.business_name)}
                           onResetPending={null}
@@ -980,7 +1429,8 @@ function AdminPage() {
                     <div className="space-y-2">
                       {approvedSellers.map((s) => (
                         <SellerRow
-                          key={s.id} s={s}
+                          key={s.id}
+                          s={s}
                           onApprove={null}
                           onReject={() => openRejectDialog(s.id, s.business_name)}
                           onResetPending={null}
@@ -1003,7 +1453,8 @@ function AdminPage() {
                     <div className="space-y-2">
                       {otherSellers.map((s) => (
                         <SellerRow
-                          key={s.id} s={s}
+                          key={s.id}
+                          s={s}
                           onApprove={() => approveSeller(s.id, s.business_name)}
                           onReject={null}
                           onResetPending={() => resetToPending(s.id, s.business_name)}
@@ -1016,52 +1467,83 @@ function AdminPage() {
                   </div>
                 )}
 
-                {sellers.length === 0 && <p className="text-sm text-muted-foreground">No sellers yet.</p>}
+                {sellers.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No sellers yet.</p>
+                )}
               </>
             )}
           </section>
         )}
-
 
         {/* ── Categories tab ── */}
         {activeTab === "categories" && (
           <section className="mt-6">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-serif text-xl">Categories ({categories.length})</h2>
-              <Button onClick={openNewCat} size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
+              <Button
+                onClick={openNewCat}
+                size="sm"
+                className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+              >
                 <Plus className="mr-1 h-4 w-4" /> New category
               </Button>
             </div>
             {categoriesState === "loading" && <SectionSkeleton />}
-            {categoriesState === "error" && <SectionError label="categories" onRetry={loadCategories} />}
+            {categoriesState === "error" && (
+              <SectionError label="categories" onRetry={loadCategories} />
+            )}
             {categoriesState === "ok" && (
-            <div className="space-y-2">
-              {categories.map((c, idx) => (
-                <div key={c.id} className="flex items-center gap-3 rounded-xl border bg-card p-3 shadow-warm">
-                  <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted">
-                    {c.image_url ? (
-                      <img src={c.image_url} alt={c.name} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-2xl">{c.icon_emoji}</div>
-                    )}
+              <div className="space-y-2">
+                {categories.map((c, idx) => (
+                  <div
+                    key={c.id}
+                    className="flex items-center gap-3 rounded-xl border bg-card p-3 shadow-warm"
+                  >
+                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted">
+                      {c.image_url ? (
+                        <img
+                          src={c.image_url}
+                          alt={c.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-2xl">
+                          {c.icon_emoji}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium">{c.name}</p>
+                      <p className="text-xs text-muted-foreground">/{c.slug}</p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => moveCat(c.id, "up")}
+                        disabled={idx === 0}
+                        className="rounded p-1 hover:bg-muted disabled:opacity-30"
+                      >
+                        <ChevronUp className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => moveCat(c.id, "down")}
+                        disabled={idx === categories.length - 1}
+                        className="rounded p-1 hover:bg-muted disabled:opacity-30"
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </button>
+                      <button onClick={() => openEditCat(c)} className="rounded p-1 hover:bg-muted">
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => deleteCat(c.id, c.name)}
+                        className="rounded p-1 text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium">{c.name}</p>
-                    <p className="text-xs text-muted-foreground">/{c.slug}</p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => moveCat(c.id, "up")} disabled={idx === 0}
-                      className="rounded p-1 hover:bg-muted disabled:opacity-30"><ChevronUp className="h-4 w-4" /></button>
-                    <button onClick={() => moveCat(c.id, "down")} disabled={idx === categories.length - 1}
-                      className="rounded p-1 hover:bg-muted disabled:opacity-30"><ChevronDown className="h-4 w-4" /></button>
-                    <button onClick={() => openEditCat(c)} className="rounded p-1 hover:bg-muted">
-                      <Pencil className="h-4 w-4" /></button>
-                    <button onClick={() => deleteCat(c.id, c.name)} className="rounded p-1 text-destructive hover:bg-destructive/10">
-                      <Trash2 className="h-4 w-4" /></button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
             )}
           </section>
         )}
@@ -1070,107 +1552,194 @@ function AdminPage() {
         {activeTab === "products" && (
           <section className="mt-6">
             <h2 className="mb-2 font-serif text-xl">Products ({products.length})</h2>
-            <p className="mb-4 text-xs text-muted-foreground">Block products to hide them everywhere. Order of the "Featured" list below is what shows on the homepage — search to feature a product that isn't in the list below.</p>
+            <p className="mb-4 text-xs text-muted-foreground">
+              Block products to hide them everywhere. Order of the "Featured" list below is what
+              shows on the homepage — search to feature a product that isn't in the list below.
+            </p>
             {productsState === "loading" && <SectionSkeleton />}
             {productsState === "error" && <SectionError label="products" onRetry={loadProducts} />}
-            {productsState === "ok" && (<>
-
-            {/* Search to feature — reaches products beyond what's loaded below */}
-            <div className="mb-4">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  value={productFeatureSearch}
-                  onChange={(e) => { setProductFeatureSearch(e.target.value); void searchProductsToFeature(e.target.value); }}
-                  placeholder="Search any product by name to feature it…"
-                  className="w-full rounded-xl border border-border bg-card py-2 pl-9 pr-9 text-sm outline-none"
-                />
-                {productFeatureSearchLoading && <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />}
-              </div>
-              {productFeatureResults.length > 0 && (
-                <div className="mt-2 rounded-xl border border-border bg-card divide-y">
-                  {productFeatureResults.map((p) => (
-                    <div key={p.id} className="flex items-center justify-between gap-3 px-3 py-2">
-                      <div className="flex items-center gap-3 min-w-0">
-                        {p.image_url && <img src={p.image_url} alt="" className="h-8 w-8 rounded-lg object-cover shrink-0" />}
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">{p.name}</p>
-                          <p className="text-xs text-muted-foreground truncate">{p.sellers?.business_name}</p>
+            {productsState === "ok" && (
+              <>
+                {/* Search to feature — reaches products beyond what's loaded below */}
+                <div className="mb-4">
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <input
+                      value={productFeatureSearch}
+                      onChange={(e) => {
+                        setProductFeatureSearch(e.target.value);
+                        void searchProductsToFeature(e.target.value);
+                      }}
+                      placeholder="Search any product by name to feature it…"
+                      className="w-full rounded-xl border border-border bg-card py-2 pl-9 pr-9 text-sm outline-none"
+                    />
+                    {productFeatureSearchLoading && (
+                      <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                    )}
+                  </div>
+                  {productFeatureResults.length > 0 && (
+                    <div className="mt-2 rounded-xl border border-border bg-card divide-y">
+                      {productFeatureResults.map((p) => (
+                        <div
+                          key={p.id}
+                          className="flex items-center justify-between gap-3 px-3 py-2"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            {p.image_url && (
+                              <img
+                                src={p.image_url}
+                                alt=""
+                                className="h-8 w-8 rounded-lg object-cover shrink-0"
+                              />
+                            )}
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">{p.name}</p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {p.sellers?.business_name}
+                              </p>
+                            </div>
+                          </div>
+                          {p.is_featured ? (
+                            <span className="shrink-0 text-xs font-medium text-muted-foreground">
+                              Already featured
+                            </span>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={() => addProductToFeatured(p)}
+                              className="shrink-0 rounded-full"
+                            >
+                              <Plus className="h-3 w-3 mr-1" /> Feature
+                            </Button>
+                          )}
                         </div>
-                      </div>
-                      {p.is_featured ? (
-                        <span className="shrink-0 text-xs font-medium text-muted-foreground">Already featured</span>
-                      ) : (
-                        <Button size="sm" onClick={() => addProductToFeatured(p)} className="shrink-0 rounded-full">
-                          <Plus className="h-3 w-3 mr-1" /> Feature
-                        </Button>
-                      )}
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
-              )}
-            </div>
 
-            {featuredProducts.length > 0 && (
-              <div className="mb-6">
-                <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Featured ({featuredProducts.length})</p>
-                <div className="space-y-2">
-                  {featuredProducts.map((p, idx) => (
-                    <div key={p.id} className={`flex items-center gap-3 rounded-xl border bg-card p-3 shadow-warm ${p.status === "blocked" ? "border-destructive/30 opacity-60" : ""}`}>
-                      <GripVertical className="h-4 w-4 text-muted-foreground/50 shrink-0" />
+                {featuredProducts.length > 0 && (
+                  <div className="mb-6">
+                    <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
+                      Featured ({featuredProducts.length})
+                    </p>
+                    <div className="space-y-2">
+                      {featuredProducts.map((p, idx) => (
+                        <div
+                          key={p.id}
+                          className={`flex items-center gap-3 rounded-xl border bg-card p-3 shadow-warm ${p.status === "blocked" ? "border-destructive/30 opacity-60" : ""}`}
+                        >
+                          <GripVertical className="h-4 w-4 text-muted-foreground/50 shrink-0" />
+                          <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-muted">
+                            {p.image_url && (
+                              <img
+                                src={p.image_url}
+                                alt={p.name}
+                                className="h-full w-full object-cover"
+                              />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="truncate font-medium text-sm">{p.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              ₦{Number(p.price).toLocaleString()} ·{" "}
+                              {(p.sellers as any)?.business_name}
+                              {p.status === "blocked" && (
+                                <span className="ml-2 text-destructive">● blocked</span>
+                              )}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => moveFeatured(p.id, "up")}
+                              disabled={idx === 0}
+                              className="rounded p-1 hover:bg-muted disabled:opacity-30"
+                            >
+                              <ChevronUp className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => moveFeatured(p.id, "down")}
+                              disabled={idx === featuredProducts.length - 1}
+                              className="rounded p-1 hover:bg-muted disabled:opacity-30"
+                            >
+                              <ChevronDown className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => toggleFeatured(p)}
+                              className="rounded p-1 text-primary hover:bg-primary/10"
+                            >
+                              <StarOff className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => toggleProductStatus(p.id, p.status)}
+                              className={`rounded p-1 transition ${p.status === "blocked" ? "text-green-600 hover:bg-green-50" : "text-destructive hover:bg-destructive/10"}`}
+                            >
+                              {p.status === "blocked" ? (
+                                <ShieldCheck className="h-4 w-4" />
+                              ) : (
+                                <ShieldOff className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
+                  All products
+                </p>
+                <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
+                  {unfeaturedProducts.map((p) => (
+                    <div
+                      key={p.id}
+                      className={`flex items-center gap-3 rounded-xl border bg-card p-3 shadow-warm ${p.status === "blocked" ? "border-destructive/30 opacity-60" : "opacity-70 hover:opacity-100"}`}
+                    >
                       <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-muted">
-                        {p.image_url && <img src={p.image_url} alt={p.name} className="h-full w-full object-cover" />}
+                        {p.image_url && (
+                          <img
+                            src={p.image_url}
+                            alt={p.name}
+                            className="h-full w-full object-cover"
+                          />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="truncate font-medium text-sm">{p.name}</p>
-                        <p className="text-xs text-muted-foreground">₦{Number(p.price).toLocaleString()} · {(p.sellers as any)?.business_name}
-                          {p.status === "blocked" && <span className="ml-2 text-destructive">● blocked</span>}
+                        <p className="text-xs text-muted-foreground">
+                          ₦{Number(p.price).toLocaleString()} · {(p.sellers as any)?.business_name}
+                          {p.status === "blocked" && (
+                            <span className="ml-2 text-destructive">● blocked</span>
+                          )}
                         </p>
                       </div>
                       <div className="flex items-center gap-1">
-                        <button onClick={() => moveFeatured(p.id, "up")} disabled={idx === 0}
-                          className="rounded p-1 hover:bg-muted disabled:opacity-30"><ChevronUp className="h-4 w-4" /></button>
-                        <button onClick={() => moveFeatured(p.id, "down")} disabled={idx === featuredProducts.length - 1}
-                          className="rounded p-1 hover:bg-muted disabled:opacity-30"><ChevronDown className="h-4 w-4" /></button>
-                        <button onClick={() => toggleFeatured(p)} className="rounded p-1 text-primary hover:bg-primary/10">
-                          <StarOff className="h-4 w-4" /></button>
-                        <button onClick={() => toggleProductStatus(p.id, p.status)}
-                          className={`rounded p-1 transition ${p.status === "blocked" ? "text-green-600 hover:bg-green-50" : "text-destructive hover:bg-destructive/10"}`}>
-                          {p.status === "blocked" ? <ShieldCheck className="h-4 w-4" /> : <ShieldOff className="h-4 w-4" />}
+                        <button
+                          onClick={() => toggleFeatured(p)}
+                          className="rounded p-1 text-muted-foreground hover:text-primary"
+                        >
+                          <Star className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => toggleProductStatus(p.id, p.status)}
+                          className={`rounded p-1 transition ${p.status === "blocked" ? "text-green-600 hover:bg-green-50" : "text-destructive hover:bg-destructive/10"}`}
+                        >
+                          {p.status === "blocked" ? (
+                            <ShieldCheck className="h-4 w-4" />
+                          ) : (
+                            <ShieldOff className="h-4 w-4" />
+                          )}
                         </button>
                       </div>
                     </div>
                   ))}
+                  {products.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No products yet.</p>
+                  )}
                 </div>
-              </div>
+              </>
             )}
-
-            <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">All products</p>
-            <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
-              {unfeaturedProducts.map((p) => (
-                <div key={p.id} className={`flex items-center gap-3 rounded-xl border bg-card p-3 shadow-warm ${p.status === "blocked" ? "border-destructive/30 opacity-60" : "opacity-70 hover:opacity-100"}`}>
-                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-muted">
-                    {p.image_url && <img src={p.image_url} alt={p.name} className="h-full w-full object-cover" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="truncate font-medium text-sm">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">₦{Number(p.price).toLocaleString()} · {(p.sellers as any)?.business_name}
-                      {p.status === "blocked" && <span className="ml-2 text-destructive">● blocked</span>}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => toggleFeatured(p)} className="rounded p-1 text-muted-foreground hover:text-primary">
-                      <Star className="h-4 w-4" /></button>
-                    <button onClick={() => toggleProductStatus(p.id, p.status)}
-                      className={`rounded p-1 transition ${p.status === "blocked" ? "text-green-600 hover:bg-green-50" : "text-destructive hover:bg-destructive/10"}`}>
-                      {p.status === "blocked" ? <ShieldCheck className="h-4 w-4" /> : <ShieldOff className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {products.length === 0 && <p className="text-sm text-muted-foreground">No products yet.</p>}
-            </div>
-            </>)}
           </section>
         )}
 
@@ -1186,7 +1755,8 @@ function AdminPage() {
                     Sellers are automatically verified when they reach this many vouches
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Current value: <span className="font-semibold text-foreground">{vouchThreshold}</span>
+                    Current value:{" "}
+                    <span className="font-semibold text-foreground">{vouchThreshold}</span>
                   </p>
                 </div>
                 <div className="flex items-center gap-2 sm:shrink-0">
@@ -1204,7 +1774,11 @@ function AdminPage() {
                     size="sm"
                     className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
                   >
-                    {thresholdSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    {thresholdSaving ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
                     <span className="ml-1">Save</span>
                   </Button>
                 </div>
@@ -1213,7 +1787,8 @@ function AdminPage() {
 
             <h2 className="mb-2 font-serif text-xl">Vouch Analytics</h2>
             <p className="mb-4 text-xs text-muted-foreground">
-              Badge is earned after {vouchThreshold} vouches from verified sellers. Click a row to see who vouched.
+              Badge is earned after {vouchThreshold} vouches from verified sellers. Click a row to
+              see who vouched.
             </p>
             {vouchesState === "loading" && <SectionSkeleton />}
             {vouchesState === "error" && <SectionError label="vouches" onRetry={loadVouches} />}
@@ -1234,11 +1809,23 @@ function AdminPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{v.seller_name}</p>
-                          <p className="text-xs text-muted-foreground">{v.vouch_count} vouch{v.vouch_count !== 1 ? "es" : ""} · click to see who</p>
+                          <p className="text-xs text-muted-foreground">
+                            {v.vouch_count} vouch{v.vouch_count !== 1 ? "es" : ""} · click to see
+                            who
+                          </p>
                         </div>
                         {v.vouch_count >= vouchThreshold && (
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 text-amber-500 shrink-0">
-                            <path fillRule="evenodd" d="M8.603 3.799A4.49 4.49 0 0 1 12 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 0 1 3.498 1.307 4.491 4.491 0 0 1 1.307 3.497A4.49 4.49 0 0 1 21.75 12a4.49 4.49 0 0 1-1.549 3.397 4.491 4.491 0 0 1-1.307 3.497 4.491 4.491 0 0 1-3.497 1.307A4.49 4.49 0 0 1 12 21.75a4.49 4.49 0 0 1-3.397-1.549 4.49 4.49 0 0 1-3.498-1.306 4.491 4.491 0 0 1-1.307-3.498A4.49 4.49 0 0 1 2.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 0 1 1.307-3.497 4.49 4.49 0 0 1 3.497-1.307Zm7.007 6.387a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            className="h-5 w-5 text-amber-500 shrink-0"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M8.603 3.799A4.49 4.49 0 0 1 12 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 0 1 3.498 1.307 4.491 4.491 0 0 1 1.307 3.497A4.49 4.49 0 0 1 21.75 12a4.49 4.49 0 0 1-1.549 3.397 4.491 4.491 0 0 1-1.307 3.497 4.491 4.491 0 0 1-3.497 1.307A4.49 4.49 0 0 1 12 21.75a4.49 4.49 0 0 1-3.397-1.549 4.49 4.49 0 0 1-3.498-1.306 4.491 4.491 0 0 1-1.307-3.498A4.49 4.49 0 0 1 2.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 0 1 1.307-3.497 4.49 4.49 0 0 1 3.497-1.307Zm7.007 6.387a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z"
+                              clipRule="evenodd"
+                            />
                           </svg>
                         )}
                       </button>
@@ -1250,34 +1837,67 @@ function AdminPage() {
           </section>
         )}
 
-
         {/* ── Homepage sections tab ── */}
         {activeTab === "homepage" && (
           <section className="mt-6">
             <h2 className="mb-2 font-serif text-xl">Homepage Sections</h2>
-            <p className="mb-4 text-xs text-muted-foreground">Edit text, show/hide, and reorder sections on the homepage.</p>
+            <p className="mb-4 text-xs text-muted-foreground">
+              Edit text, show/hide, and reorder sections on the homepage.
+            </p>
             {sectionsState === "loading" && <SectionSkeleton />}
-            {sectionsState === "error" && <SectionError label="homepage sections" onRetry={loadSections} />}
+            {sectionsState === "error" && (
+              <SectionError label="homepage sections" onRetry={loadSections} />
+            )}
             {sectionsState === "ok" && (
               <div className="space-y-3">
                 {sections.map((s, idx) => (
-                  <div key={s.id} className={`rounded-xl border bg-card p-4 shadow-warm ${!s.is_visible ? "opacity-50" : ""}`}>
+                  <div
+                    key={s.id}
+                    className={`rounded-xl border bg-card p-4 shadow-warm ${!s.is_visible ? "opacity-50" : ""}`}
+                  >
                     <div className="flex items-start gap-3">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium">{s.title}</p>
-                        {s.subtitle && <p className="text-xs text-muted-foreground">{s.subtitle}</p>}
-                        {s.content  && <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{s.content}</p>}
+                        {s.subtitle && (
+                          <p className="text-xs text-muted-foreground">{s.subtitle}</p>
+                        )}
+                        {s.content && (
+                          <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                            {s.content}
+                          </p>
+                        )}
                       </div>
                       <div className="flex shrink-0 items-center gap-1">
-                        <button onClick={() => moveSec(s.id, "up")} disabled={idx === 0}
-                          className="rounded p-1 hover:bg-muted disabled:opacity-30"><ChevronUp className="h-4 w-4" /></button>
-                        <button onClick={() => moveSec(s.id, "down")} disabled={idx === sections.length - 1}
-                          className="rounded p-1 hover:bg-muted disabled:opacity-30"><ChevronDown className="h-4 w-4" /></button>
-                        <button onClick={() => toggleSectionVisible(s)} className="rounded p-1 hover:bg-muted">
-                          {s.is_visible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
+                        <button
+                          onClick={() => moveSec(s.id, "up")}
+                          disabled={idx === 0}
+                          className="rounded p-1 hover:bg-muted disabled:opacity-30"
+                        >
+                          <ChevronUp className="h-4 w-4" />
                         </button>
-                        <button onClick={() => openEditSection(s)} className="rounded p-1 hover:bg-muted">
-                          <Pencil className="h-4 w-4" /></button>
+                        <button
+                          onClick={() => moveSec(s.id, "down")}
+                          disabled={idx === sections.length - 1}
+                          className="rounded p-1 hover:bg-muted disabled:opacity-30"
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => toggleSectionVisible(s)}
+                          className="rounded p-1 hover:bg-muted"
+                        >
+                          {s.is_visible ? (
+                            <Eye className="h-4 w-4" />
+                          ) : (
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => openEditSection(s)}
+                          className="rounded p-1 hover:bg-muted"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1292,25 +1912,57 @@ function AdminPage() {
           <section className="mt-6">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-serif text-xl">Locations</h2>
-              <Button onClick={openNewCity} size="sm" className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
+              <Button
+                onClick={openNewCity}
+                size="sm"
+                className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+              >
                 <Plus className="mr-1 h-4 w-4" /> Add area
               </Button>
             </div>
-            <p className="mb-4 text-xs text-muted-foreground">Manage states and the areas available for sellers to choose from during registration.</p>
+            <p className="mb-4 text-xs text-muted-foreground">
+              Manage states and the areas available for sellers to choose from during registration.
+            </p>
             {statesState === "loading" && <SectionSkeleton />}
             {statesState === "error" && <SectionError label="states" onRetry={loadStates} />}
             {statesState === "ok" && (
               <div className="mb-6 space-y-2">
                 <div className="flex items-center justify-between">
                   <h3 className="font-serif text-lg">States ({states.length})</h3>
-                  <Button onClick={openNewState} size="sm" variant="outline" className="rounded-full"><Plus className="mr-1 h-4 w-4" /> Add state</Button>
+                  <Button
+                    onClick={openNewState}
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full"
+                  >
+                    <Plus className="mr-1 h-4 w-4" /> Add state
+                  </Button>
                 </div>
                 {states.map((st) => (
-                  <div key={st.id} className={`flex items-center gap-3 rounded-xl border bg-card p-3 shadow-warm ${!st.is_active ? "opacity-60" : ""}`}>
-                    <div className="flex-1 min-w-0"><p className="font-medium">{st.name}</p><p className="text-xs text-muted-foreground">/{st.slug}</p></div>
-                    <Switch checked={st.is_active} onCheckedChange={() => toggleStateActive(st.id, st.is_active)} />
-                    <button onClick={() => openEditState(st)} className="rounded p-1 hover:bg-muted"><Pencil className="h-4 w-4" /></button>
-                    <button onClick={() => deleteState(st.id, st.name)} className="rounded p-1 text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></button>
+                  <div
+                    key={st.id}
+                    className={`flex items-center gap-3 rounded-xl border bg-card p-3 shadow-warm ${!st.is_active ? "opacity-60" : ""}`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium">{st.name}</p>
+                      <p className="text-xs text-muted-foreground">/{st.slug}</p>
+                    </div>
+                    <Switch
+                      checked={st.is_active}
+                      onCheckedChange={() => toggleStateActive(st.id, st.is_active)}
+                    />
+                    <button
+                      onClick={() => openEditState(st)}
+                      className="rounded p-1 hover:bg-muted"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => deleteState(st.id, st.name)}
+                      className="rounded p-1 text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -1321,10 +1973,15 @@ function AdminPage() {
             {citiesState === "ok" && (
               <div className="space-y-2">
                 {cities.length === 0 && (
-                  <p className="text-sm text-muted-foreground">No areas yet. Add one to get started.</p>
+                  <p className="text-sm text-muted-foreground">
+                    No areas yet. Add one to get started.
+                  </p>
                 )}
                 {cities.map((c, idx) => (
-                  <div key={c.id} className={`flex items-center gap-3 rounded-xl border bg-card p-3 shadow-warm ${!c.is_active ? "opacity-60" : ""}`}>
+                  <div
+                    key={c.id}
+                    className={`flex items-center gap-3 rounded-xl border bg-card p-3 shadow-warm ${!c.is_active ? "opacity-60" : ""}`}
+                  >
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sage/10">
                       <MapPin className="h-4 w-4 text-sage-deep" />
                     </div>
@@ -1337,7 +1994,9 @@ function AdminPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground">{c.state} · /{c.slug}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {c.state} · /{c.slug}
+                      </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Switch
@@ -1346,14 +2005,32 @@ function AdminPage() {
                         aria-label={c.is_active ? "Deactivate area" : "Activate area"}
                       />
                       <div className="flex items-center gap-1">
-                        <button onClick={() => moveCity(c.id, "up")} disabled={idx === 0}
-                          className="rounded p-1 hover:bg-muted disabled:opacity-30"><ChevronUp className="h-4 w-4" /></button>
-                        <button onClick={() => moveCity(c.id, "down")} disabled={idx === cities.length - 1}
-                          className="rounded p-1 hover:bg-muted disabled:opacity-30"><ChevronDown className="h-4 w-4" /></button>
-                        <button onClick={() => openEditCity(c)} className="rounded p-1 hover:bg-muted">
-                          <Pencil className="h-4 w-4" /></button>
-                        <button onClick={() => deleteCity(c.id, c.name)} className="rounded p-1 text-destructive hover:bg-destructive/10">
-                          <Trash2 className="h-4 w-4" /></button>
+                        <button
+                          onClick={() => moveCity(c.id, "up")}
+                          disabled={idx === 0}
+                          className="rounded p-1 hover:bg-muted disabled:opacity-30"
+                        >
+                          <ChevronUp className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => moveCity(c.id, "down")}
+                          disabled={idx === cities.length - 1}
+                          className="rounded p-1 hover:bg-muted disabled:opacity-30"
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => openEditCity(c)}
+                          className="rounded p-1 hover:bg-muted"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => deleteCity(c.id, c.name)}
+                          className="rounded p-1 text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1370,26 +2047,43 @@ function AdminPage() {
           <section className="mt-6 space-y-10">
             <div>
               <p className="text-xs text-muted-foreground mb-6">
-                Control which sellers show in the <strong>Trending Sellers</strong> section. Changes are live immediately.{" "}
-                (Featured products are managed on the <button type="button" onClick={() => setActiveTab("products")} className="underline font-medium text-foreground">Products tab</button>.)
+                Control which sellers show in the <strong>Trending Sellers</strong> section. Changes
+                are live immediately. (Featured products are managed on the{" "}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("products")}
+                  className="underline font-medium text-foreground"
+                >
+                  Products tab
+                </button>
+                .)
               </p>
 
               {/* ── Trending Sellers ── */}
               <div>
                 <h2 className="font-serif text-xl mb-1 flex items-center gap-2">
-                  <BadgeCheck className="h-5 w-5 text-emerald-500" /> Trending Sellers ({cmsSellers.length})
+                  <BadgeCheck className="h-5 w-5 text-emerald-500" /> Trending Sellers (
+                  {cmsSellers.length})
                 </h2>
-                <p className="text-xs text-muted-foreground mb-4">These appear in the "Trending sellers" row on the homepage and explore page. The first 3 are shown on the homepage. Order them with the arrows.</p>
+                <p className="text-xs text-muted-foreground mb-4">
+                  These appear in the "Trending sellers" row on the homepage and explore page. The
+                  first 3 are shown on the homepage. Order them with the arrows.
+                </p>
 
                 {/* Search to add */}
                 <div className="mb-4 flex items-center gap-2">
                   <input
                     value={cmsSellerSearch}
-                    onChange={(e) => { setCmsSellerSearch(e.target.value); cmsSearchSellers(e.target.value); }}
+                    onChange={(e) => {
+                      setCmsSellerSearch(e.target.value);
+                      cmsSearchSellers(e.target.value);
+                    }}
                     placeholder="Search seller name to add…"
                     className="flex-1 rounded-xl border border-border bg-card px-3 py-2 text-sm outline-none"
                   />
-                  {cmsSellerSearchLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                  {cmsSellerSearchLoading && (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  )}
                 </div>
                 {cmsSellerOptions.length > 0 && (
                   <div className="mb-4 rounded-xl border border-border bg-card divide-y">
@@ -1397,16 +2091,28 @@ function AdminPage() {
                       <div key={s.id} className="flex items-center justify-between gap-3 px-3 py-2">
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center shrink-0 overflow-hidden">
-                            {s.profile_photo_url
-                              ? <img src={s.profile_photo_url} alt="" className="h-full w-full object-cover" />
-                              : <span className="text-sm font-bold text-primary">{s.business_name?.charAt(0)}</span>}
+                            {s.profile_photo_url ? (
+                              <img
+                                src={s.profile_photo_url}
+                                alt=""
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-sm font-bold text-primary">
+                                {s.business_name?.charAt(0)}
+                              </span>
+                            )}
                           </div>
                           <div className="min-w-0">
                             <p className="text-sm font-medium truncate">{s.business_name}</p>
                             <p className="text-xs text-muted-foreground truncate">{s.category}</p>
                           </div>
                         </div>
-                        <Button size="sm" onClick={() => cmsAddTrendingSeller(s.id)} className="shrink-0 rounded-full">
+                        <Button
+                          size="sm"
+                          onClick={() => cmsAddTrendingSeller(s.id)}
+                          className="shrink-0 rounded-full"
+                        >
                           <Plus className="h-3 w-3 mr-1" /> Add
                         </Button>
                       </div>
@@ -1415,34 +2121,66 @@ function AdminPage() {
                 )}
 
                 {cmsSellersState === "loading" && <SectionSkeleton />}
-                {cmsSellersState === "error" && <SectionError label="trending sellers" onRetry={loadCmsTrendingSellers} />}
+                {cmsSellersState === "error" && (
+                  <SectionError label="trending sellers" onRetry={loadCmsTrendingSellers} />
+                )}
                 {cmsSellersState === "ok" && (
                   <div className="space-y-2">
                     {cmsSellers.length === 0 && (
-                      <p className="text-sm text-muted-foreground py-4 text-center">No trending sellers yet. Search above to add some.</p>
+                      <p className="text-sm text-muted-foreground py-4 text-center">
+                        No trending sellers yet. Search above to add some.
+                      </p>
                     )}
                     {cmsSellers.map((s, idx) => (
-                      <div key={s.id} className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2">
+                      <div
+                        key={s.id}
+                        className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2"
+                      >
                         <div className="flex flex-col gap-0.5">
-                          <button onClick={() => cmsMoveTrendingSeller(s.id, "up")} disabled={idx === 0} className="disabled:opacity-30 hover:text-primary">
+                          <button
+                            onClick={() => cmsMoveTrendingSeller(s.id, "up")}
+                            disabled={idx === 0}
+                            className="disabled:opacity-30 hover:text-primary"
+                          >
                             <ChevronUp className="h-3.5 w-3.5" />
                           </button>
-                          <button onClick={() => cmsMoveTrendingSeller(s.id, "down")} disabled={idx === cmsSellers.length - 1} className="disabled:opacity-30 hover:text-primary">
+                          <button
+                            onClick={() => cmsMoveTrendingSeller(s.id, "down")}
+                            disabled={idx === cmsSellers.length - 1}
+                            className="disabled:opacity-30 hover:text-primary"
+                          >
                             <ChevronDown className="h-3.5 w-3.5" />
                           </button>
                         </div>
-                        <span className="text-xs font-mono text-muted-foreground w-5">{idx + 1}</span>
-                        {idx < 3 && <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full shrink-0">Shown</span>}
+                        <span className="text-xs font-mono text-muted-foreground w-5">
+                          {idx + 1}
+                        </span>
+                        {idx < 3 && (
+                          <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full shrink-0">
+                            Shown
+                          </span>
+                        )}
                         <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center shrink-0 overflow-hidden">
-                          {s.profile_photo_url
-                            ? <img src={s.profile_photo_url} alt="" className="h-full w-full object-cover" />
-                            : <span className="text-sm font-bold text-primary">{s.business_name?.charAt(0)}</span>}
+                          {s.profile_photo_url ? (
+                            <img
+                              src={s.profile_photo_url}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-sm font-bold text-primary">
+                              {s.business_name?.charAt(0)}
+                            </span>
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{s.business_name}</p>
                           <p className="text-xs text-muted-foreground truncate">{s.category}</p>
                         </div>
-                        <button onClick={() => cmsRemoveTrendingSeller(s.id)} className="text-rose-500 hover:text-rose-600 shrink-0">
+                        <button
+                          onClick={() => cmsRemoveTrendingSeller(s.id)}
+                          className="text-rose-500 hover:text-rose-600 shrink-0"
+                        >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
@@ -1454,11 +2192,17 @@ function AdminPage() {
           </section>
         )}
 
-        <Button variant="ghost" onClick={async () => { await supabase.auth.signOut(); nav({ to: "/" }); }} className="mt-10">
+        <Button
+          variant="ghost"
+          onClick={async () => {
+            await supabase.auth.signOut();
+            nav({ to: "/" });
+          }}
+          className="mt-10"
+        >
           Sign out
         </Button>
       </div>
-
 
       {/* ── Category editor dialog ── */}
       <Dialog open={newCatOpen} onOpenChange={(o) => !o && setNewCatOpen(false)}>
@@ -1467,10 +2211,19 @@ function AdminPage() {
             <DialogTitle>{editingCat ? "Edit category" : "New category"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 max-h-[600px] overflow-y-auto pr-1">
-            <div><Label>Name *</Label><Input value={catName} onChange={(e) => setCatName(e.target.value)} placeholder="e.g. Electronics" /></div>
+            <div>
+              <Label>Name *</Label>
+              <Input
+                value={catName}
+                onChange={(e) => setCatName(e.target.value)}
+                placeholder="e.g. Electronics"
+              />
+            </div>
             <div>
               <Label>Category image</Label>
-              <p className="mb-2 text-xs text-muted-foreground">Replaces emoji — displayed on homepage, category pages, and filters.</p>
+              <p className="mb-2 text-xs text-muted-foreground">
+                Replaces emoji — displayed on homepage, category pages, and filters.
+              </p>
               <ImageUploader
                 value={catImage}
                 onChange={setCatImage}
@@ -1483,11 +2236,29 @@ function AdminPage() {
             </div>
             <div>
               <Label>Subtitle (optional)</Label>
-              <p className="mb-2 text-xs text-muted-foreground">Shown under the category name on the homepage. Leave blank to use the default Hausa translation, if one exists.</p>
-              <Input value={catSubtitle} onChange={(e) => setCatSubtitle(e.target.value)} placeholder="e.g. Kayan lantarki" />
+              <p className="mb-2 text-xs text-muted-foreground">
+                Shown under the category name on the homepage. Leave blank to use the default Hausa
+                translation, if one exists.
+              </p>
+              <Input
+                value={catSubtitle}
+                onChange={(e) => setCatSubtitle(e.target.value)}
+                placeholder="e.g. Kayan lantarki"
+              />
             </div>
-            <Button onClick={saveCat} disabled={catSaving} className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
-              {catSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : "Save"}
+            <Button
+              onClick={saveCat}
+              disabled={catSaving}
+              className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              {catSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                "Save"
+              )}
             </Button>
           </div>
         </DialogContent>
@@ -1501,9 +2272,13 @@ function AdminPage() {
           </DialogHeader>
           <div className="max-h-[600px] space-y-3 overflow-y-auto pr-1">
             {waDetailLoading ? (
-              <div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
             ) : waDetail.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">No WhatsApp clicks yet.</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No WhatsApp clicks yet.
+              </p>
             ) : (
               waDetail.map((v) => (
                 <details key={v.seller_id} className="rounded-xl border bg-background p-3">
@@ -1530,14 +2305,41 @@ function AdminPage() {
       <Dialog open={!!editingSec} onOpenChange={(o) => !o && setEditingSec(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit section — <span className="text-muted-foreground font-normal">{editingSec?.key}</span></DialogTitle>
+            <DialogTitle>
+              Edit section —{" "}
+              <span className="text-muted-foreground font-normal">{editingSec?.key}</span>
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <div><Label>Title</Label><Input value={secTitle} onChange={(e) => setSecTitle(e.target.value)} /></div>
-            <div><Label>Subtitle (Hausa or tagline)</Label><Input value={secSubtitle} onChange={(e) => setSecSubtitle(e.target.value)} /></div>
-            <div><Label>Body text (optional)</Label><Textarea value={secContent} onChange={(e) => setSecContent(e.target.value)} rows={3} /></div>
-            <Button onClick={saveSection} disabled={secSaving} className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
-              {secSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : "Save changes"}
+            <div>
+              <Label>Title</Label>
+              <Input value={secTitle} onChange={(e) => setSecTitle(e.target.value)} />
+            </div>
+            <div>
+              <Label>Subtitle (Hausa or tagline)</Label>
+              <Input value={secSubtitle} onChange={(e) => setSecSubtitle(e.target.value)} />
+            </div>
+            <div>
+              <Label>Body text (optional)</Label>
+              <Textarea
+                value={secContent}
+                onChange={(e) => setSecContent(e.target.value)}
+                rows={3}
+              />
+            </div>
+            <Button
+              onClick={saveSection}
+              disabled={secSaving}
+              className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              {secSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                "Save changes"
+              )}
             </Button>
           </div>
         </DialogContent>
@@ -1550,15 +2352,22 @@ function AdminPage() {
             <DialogTitle>Who vouched for {vouchDetail?.seller_name}</DialogTitle>
           </DialogHeader>
           {vouchDetailLoading ? (
-            <div className="flex justify-center py-6"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+            <div className="flex justify-center py-6">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
           ) : vouchDetail?.vouchers.length === 0 ? (
             <p className="py-4 text-sm text-muted-foreground text-center">No vouchers found.</p>
           ) : (
             <div className="max-h-72 space-y-2 overflow-y-auto">
               {vouchDetail?.vouchers.map((v) => (
-                <div key={v.voucher_seller_id} className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2 text-sm">
+                <div
+                  key={v.voucher_seller_id}
+                  className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2 text-sm"
+                >
                   <span className="font-medium">{v.business_name}</span>
-                  <span className="text-xs text-muted-foreground">{new Date(v.created_at).toLocaleDateString()}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(v.created_at).toLocaleDateString()}
+                  </span>
                 </div>
               ))}
             </div>
@@ -1574,7 +2383,8 @@ function AdminPage() {
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              The seller will see this reason in their dashboard. Be specific so they know what to fix.
+              The seller will see this reason in their dashboard. Be specific so they know what to
+              fix.
             </p>
             <div>
               <Label>Reason for rejection</Label>
@@ -1586,7 +2396,11 @@ function AdminPage() {
               />
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1 rounded-full" onClick={() => setRejectTarget(null)}>
+              <Button
+                variant="outline"
+                className="flex-1 rounded-full"
+                onClick={() => setRejectTarget(null)}
+              >
                 Cancel
               </Button>
               <Button
@@ -1594,7 +2408,13 @@ function AdminPage() {
                 disabled={rejectSaving}
                 className="flex-1 rounded-full bg-destructive text-white hover:bg-destructive/90"
               >
-                {rejectSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Rejecting…</> : "Confirm reject"}
+                {rejectSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Rejecting…
+                  </>
+                ) : (
+                  "Confirm reject"
+                )}
               </Button>
             </div>
           </div>
@@ -1622,15 +2442,23 @@ function AdminPage() {
             <div>
               <Label>State *</Label>
               <Select value={cityState} onValueChange={setCityState}>
-                <SelectTrigger><SelectValue placeholder="Choose state" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose state" />
+                </SelectTrigger>
                 <SelectContent>
-                  {states.map((st) => <SelectItem key={st.id} value={st.name}>{st.name}</SelectItem>)}
+                  {states.map((st) => (
+                    <SelectItem key={st.id} value={st.name}>
+                      {st.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
               <Label>Slug</Label>
-              <p className="mb-1 text-xs text-muted-foreground">Auto-generated from name — edit if needed</p>
+              <p className="mb-1 text-xs text-muted-foreground">
+                Auto-generated from name — edit if needed
+              </p>
               <Input
                 value={citySlug}
                 onChange={(e) => setCitySlug(e.target.value)}
@@ -1640,19 +2468,27 @@ function AdminPage() {
             <div className="flex items-center justify-between rounded-xl border border-border-warm bg-muted/30 px-3 py-2.5">
               <div>
                 <p className="text-sm font-medium">Active</p>
-                <p className="text-xs text-muted-foreground">Visible to sellers during registration</p>
+                <p className="text-xs text-muted-foreground">
+                  Visible to sellers during registration
+                </p>
               </div>
-              <Switch
-                checked={cityIsActive}
-                onCheckedChange={setCityIsActive}
-              />
+              <Switch checked={cityIsActive} onCheckedChange={setCityIsActive} />
             </div>
             <Button
               onClick={saveCity}
               disabled={citySaving}
               className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
             >
-              {citySaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : editingCity ? "Save changes" : "Add area"}
+              {citySaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving…
+                </>
+              ) : editingCity ? (
+                "Save changes"
+              ) : (
+                "Add area"
+              )}
             </Button>
           </div>
         </DialogContent>
@@ -1660,12 +2496,50 @@ function AdminPage() {
 
       <Dialog open={stateDialogOpen} onOpenChange={(o) => !o && setStateDialogOpen(false)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{editingState ? "Edit state" : "Add state"}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{editingState ? "Edit state" : "Add state"}</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4">
-            <div><Label>State name *</Label><Input value={stateName} onChange={(e) => { setStateName(e.target.value); if (!editingState) setStateSlug(slugify(e.target.value)); }} placeholder="e.g. Kano" /></div>
-            <div><Label>Slug</Label><Input value={stateSlug} onChange={(e) => setStateSlug(e.target.value)} placeholder="e.g. kano" /></div>
-            <div className="flex items-center justify-between rounded-xl border border-border-warm bg-muted/30 px-3 py-2.5"><div><p className="text-sm font-medium">Active</p><p className="text-xs text-muted-foreground">Visible during onboarding</p></div><Switch checked={stateIsActive} onCheckedChange={setStateIsActive} /></div>
-            <Button onClick={saveState} disabled={stateSaving} className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">{stateSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : "Save state"}</Button>
+            <div>
+              <Label>State name *</Label>
+              <Input
+                value={stateName}
+                onChange={(e) => {
+                  setStateName(e.target.value);
+                  if (!editingState) setStateSlug(slugify(e.target.value));
+                }}
+                placeholder="e.g. Kano"
+              />
+            </div>
+            <div>
+              <Label>Slug</Label>
+              <Input
+                value={stateSlug}
+                onChange={(e) => setStateSlug(e.target.value)}
+                placeholder="e.g. kano"
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-xl border border-border-warm bg-muted/30 px-3 py-2.5">
+              <div>
+                <p className="text-sm font-medium">Active</p>
+                <p className="text-xs text-muted-foreground">Visible during onboarding</p>
+              </div>
+              <Switch checked={stateIsActive} onCheckedChange={setStateIsActive} />
+            </div>
+            <Button
+              onClick={saveState}
+              disabled={stateSaving}
+              className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              {stateSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                "Save state"
+              )}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1696,20 +2570,30 @@ function SellerRow({
   onDelete: () => void;
 }) {
   return (
-    <div className={`rounded-xl border bg-card p-3 shadow-warm ${s.is_blocked ? "border-destructive/30 opacity-60" : ""}`}>
+    <div
+      className={`rounded-xl border bg-card p-3 shadow-warm ${s.is_blocked ? "border-destructive/30 opacity-60" : ""}`}
+    >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <Link to="/admin/vendor/$id" params={{ id: s.id }} className="truncate font-medium hover:text-primary">
+            <Link
+              to="/admin/vendor/$id"
+              params={{ id: s.id }}
+              className="truncate font-medium hover:text-primary"
+            >
               {s.business_name}
             </Link>
             {s.is_verified && <VerifiedBadge className="h-4 w-4" />}
             <VerifBadge status={s.verification_status} />
             {s.is_blocked && (
-              <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">BLOCKED</span>
+              <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
+                BLOCKED
+              </span>
             )}
           </div>
-          <p className="text-xs text-muted-foreground">{s.category} · {s.city}</p>
+          <p className="text-xs text-muted-foreground">
+            {s.category} · {s.city}
+          </p>
 
           {/* Vendor phone — always visible so admin can DM without opening the store page */}
           <div className="mt-1 flex items-center gap-1.5">
@@ -1755,7 +2639,6 @@ function SellerRow({
 
         {/* Admin actions */}
         <div className="flex flex-wrap items-center gap-1.5 border-t pt-2.5 text-xs sm:w-auto sm:shrink-0 sm:border-t-0 sm:pt-0">
-
           {/* Approve button — shown for pending and rejected sellers */}
           {onApprove && (
             <button
@@ -1795,8 +2678,17 @@ function SellerRow({
             title={s.is_verified ? "Revoke badge" : "Grant badge"}
             className={`flex items-center gap-1 rounded-full px-2.5 py-1 transition ${s.is_verified ? "bg-amber-100 text-amber-700 hover:bg-amber-200" : "bg-muted text-muted-foreground hover:bg-amber-50 hover:text-amber-600"}`}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5">
-              <path fillRule="evenodd" d="M8.603 3.799A4.49 4.49 0 0 1 12 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 0 1 3.498 1.307 4.491 4.491 0 0 1 1.307 3.497A4.49 4.49 0 0 1 21.75 12a4.49 4.49 0 0 1-1.549 3.397 4.491 4.491 0 0 1-1.307 3.497 4.491 4.491 0 0 1-3.497 1.307A4.49 4.49 0 0 1 12 21.75a4.49 4.49 0 0 1-3.397-1.549 4.49 4.49 0 0 1-3.498-1.306 4.491 4.491 0 0 1-1.307-3.498A4.49 4.49 0 0 1 2.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 0 1 1.307-3.497 4.49 4.49 0 0 1 3.497-1.307Zm7.007 6.387a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="h-3.5 w-3.5"
+            >
+              <path
+                fillRule="evenodd"
+                d="M8.603 3.799A4.49 4.49 0 0 1 12 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 0 1 3.498 1.307 4.491 4.491 0 0 1 1.307 3.497A4.49 4.49 0 0 1 21.75 12a4.49 4.49 0 0 1-1.549 3.397 4.491 4.491 0 0 1-1.307 3.497 4.491 4.491 0 0 1-3.497 1.307A4.49 4.49 0 0 1 12 21.75a4.49 4.49 0 0 1-3.397-1.549 4.49 4.49 0 0 1-3.498-1.306 4.491 4.491 0 0 1-1.307-3.498A4.49 4.49 0 0 1 2.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 0 1 1.307-3.497 4.49 4.49 0 0 1 3.497-1.307Zm7.007 6.387a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z"
+                clipRule="evenodd"
+              />
             </svg>
             {s.is_verified ? "Revoke" : "Badge"}
           </button>
@@ -1806,7 +2698,15 @@ function SellerRow({
             onClick={onToggleBlock}
             className={`flex items-center gap-1 rounded-full px-2.5 py-1 transition ${s.is_blocked ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-destructive/10 text-destructive hover:bg-destructive/20"}`}
           >
-            {s.is_blocked ? <><ShieldCheck className="h-3.5 w-3.5" /> Unblock</> : <><ShieldOff className="h-3.5 w-3.5" /> Block</>}
+            {s.is_blocked ? (
+              <>
+                <ShieldCheck className="h-3.5 w-3.5" /> Unblock
+              </>
+            ) : (
+              <>
+                <ShieldOff className="h-3.5 w-3.5" /> Block
+              </>
+            )}
           </button>
 
           {/* Delete */}

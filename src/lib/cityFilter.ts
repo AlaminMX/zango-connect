@@ -33,7 +33,9 @@ export function useCityFilter() {
   useEffect(() => {
     // Keep in sync when another component changes the city
     listeners.add(_setCity);
-    return () => { listeners.delete(_setCity); };
+    return () => {
+      listeners.delete(_setCity);
+    };
   }, []);
 
   return {

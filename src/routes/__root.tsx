@@ -22,7 +22,12 @@ function NotFoundComponent() {
       <div className="max-w-md text-center">
         <h1 className="font-serif text-7xl text-primary">404</h1>
         <p className="mt-2 text-muted-foreground">This page doesn't exist.</p>
-        <a href="/" className="mt-6 inline-block rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground">Go home</a>
+        <a
+          href="/"
+          className="mt-6 inline-block rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground"
+        >
+          Go home
+        </a>
       </div>
     </div>
   );
@@ -35,11 +40,18 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="font-serif text-2xl">Something went wrong</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Something unexpected happened. Please try again.</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Something unexpected happened. Please try again.
+        </p>
         <button
-          onClick={() => { router.invalidate(); reset(); }}
+          onClick={() => {
+            router.invalidate();
+            reset();
+          }}
           className="mt-6 rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground"
-        >Try again</button>
+        >
+          Try again
+        </button>
       </div>
     </div>
   );
@@ -58,22 +70,46 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "application-name", content: "ZANGO" },
       { name: "msapplication-TileColor", content: "#C05A3F" },
       { title: "ZANGO — Your Business, Discovered." },
-      { name: "description", content: "The marketplace built for northern Nigeria's entrepreneurs. Discover sellers, order on WhatsApp." },
+      {
+        name: "description",
+        content:
+          "The marketplace built for northern Nigeria's entrepreneurs. Discover sellers, order on WhatsApp.",
+      },
       { property: "og:site_name", content: "ZANGO" },
       { property: "og:title", content: "ZANGO — Your Business, Discovered." },
-      { property: "og:description", content: "The marketplace built for northern Nigeria's entrepreneurs. Discover sellers, order on WhatsApp." },
+      {
+        property: "og:description",
+        content:
+          "The marketplace built for northern Nigeria's entrepreneurs. Discover sellers, order on WhatsApp.",
+      },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://sutura-connect.lovable.app/" },
       { name: "twitter:title", content: "ZANGO — Your Business, Discovered." },
-      { name: "twitter:description", content: "The marketplace built for northern Nigeria's entrepreneurs. Discover sellers, order on WhatsApp." },
+      {
+        name: "twitter:description",
+        content:
+          "The marketplace built for northern Nigeria's entrepreneurs. Discover sellers, order on WhatsApp.",
+      },
       { name: "twitter:card", content: "summary_large_image" },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/sgPidVUphLSGVGq51GiPoIX6I323/social-images/social-1784011047122-ChatGPT_Image_Jul_14,_2026,_07_37_16_AM.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/sgPidVUphLSGVGq51GiPoIX6I323/social-images/social-1784011047122-ChatGPT_Image_Jul_14,_2026,_07_37_16_AM.webp" },
+      {
+        property: "og:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/sgPidVUphLSGVGq51GiPoIX6I323/social-images/social-1784011047122-ChatGPT_Image_Jul_14,_2026,_07_37_16_AM.webp",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/sgPidVUphLSGVGq51GiPoIX6I323/social-images/social-1784011047122-ChatGPT_Image_Jul_14,_2026,_07_37_16_AM.webp",
+      },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Fira+Sans:wght@300;400;500;600;700&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Fira+Sans:wght@300;400;500;600;700&display=swap",
+        crossOrigin: "anonymous",
+      },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
       { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32x32.png" },
@@ -118,8 +154,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <head><HeadContent /></head>
-      <body>{children}<Scripts /></body>
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        {children}
+        <Scripts />
+      </body>
     </html>
   );
 }
@@ -145,4 +186,3 @@ function RootComponent() {
     </QueryClientProvider>
   );
 }
-  

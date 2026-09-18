@@ -15,9 +15,13 @@ export function normaliseNigerianPhone(raw: string): string | null {
 export function validateNigerianPhone(raw: string): { valid: boolean; error?: string } {
   const digits = raw.replace(/\D/g, "");
   if (!digits) return { valid: false, error: "Please enter a phone number." };
-  if (digits.length < 10) return { valid: false, error: "Number is too short — enter a valid Nigerian mobile number." };
+  if (digits.length < 10)
+    return { valid: false, error: "Number is too short — enter a valid Nigerian mobile number." };
   if (normaliseNigerianPhone(raw) === null)
-    return { valid: false, error: "Enter a valid Nigerian number e.g. 08012345678 or 2348012345678." };
+    return {
+      valid: false,
+      error: "Enter a valid Nigerian number e.g. 08012345678 or 2348012345678.",
+    };
   return { valid: true };
 }
 
@@ -32,12 +36,19 @@ export function buildWhatsAppUrl(phone: string, productName?: string, storeUrl?:
 
 export async function trackClick(sellerId: string, productId?: string) {
   try {
-    await supabase.from("whatsapp_clicks").insert({ seller_id: sellerId, product_id: productId ?? null });
+    await supabase
+      .from("whatsapp_clicks")
+      .insert({ seller_id: sellerId, product_id: productId ?? null });
   } catch {
     // best effort
   }
 }
 
 export function slugify(s: string) {
-  return s.toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
+  return s
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
 }

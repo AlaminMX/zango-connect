@@ -17,7 +17,11 @@ export const Route = createFileRoute("/cities")({
   head: () => ({
     meta: [
       { title: "All cities — ZANGO" },
-      { name: "description", content: "Browse every city and state on ZANGO. Search for sellers by city or state across northern Nigeria." },
+      {
+        name: "description",
+        content:
+          "Browse every city and state on ZANGO. Search for sellers by city or state across northern Nigeria.",
+      },
       { property: "og:title", content: "All cities — ZANGO" },
       { property: "og:description", content: "Browse every city and state on ZANGO." },
       { property: "og:type", content: "website" },
@@ -39,10 +43,7 @@ export const Route = createFileRoute("/cities")({
   component: CitiesPage,
 });
 
-interface CityRow {
-  id: string; name: string; state: string; slug: string;
-  sellers_count: number; products_count: number;
-}
+import { getNormalizedCitiesWithStats, CityStatRow } from "@/lib/states-data";
 
 function CitiesPage() {
   const [q, setQ] = useState("");
@@ -50,19 +51,8 @@ function CitiesPage() {
   const { data: cities = [], isLoading } = useQuery({
     queryKey: ["all-cities"],
     staleTime: 60_000,
-    queryFn: async (): Promise<CityRow[]> => {
-      const { data, error } = await (supabase as any)
-        .from("cities_with_stats")
-        .select("id, name, state, slug, is_active, sellers_count, products_count")
-        .eq("is_active", true);
-      if (error) {
-        const { data: fb } = await supabase
-          .from("cities_of_business")
-          .select("id, name, state, slug")
-          .eq("is_active", true);
-        return ((fb ?? []) as any[]).map((c) => ({ ...c, sellers_count: 0, products_count: 0 }));
-      }
-      return (data ?? []) as CityRow[];
+    queryFn: async (): Promise<CityStatRow[]> => {
+      return getNormalizedCitiesWithStats();
     },
   });
 
@@ -81,7 +71,9 @@ function CitiesPage() {
       map.get(c.state)!.push(c);
     }
     for (const arr of map.values()) {
-      arr.sort((a, b) => (b.sellers_count ?? 0) - (a.sellers_count ?? 0) || a.name.localeCompare(b.name));
+      arr.sort(
+        (a, b) => (b.sellers_count ?? 0) - (a.sellers_count ?? 0) || a.name.localeCompare(b.name),
+      );
     }
     return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   }, [filtered]);
@@ -94,7 +86,8 @@ function CitiesPage() {
           <p className="text-xs font-bold uppercase tracking-[0.22em] text-sage-deep">Directory</p>
           <h1 className="mt-1 font-display text-4xl text-espresso">All cities on ZANGO</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            {cities.length} {cities.length === 1 ? "city" : "cities"} across northern Nigeria. Search by city or state.
+            {cities.length} {cities.length === 1 ? "city" : "cities"} across northern Nigeria.
+            Search by city or state.
           </p>
         </div>
 

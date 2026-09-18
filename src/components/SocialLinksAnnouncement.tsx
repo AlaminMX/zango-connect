@@ -33,7 +33,11 @@ export function SocialLinksAnnouncement({
   if (hasSocialLinks || dismissed) return null;
 
   const dismiss = () => {
-    try { localStorage.setItem(dismissKey, "1"); } catch { /* private browsing, etc — fine to skip */ }
+    try {
+      localStorage.setItem(dismissKey, "1");
+    } catch {
+      /* private browsing, etc — fine to skip */
+    }
     setDismissed(true);
   };
 
@@ -50,13 +54,19 @@ export function SocialLinksAnnouncement({
       <div className="flex items-start gap-3 pr-6">
         <Instagram className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
         <div className="flex-1">
-          <p className="text-sm font-semibold text-espresso">New: add your Instagram &amp; Snapchat</p>
+          <p className="text-sm font-semibold text-espresso">
+            New: add your Instagram &amp; Snapchat
+          </p>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Shoppers can now find and follow you off ZANGO too. Add your handles and they'll show as icons on your store page.
+            Shoppers can now find and follow you off ZANGO too. Add your handles and they'll show as
+            icons on your store page.
           </p>
           <button
             type="button"
-            onClick={() => { dismiss(); onAddNow(); }}
+            onClick={() => {
+              dismiss();
+              onAddNow();
+            }}
             className="mt-2 rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
           >
             Add now

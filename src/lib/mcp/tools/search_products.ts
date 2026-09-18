@@ -15,7 +15,12 @@ export default defineTool({
   description:
     "Search active ZANGO product listings by keyword. Returns up to 20 products with name, price (NGN), category, seller store name and slug, and city.",
   inputSchema: {
-    query: z.string().trim().min(1).max(200).describe("Keyword to match against product name and description."),
+    query: z
+      .string()
+      .trim()
+      .min(1)
+      .max(200)
+      .describe("Keyword to match against product name and description."),
     city: z.string().trim().max(80).optional().describe("Optional city name filter, e.g. 'Kano'."),
     limit: z.number().int().min(1).max(20).default(10),
   },
@@ -27,13 +32,17 @@ export default defineTool({
     const supabase = supabaseForUser(ctx);
     let q = supabase
       .from("products")
-      .select("id, name, description, price, category, image_url, sellers:seller_id(business_name, slug, city)")
+      .select(
+        "id, name, description, price, category, image_url, sellers:seller_id(business_name, slug, city)",
+      )
       .eq("status", "active")
       .ilike("name", `%${query}%`)
       .limit(limit);
     const { data, error } = await q;
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
-    const rows = (data ?? []).filter((r: any) => !city || r.sellers?.city?.toLowerCase() === city.toLowerCase());
+    const rows = (data ?? []).filter(
+      (r: any) => !city || r.sellers?.city?.toLowerCase() === city.toLowerCase(),
+    );
     return {
       content: [{ type: "text", text: JSON.stringify(rows, null, 2) }],
       structuredContent: { products: rows },

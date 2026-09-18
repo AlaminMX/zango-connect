@@ -21,7 +21,9 @@ export default defineTool({
     const supabase = supabaseForUser(ctx);
     const { data, error } = await supabase
       .from("wishlists")
-      .select("product_id, products:product_id(id, name, price, image_url, sellers:seller_id(business_name, slug))")
+      .select(
+        "product_id, products:product_id(id, name, price, image_url, sellers:seller_id(business_name, slug))",
+      )
       .eq("user_id", ctx.getUserId()!);
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
     return {

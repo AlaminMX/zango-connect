@@ -32,7 +32,10 @@ export function MultiImageUploader({
     if (!files || files.length === 0) return;
     const slotsLeft = max - value.length;
     const list = Array.from(files).slice(0, slotsLeft);
-    if (list.length === 0) { toast.error(`Max ${max} images`); return; }
+    if (list.length === 0) {
+      toast.error(`Max ${max} images`);
+      return;
+    }
     setBusy(true);
     try {
       const { data: u, error: userErr } = await supabase.auth.getUser();
@@ -43,16 +46,29 @@ export function MultiImageUploader({
       const uid = u.user.id;
       const uploaded: string[] = [];
       for (const file of list) {
-        if (!file.type.startsWith("image/")) { toast.error("Only images allowed"); continue; }
-        if (file.size > 8 * 1024 * 1024) { toast.error(`${file.name} too large (max 8MB)`); continue; }
+        if (!file.type.startsWith("image/")) {
+          toast.error("Only images allowed");
+          continue;
+        }
+        if (file.size > 8 * 1024 * 1024) {
+          toast.error(`${file.name} too large (max 8MB)`);
+          continue;
+        }
         const compressed = await imageCompression(file, {
-          maxSizeMB: 1, maxWidthOrHeight: 1600, useWebWorker: true, fileType: "image/jpeg",
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1600,
+          useWebWorker: true,
+          fileType: "image/jpeg",
         });
         const path = `${uid}/${pathPrefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.jpg`;
         const { error } = await supabase.storage.from(bucket).upload(path, compressed, {
-          upsert: true, contentType: "image/jpeg",
+          upsert: true,
+          contentType: "image/jpeg",
         });
-        if (error) { toast.error(humanizeError(error.message)); continue; }
+        if (error) {
+          toast.error(humanizeError(error.message));
+          continue;
+        }
         uploaded.push(supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl);
       }
       if (uploaded.length) onChange([...value, ...uploaded]);
@@ -68,16 +84,23 @@ export function MultiImageUploader({
     <div>
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
         {value.map((url, i) => (
-          <div key={url} className="relative aspect-square overflow-hidden rounded-xl border border-border-warm bg-surface-warm">
+          <div
+            key={url}
+            className="relative aspect-square overflow-hidden rounded-xl border border-border-warm bg-surface-warm"
+          >
             <img src={url} alt="" className="h-full w-full object-cover" />
             <button
               type="button"
               onClick={() => remove(i)}
               className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-espresso/70 text-white hover:bg-destructive"
               aria-label="Remove image"
-            ><X className="h-3.5 w-3.5" /></button>
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
             {i === 0 && (
-              <span className="absolute bottom-1 left-1 rounded-full bg-primary px-2 py-0.5 text-[9px] font-semibold text-primary-foreground">Cover</span>
+              <span className="absolute bottom-1 left-1 rounded-full bg-primary px-2 py-0.5 text-[9px] font-semibold text-primary-foreground">
+                Cover
+              </span>
             )}
           </div>
         ))}
@@ -104,7 +127,9 @@ export function MultiImageUploader({
         Up to {max} photos. First photo is the cover.
       </p>
       <Button
-        type="button" variant="ghost" size="sm"
+        type="button"
+        variant="ghost"
+        size="sm"
         onClick={() => inputRef.current?.click()}
         disabled={busy || value.length >= max}
         className="mt-1 rounded-full text-xs"

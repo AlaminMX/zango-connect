@@ -37,15 +37,27 @@ function AuthPage() {
       window.location.href = next;
       return;
     }
-    const { data: role } = await supabase.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle();
-    if (role) { nav({ to: "/admin" }); return; }
-    const { data: s } = await supabase.from("sellers").select("id, onboarding_status, verification_status").eq("user_id", userId).maybeSingle();
-    
+    const { data: role } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (role) {
+      nav({ to: "/admin" });
+      return;
+    }
+    const { data: s } = await supabase
+      .from("sellers")
+      .select("id, onboarding_status, verification_status")
+      .eq("user_id", userId)
+      .maybeSingle();
+
     if (s) {
       // Vendor found — check onboarding and approval status
       const status = s.onboarding_status;
       const verificationStatus = s.verification_status;
-      
+
       if (status === "step1_complete" || status === "draft") {
         // Incomplete onboarding — resume from step 2
         nav({ to: "/register" });
@@ -100,7 +112,11 @@ function AuthPage() {
         // button can never get permanently stuck in the loading state.
         const signInPromise = supabase.auth.signInWithPassword({ email, password });
         const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Sign-in timed out. Please check your connection and try again.")), 12_000)
+          setTimeout(
+            () =>
+              reject(new Error("Sign-in timed out. Please check your connection and try again.")),
+            12_000,
+          ),
         );
         const { data, error } = await Promise.race([signInPromise, timeoutPromise]);
         if (error) {
@@ -119,7 +135,6 @@ function AuthPage() {
           toast.success("Welcome back");
           await routeAfterLogin(data.user.id);
         }
-
       } else if (mode === "forgot") {
         const trimmedEmail = email.trim();
         if (!/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
@@ -129,17 +144,22 @@ function AuthPage() {
         const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
           redirectTo: `${window.location.origin}/reset-password`,
         });
-        if (error) { toast.error(humanizeError(error.message)); return; }
+        if (error) {
+          toast.error(humanizeError(error.message));
+          return;
+        }
         setResetSent(true);
         return;
-
       } else if (mode === "reset") {
         if (newPassword.length < 6) {
           toast.error("Password must be at least 6 characters.");
           return;
         }
         const { error } = await supabase.auth.updateUser({ password: newPassword });
-        if (error) { toast.error(humanizeError(error.message)); return; }
+        if (error) {
+          toast.error(humanizeError(error.message));
+          return;
+        }
         toast.success("Password updated! You're now signed in.");
         const { data } = await supabase.auth.getUser();
         if (data.user) await routeAfterLogin(data.user.id);
@@ -163,11 +183,14 @@ function AuthPage() {
             <div className="mb-3 text-4xl">📬</div>
             <h1 className="font-serif text-2xl">Check your email</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              If an account exists for <strong>{email.trim()}</strong>, we sent a password reset link. Click the link in
-              the email to set a new password.
+              If an account exists for <strong>{email.trim()}</strong>, we sent a password reset
+              link. Click the link in the email to set a new password.
             </p>
             <button
-              onClick={() => { setMode("signin"); setResetSent(false); }}
+              onClick={() => {
+                setMode("signin");
+                setResetSent(false);
+              }}
               className="mt-5 text-sm text-primary underline underline-offset-2"
             >
               Back to sign in
@@ -187,9 +210,14 @@ function AuthPage() {
         <div className="mx-auto max-w-md px-5 py-10">
           <div className="mt-6">
             <h1 className="font-serif text-3xl">Set new password</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Choose a strong password for your account.</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Choose a strong password for your account.
+            </p>
           </div>
-          <form onSubmit={submit} className="mt-6 space-y-4 rounded-2xl border bg-card p-6 shadow-warm">
+          <form
+            onSubmit={submit}
+            className="mt-6 space-y-4 rounded-2xl border bg-card p-6 shadow-warm"
+          >
             <div>
               <Label htmlFor="new-pw">New password</Label>
               <PasswordInput
@@ -228,7 +256,10 @@ function AuthPage() {
               Enter your email and we'll send you a reset link.
             </p>
           </div>
-          <form onSubmit={submit} className="mt-6 space-y-4 rounded-2xl border bg-card p-6 shadow-warm">
+          <form
+            onSubmit={submit}
+            className="mt-6 space-y-4 rounded-2xl border bg-card p-6 shadow-warm"
+          >
             <div>
               <Label htmlFor="reset-email">Email</Label>
               <Input
@@ -273,7 +304,10 @@ function AuthPage() {
           <p className="mt-1 text-sm text-muted-foreground">Sign in to manage your store.</p>
         </div>
 
-        <form onSubmit={submit} className="mt-6 space-y-4 rounded-2xl border bg-card p-6 shadow-warm">
+        <form
+          onSubmit={submit}
+          className="mt-6 space-y-4 rounded-2xl border bg-card p-6 shadow-warm"
+        >
           <div>
             <Label htmlFor="email">Email</Label>
             <Input
@@ -305,15 +339,25 @@ function AuthPage() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-          <Button type="submit" disabled={loading} className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+          >
             {loading ? "…" : "Sign in"}
           </Button>
         </form>
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          Just browsing? <Link to="/" className="text-primary underline">Go to marketplace</Link>
+          Just browsing?{" "}
+          <Link to="/" className="text-primary underline">
+            Go to marketplace
+          </Link>
         </p>
         <p className="mt-2 text-center text-xs text-muted-foreground">
-          Want to sell? <Link to="/register" className="text-primary underline">Open your store →</Link>
+          Want to sell?{" "}
+          <Link to="/register" className="text-primary underline">
+            Open your store →
+          </Link>
         </p>
       </div>
       <BottomNav />

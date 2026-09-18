@@ -14,7 +14,10 @@ const INSTALL_HIDE_DAYS = 14;
 
 function isStandalone() {
   if (typeof window === "undefined") return false;
-  return window.matchMedia("(display-mode: standalone)").matches || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (window.navigator as Navigator & { standalone?: boolean }).standalone === true
+  );
 }
 
 function recentlyDismissed() {
@@ -45,7 +48,9 @@ export function PwaManager() {
     };
     const onOnline = () => {
       setOffline(false);
-      toast.success("You're back online", { description: "ZANGO will refresh marketplace content automatically." });
+      toast.success("You're back online", {
+        description: "ZANGO will refresh marketplace content automatically.",
+      });
     };
     const onOffline = () => setOffline(true);
 
@@ -55,16 +60,21 @@ export function PwaManager() {
     window.addEventListener("offline", onOffline);
 
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js", { scope: "/" }).then((registration) => {
-        const notifyUpdate = (worker?: ServiceWorker | null) => worker && setWaitingWorker(worker);
-        notifyUpdate(registration.waiting);
-        registration.addEventListener("updatefound", () => {
-          const worker = registration.installing;
-          worker?.addEventListener("statechange", () => {
-            if (worker.state === "installed" && navigator.serviceWorker.controller) notifyUpdate(worker);
+      navigator.serviceWorker
+        .register("/sw.js", { scope: "/" })
+        .then((registration) => {
+          const notifyUpdate = (worker?: ServiceWorker | null) =>
+            worker && setWaitingWorker(worker);
+          notifyUpdate(registration.waiting);
+          registration.addEventListener("updatefound", () => {
+            const worker = registration.installing;
+            worker?.addEventListener("statechange", () => {
+              if (worker.state === "installed" && navigator.serviceWorker.controller)
+                notifyUpdate(worker);
+            });
           });
-        });
-      }).catch((error) => console.warn("ZANGO service worker registration failed", error));
+        })
+        .catch((error) => console.warn("ZANGO service worker registration failed", error));
 
       let refreshing = false;
       navigator.serviceWorker.addEventListener("controllerchange", () => {
@@ -91,7 +101,8 @@ export function PwaManager() {
     if (!installPrompt) return;
     await installPrompt.prompt();
     const choice = await installPrompt.userChoice;
-    if (choice.outcome === "dismissed") window.localStorage.setItem(DISMISS_KEY, String(Date.now()));
+    if (choice.outcome === "dismissed")
+      window.localStorage.setItem(DISMISS_KEY, String(Date.now()));
     setInstallPrompt(null);
     setShowInstall(false);
   };
@@ -110,11 +121,17 @@ export function PwaManager() {
       {waitingWorker ? (
         <div className="fixed inset-x-3 bottom-24 z-50 mx-auto max-w-md rounded-3xl border border-border-warm bg-card p-4 shadow-2xl md:bottom-5">
           <div className="flex items-start gap-3">
-            <div className="rounded-2xl bg-primary/10 p-2 text-primary"><RefreshCw className="size-5" /></div>
+            <div className="rounded-2xl bg-primary/10 p-2 text-primary">
+              <RefreshCw className="size-5" />
+            </div>
             <div className="flex-1">
               <p className="font-semibold">A fresh ZANGO update is ready</p>
-              <p className="mt-1 text-sm text-muted-foreground">Refresh when convenient to load the newest marketplace experience.</p>
-              <Button className="mt-3 rounded-full" size="sm" onClick={applyUpdate}>Refresh now</Button>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Refresh when convenient to load the newest marketplace experience.
+              </p>
+              <Button className="mt-3 rounded-full" size="sm" onClick={applyUpdate}>
+                Refresh now
+              </Button>
             </div>
           </div>
         </div>
@@ -122,15 +139,29 @@ export function PwaManager() {
 
       {showInstall && installPrompt ? (
         <div className="fixed inset-x-3 bottom-24 z-50 mx-auto max-w-md rounded-3xl border border-border-warm bg-card p-4 shadow-2xl md:bottom-5">
-          <button className="absolute right-3 top-3 rounded-full p-1 text-muted-foreground hover:bg-muted" onClick={dismissInstall} aria-label="Dismiss install prompt"><X className="size-4" /></button>
+          <button
+            className="absolute right-3 top-3 rounded-full p-1 text-muted-foreground hover:bg-muted"
+            onClick={dismissInstall}
+            aria-label="Dismiss install prompt"
+          >
+            <X className="size-4" />
+          </button>
           <div className="flex items-start gap-3 pr-6">
-            <div className="rounded-2xl bg-primary p-2 text-primary-foreground"><Download className="size-5" /></div>
+            <div className="rounded-2xl bg-primary p-2 text-primary-foreground">
+              <Download className="size-5" />
+            </div>
             <div className="flex-1">
               <p className="font-semibold">Install ZANGO</p>
-              <p className="mt-1 text-sm text-muted-foreground">Launch faster, browse cached pages offline, and keep ZANGO on your home screen.</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Launch faster, browse cached pages offline, and keep ZANGO on your home screen.
+              </p>
               <div className="mt-3 flex gap-2">
-                <Button className="rounded-full" size="sm" onClick={install}>Install app</Button>
-                <Button className="rounded-full" size="sm" variant="ghost" onClick={dismissInstall}>Not now</Button>
+                <Button className="rounded-full" size="sm" onClick={install}>
+                  Install app
+                </Button>
+                <Button className="rounded-full" size="sm" variant="ghost" onClick={dismissInstall}>
+                  Not now
+                </Button>
               </div>
             </div>
           </div>

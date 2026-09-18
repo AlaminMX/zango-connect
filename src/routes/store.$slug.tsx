@@ -26,15 +26,29 @@ import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { ImageUploader } from "@/components/ImageUploader";
 import { SectionLoader } from "@/components/LoadingSpinner";
 import {
-  MapPin, Share2, Heart, Pencil, X, Check,
-  Plus, Trash2, MessageCircle, Loader2, ImageOff, Instagram,
+  MapPin,
+  Share2,
+  Heart,
+  Pencil,
+  X,
+  Check,
+  Plus,
+  Trash2,
+  MessageCircle,
+  Loader2,
+  ImageOff,
+  Instagram,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -42,9 +56,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useCity } from "@/lib/cityContext";
 import { validateNigerianPhone } from "@/lib/whatsapp";
 
-
 function prettifySlug(slug: string) {
-  return slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  return slug
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 }
 
 export const Route = createFileRoute("/store/$slug")({
@@ -67,29 +83,33 @@ export const Route = createFileRoute("/store/$slug")({
         { name: "twitter:description", content: description },
       ],
       links: [{ rel: "canonical", href: url }],
-      scripts: [{
-        type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "Store",
-          name, url, description,
-        }),
-      }],
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Store",
+            name,
+            url,
+            description,
+          }),
+        },
+      ],
     };
   },
 });
 
 const STOCK_OPTIONS = [
   { value: "available", label: "Available" },
-  { value: "low_stock",  label: "Selling fast" },
-  { value: "sold_out",   label: "Sold out" },
+  { value: "low_stock", label: "Selling fast" },
+  { value: "sold_out", label: "Sold out" },
 ];
 
 // lucide-react has no Snapchat glyph — minimal inline ghost mark, currentColor so it themes.
 function SnapchatIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
-      <path d="M12 2c2.9 0 5.1 2.3 5.1 5.4v1.9c0 .3.3.5.7.4l.7-.2c.4-.1.9.1 1 .5.1.4-.1.8-.5 1l-1 .4c-.3.1-.4.4-.3.7.4 1.2 1.3 2.1 2.6 2.6.3.1.5.5.4.8-.2.6-1 1-1.9 1.2-.1 0-.2.2-.2.3 0 .2 0 .5-.1.7-.1.3-.4.4-.7.4-.5 0-1-.1-1.6-.1-.6 0-1 .2-1.5.6-.8.6-1.6 1.2-2.9 1.2s-2.1-.6-2.9-1.2c-.5-.4-.9-.6-1.5-.6-.6 0-1.1.1-1.6.1-.3 0-.6-.1-.7-.4-.1-.2-.1-.5-.1-.7 0-.1-.1-.3-.2-.3-.9-.2-1.7-.6-1.9-1.2-.1-.3.1-.7.4-.8 1.3-.5 2.2-1.4 2.6-2.6.1-.3 0-.6-.3-.7l-1-.4c-.4-.2-.6-.6-.5-1 .1-.4.6-.6 1-.5l.7.2c.4.1.7-.1.7-.4V7.4C6.9 4.3 9.1 2 12 2z"/>
+      <path d="M12 2c2.9 0 5.1 2.3 5.1 5.4v1.9c0 .3.3.5.7.4l.7-.2c.4-.1.9.1 1 .5.1.4-.1.8-.5 1l-1 .4c-.3.1-.4.4-.3.7.4 1.2 1.3 2.1 2.6 2.6.3.1.5.5.4.8-.2.6-1 1-1.9 1.2-.1 0-.2.2-.2.3 0 .2 0 .5-.1.7-.1.3-.4.4-.7.4-.5 0-1-.1-1.6-.1-.6 0-1 .2-1.5.6-.8.6-1.6 1.2-2.9 1.2s-2.1-.6-2.9-1.2c-.5-.4-.9-.6-1.5-.6-.6 0-1.1.1-1.6.1-.3 0-.6-.1-.7-.4-.1-.2-.1-.5-.1-.7 0-.1-.1-.3-.2-.3-.9-.2-1.7-.6-1.9-1.2-.1-.3.1-.7.4-.8 1.3-.5 2.2-1.4 2.6-2.6.1-.3 0-.6-.3-.7l-1-.4c-.4-.2-.6-.6-.5-1 .1-.4.6-.6 1-.5l.7.2c.4.1.7-.1.7-.4V7.4C6.9 4.3 9.1 2 12 2z" />
     </svg>
   );
 }
@@ -98,63 +118,71 @@ function StorePage() {
   const { slug } = Route.useParams();
   const qc = useQueryClient();
 
-  const [userId, setUserId]         = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [mySellerId, setMySellerId] = useState<string | null>(null);
-  const [isOwner, setIsOwner]       = useState(false);
-  const [isAdmin, setIsAdmin]       = useState(false);
-  const [editMode, setEditMode]     = useState(false);
-  const [authReady, setAuthReady]   = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
 
   // Vouch state
-  const [hasVouched, setHasVouched]     = useState(false);
+  const [hasVouched, setHasVouched] = useState(false);
   const [vouchLoading, setVouchLoading] = useState(false);
   const [localVouchCount, setLocalVouchCount] = useState<number | null>(null);
 
   // Edit fields
   const [eBusiness, setEBusiness] = useState("");
-  const [eCity, setECity]         = useState("");
-  const [eCityId, setECityId]     = useState<string | null>(null);
+  const [eCity, setECity] = useState("");
+  const [eCityId, setECityId] = useState<string | null>(null);
   const [eCategory, setECategory] = useState("");
-  const [eBio, setEBio]           = useState("");
+  const [eBio, setEBio] = useState("");
   const [eWhatsapp, setEWhatsapp] = useState("");
   const [eInstagram, setEInstagram] = useState("");
   const [eSnapchat, setESnapchat] = useState("");
   const [eProfileUrl, setEProfileUrl] = useState<string | null>(null);
-  const [eCoverUrl, setECoverUrl]     = useState<string | null>(null);
+  const [eCoverUrl, setECoverUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  
 
   const { activeCities, citiesLoading } = useCity();
 
   // Add product — now uses ImageUploader (url-based) + image is REQUIRED
-  const [pName, setPName]     = useState("");
-  const [pPrice, setPPrice]   = useState("");
-  const [pDesc, setPDesc]     = useState("");
+  const [pName, setPName] = useState("");
+  const [pPrice, setPPrice] = useState("");
+  const [pDesc, setPDesc] = useState("");
   const [pImgUrl, setPImgUrl] = useState<string | null>(null);
-  const [adding, setAdding]   = useState(false);
+  const [adding, setAdding] = useState(false);
   const [pImgError, setPImgError] = useState("");
 
   // Edit product dialog
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
-  const [ePName, setEPName]     = useState("");
-  const [ePPrice, setEPPrice]   = useState("");
-  const [ePDesc, setEPDesc]     = useState("");
-  const [ePStock, setEPStock]   = useState("available");
+  const [ePName, setEPName] = useState("");
+  const [ePPrice, setEPPrice] = useState("");
+  const [ePDesc, setEPDesc] = useState("");
+  const [ePStock, setEPStock] = useState("available");
   const [ePImgUrl, setEPImgUrl] = useState<string | null>(null);
   const [ePSaving, setEPSaving] = useState(false);
 
-  const [clicks, setClicks]         = useState(0);
+  const [clicks, setClicks] = useState(0);
   const [categories, setCategories] = useState<{ name: string }[]>([]);
 
   useEffect(() => {
-    supabase.from("categories").select("name").order("sort_order").then(({ data }) => setCategories(data ?? []));
+    supabase
+      .from("categories")
+      .select("name")
+      .order("sort_order")
+      .then(({ data }) => setCategories(data ?? []));
 
     const initAuth = async (uid: string) => {
       setUserId(uid);
       const [{ data: s }, { data: role }] = await Promise.all([
         supabase.from("sellers").select("id").eq("user_id", uid).maybeSingle(),
-        supabase.from("user_roles").select("role").eq("user_id", uid).eq("role", "admin").maybeSingle(),
+        supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", uid)
+          .eq("role", "admin")
+          .maybeSingle(),
       ]);
       if (s) setMySellerId(s.id);
       if (role) setIsAdmin(true);
@@ -169,7 +197,10 @@ function StorePage() {
       if (session?.user) {
         initAuth(session.user.id);
       } else if (event === "SIGNED_OUT") {
-        setUserId(null); setMySellerId(null); setIsOwner(false); setIsAdmin(false);
+        setUserId(null);
+        setMySellerId(null);
+        setIsOwner(false);
+        setIsAdmin(false);
       }
     });
     return () => listener.subscription.unsubscribe();
@@ -178,14 +209,50 @@ function StorePage() {
   const { data: seller, isLoading } = useQuery({
     queryKey: ["seller", slug],
     queryFn: async () => {
-      // Select explicit columns so anon (guest) reads don't touch columns
-      // that are restricted to authenticated/admin users.
-      const { data, error } = await supabase
+      // Safe columns explicitly granted to anonymous visitors in DB migrations.
+      const safeCols =
+        "id, user_id, name, business_name, slug, whatsapp_number, city, city_id, category, bio, profile_photo_url, cover_photo_url, is_verified, rating, created_at, status, verification_status, is_blocked";
+      const fullCols = `${safeCols}, instagram, snapchat`;
+
+      // 1. Try selecting full columns (works for authenticated users / owners)
+      try {
+        const { data: fullData, error: fullError } = await supabase
+          .from("sellers")
+          .select(fullCols)
+          .eq("slug", slug)
+          .maybeSingle();
+        if (!fullError && fullData) {
+          return fullData;
+        }
+      } catch {
+        // Fall through to safe query
+      }
+
+      // 2. Query safe columns (guaranteed to succeed for anon visitors)
+      const { data: initialData, error } = await supabase
         .from("sellers")
-        .select("id, user_id, name, business_name, slug, whatsapp_number, instagram, snapchat, city, city_id, category, bio, profile_photo_url, cover_photo_url, is_verified, rating, created_at, status, verification_status, is_blocked")
+        .select(safeCols)
         .eq("slug", slug)
         .maybeSingle();
-      if (error) throw error;
+
+      let data = initialData;
+
+      // Case-insensitive fallback in case of URL case mismatch
+      if (!data && !error) {
+        const { data: ciData, error: ciError } = await supabase
+          .from("sellers")
+          .select(safeCols)
+          .ilike("slug", slug)
+          .maybeSingle();
+        if (!ciError && ciData) {
+          data = ciData;
+        }
+      }
+
+      if (error) {
+        console.error("[store] Error loading seller:", error);
+        throw error;
+      }
       return data;
     },
   });
@@ -210,14 +277,19 @@ function StorePage() {
     queryKey: ["vouches", seller?.id],
     enabled: !!seller,
     queryFn: async () => {
-      const { count } = await supabase.from("vouches").select("id", { count: "exact", head: true }).eq("vouched_seller_id", seller!.id);
+      const { count } = await supabase
+        .from("vouches")
+        .select("id", { count: "exact", head: true })
+        .eq("vouched_seller_id", seller!.id);
       return count ?? 0;
     },
   });
 
   useEffect(() => {
     if (!seller || !mySellerId) return;
-    supabase.from("vouches").select("id")
+    supabase
+      .from("vouches")
+      .select("id")
       .eq("voucher_seller_id", mySellerId)
       .eq("vouched_seller_id", seller.id)
       .maybeSingle()
@@ -244,8 +316,16 @@ function StorePage() {
       const owned = seller.user_id === userId;
       setIsOwner(owned);
       if (owned) {
-        supabase.from("sellers").select("rejection_reason").eq("id", seller.id).maybeSingle()
-          .then(({ data }) => setRejectionReason(data?.rejection_reason ?? null));
+        supabase
+          .from("sellers")
+          .select("rejection_reason, instagram, snapchat")
+          .eq("id", seller.id)
+          .maybeSingle()
+          .then(({ data }) => {
+            if (data?.rejection_reason) setRejectionReason(data.rejection_reason);
+            if (data?.instagram) setEInstagram(data.instagram);
+            if (data?.snapchat) setESnapchat(data.snapchat);
+          });
         setEBusiness(seller.business_name);
         setECity(seller.city);
         setECityId(seller.city_id ?? null);
@@ -257,49 +337,77 @@ function StorePage() {
         setEProfileUrl(seller.profile_photo_url ?? null);
         setECoverUrl(seller.cover_photo_url ?? null);
         const since = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
-        supabase.from("whatsapp_clicks").select("id", { count: "exact", head: true })
-          .eq("seller_id", seller.id).gte("created_at", since)
+        supabase
+          .from("whatsapp_clicks")
+          .select("id", { count: "exact", head: true })
+          .eq("seller_id", seller.id)
+          .gte("created_at", since)
           .then(({ count }) => setClicks(count ?? 0));
       }
     }
   }, [seller, userId]);
 
   if (isLoading) return <SectionLoader label="Loading store…" />;
-  if (!seller) return (
-    <div className="min-h-screen bg-background">
-      <TopBar />
-      <div className="p-10 text-center">
-        <p className="font-serif text-2xl">Store not found</p>
-        <Link to="/" className="mt-3 inline-block text-sm text-primary underline">Go home</Link>
+  if (!seller)
+    return (
+      <div className="min-h-screen bg-background">
+        <TopBar />
+        <div className="p-10 text-center">
+          <p className="font-serif text-2xl">Store not found</p>
+          <Link to="/" className="mt-3 inline-block text-sm text-primary underline">
+            Go home
+          </Link>
+        </div>
       </div>
-    </div>
-  );
+    );
 
-  const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/store/${seller.slug}` : "";
+  const shareUrl =
+    typeof window !== "undefined" ? `${window.location.origin}/store/${seller.slug}` : "";
 
   const handleShare = async () => {
-    try { await navigator.clipboard.writeText(shareUrl); toast.success("Link copied!"); } catch {}
-    window.open(`https://wa.me/?text=${encodeURIComponent(`Check out my store on ZANGO 🛍️ ${shareUrl}`)}`, "_blank");
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("Link copied!");
+    } catch {}
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(`Check out my store on ZANGO 🛍️ ${shareUrl}`)}`,
+      "_blank",
+    );
   };
 
   const handleVouch = async () => {
-    if (!userId || !mySellerId) { toast.error("Sign in as a seller to vouch"); return; }
-    if (mySellerId === seller.id) { toast.error("You can't vouch for yourself"); return; }
+    if (!userId || !mySellerId) {
+      toast.error("Sign in as a seller to vouch");
+      return;
+    }
+    if (mySellerId === seller.id) {
+      toast.error("You can't vouch for yourself");
+      return;
+    }
     setVouchLoading(true);
     if (hasVouched) {
-      const { error } = await supabase.from("vouches").delete()
-        .eq("voucher_seller_id", mySellerId).eq("vouched_seller_id", seller.id);
-      if (error) { toast.error(error.message); setVouchLoading(false); return; }
+      const { error } = await supabase
+        .from("vouches")
+        .delete()
+        .eq("voucher_seller_id", mySellerId)
+        .eq("vouched_seller_id", seller.id);
+      if (error) {
+        toast.error(error.message);
+        setVouchLoading(false);
+        return;
+      }
       setHasVouched(false);
       setLocalVouchCount((c) => Math.max(0, (c ?? 1) - 1));
       toast("Vouch removed");
     } else {
       const { error } = await supabase.from("vouches").insert({
-        voucher_seller_id: mySellerId, vouched_seller_id: seller.id,
+        voucher_seller_id: mySellerId,
+        vouched_seller_id: seller.id,
       });
       if (error) {
         toast.error(error.message.includes("duplicate") ? "Already vouched" : error.message);
-        setVouchLoading(false); return;
+        setVouchLoading(false);
+        return;
       }
       setHasVouched(true);
       setLocalVouchCount((c) => (c ?? 0) + 1);
@@ -330,9 +438,15 @@ function StorePage() {
   };
 
   const saveProfile = async () => {
-    if (!eBusiness.trim()) { toast.error("Business name cannot be empty"); return; }
+    if (!eBusiness.trim()) {
+      toast.error("Business name cannot be empty");
+      return;
+    }
     const phoneCheck = validateNigerianPhone(eWhatsapp);
-    if (!phoneCheck.valid) { toast.error(phoneCheck.error); return; }
+    if (!phoneCheck.valid) {
+      toast.error(phoneCheck.error);
+      return;
+    }
     setSaving(true);
     const updates: any = {
       business_name: eBusiness.trim(),
@@ -348,7 +462,10 @@ function StorePage() {
     };
     const { error } = await supabase.from("sellers").update(updates).eq("id", seller.id);
     setSaving(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Profile updated!");
     qc.invalidateQueries({ queryKey: ["seller", slug] });
     setEditMode(false);
@@ -357,9 +474,18 @@ function StorePage() {
   // Add product — image is now REQUIRED
   const addProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pName.trim()) { toast.error("Product name is required"); return; }
-    if (!pPrice || Number(pPrice) <= 0) { toast.error("Enter a valid price"); return; }
-    if (!pImgUrl) { setPImgError("A product image is required"); return; }
+    if (!pName.trim()) {
+      toast.error("Product name is required");
+      return;
+    }
+    if (!pPrice || Number(pPrice) <= 0) {
+      toast.error("Enter a valid price");
+      return;
+    }
+    if (!pImgUrl) {
+      setPImgError("A product image is required");
+      return;
+    }
     setPImgError("");
     setAdding(true);
     const { error } = await supabase.from("products").insert({
@@ -371,9 +497,15 @@ function StorePage() {
       status: "active",
     });
     setAdding(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Product added!");
-    setPName(""); setPPrice(""); setPDesc(""); setPImgUrl(null);
+    setPName("");
+    setPPrice("");
+    setPDesc("");
+    setPImgUrl(null);
     refetchProducts();
   };
 
@@ -398,7 +530,10 @@ function StorePage() {
     };
     const { error } = await supabase.from("products").update(updates).eq("id", editingProduct.id);
     setEPSaving(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Product updated!");
     setEditingProduct(null);
     refetchProducts();
@@ -407,7 +542,10 @@ function StorePage() {
   const deleteProduct = async (id: string) => {
     if (!confirm("Delete this product?")) return;
     const { error } = await supabase.from("products").delete().eq("id", id);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Product deleted");
     refetchProducts();
   };
@@ -426,11 +564,25 @@ function StorePage() {
             <Pencil className="h-3.5 w-3.5" /> Edit Mode — customers can't see this bar
           </span>
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" className="rounded-full h-7 text-xs" onClick={() => setEditMode(false)}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-full h-7 text-xs"
+              onClick={() => setEditMode(false)}
+            >
               <X className="mr-1 h-3 w-3" /> Cancel
             </Button>
-            <Button size="sm" className="rounded-full h-7 text-xs bg-primary text-primary-foreground" onClick={saveProfile} disabled={saving}>
-              {saving ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Check className="mr-1 h-3 w-3" />}
+            <Button
+              size="sm"
+              className="rounded-full h-7 text-xs bg-primary text-primary-foreground"
+              onClick={saveProfile}
+              disabled={saving}
+            >
+              {saving ? (
+                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+              ) : (
+                <Check className="mr-1 h-3 w-3" />
+              )}
               Save
             </Button>
           </div>
@@ -469,33 +621,15 @@ function StorePage() {
       </div>
 
       <div className="mx-auto max-w-3xl px-5">
-
-        {/* Verification / status banners */}
-        {isOwner && seller.verification_status && seller.verification_status !== "approved" && (
-          <div className="pt-4">
-            <VerificationBanner status={seller.verification_status as any} reason={rejectionReason} />
-          </div>
-        )}
-        {isOwner && seller.verification_status === "approved" && (
-          <div className="pt-4">
-            <ApprovedBanner productCount={activeProducts.length} clicks7d={clicks} />
-          </div>
-        )}
-        {isOwner && !editMode && (
-          <div className="pt-4">
-            <SocialLinksAnnouncement
-              sellerId={seller.id}
-              hasSocialLinks={Boolean(seller.instagram || seller.snapchat)}
-              onAddNow={() => setEditMode(true)}
-            />
-          </div>
-        )}
-
         {/* ── Profile picture ── */}
         <div className="-mt-12 flex items-end gap-4">
           <div className="relative z-10 h-24 w-24 shrink-0 overflow-hidden rounded-full border-4 border-background bg-secondary shadow-warm-lg ring-2 ring-primary/15">
             {seller.profile_photo_url ? (
-              <img src={seller.profile_photo_url} alt={seller.business_name} className="h-full w-full object-cover" />
+              <img
+                src={seller.profile_photo_url}
+                alt={seller.business_name}
+                className="h-full w-full object-cover"
+              />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-secondary to-rose/40 font-serif text-4xl text-primary">
                 {seller.business_name.charAt(0)}
@@ -522,7 +656,10 @@ function StorePage() {
                 />
               </div>
 
-              <div><Label>Business name</Label><Input value={eBusiness} onChange={(e) => setEBusiness(e.target.value)} /></div>
+              <div>
+                <Label>Business name</Label>
+                <Input value={eBusiness} onChange={(e) => setEBusiness(e.target.value)} />
+              </div>
               <div>
                 <Label>City</Label>
                 <Select
@@ -533,28 +670,64 @@ function StorePage() {
                   }}
                   disabled={citiesLoading}
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    {activeCities.map((c) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                    {activeCities.map((c) => (
+                      <SelectItem key={c.id} value={c.name}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
                 <Label>Category</Label>
                 <Select value={eCategory} onValueChange={setECategory}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{categories.map((c) => <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>)}</SelectContent>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((c) => (
+                      <SelectItem key={c.name} value={c.name}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
-              <div><Label>Bio (max 150 chars)</Label><Textarea maxLength={150} value={eBio} onChange={(e) => setEBio(e.target.value)} /></div>
-              <div><Label>WhatsApp number</Label><Input value={eWhatsapp} onChange={(e) => setEWhatsapp(e.target.value)} /></div>
-              <div><Label>Instagram (optional)</Label><Input placeholder="handle or profile link" value={eInstagram} onChange={(e) => setEInstagram(e.target.value)} /></div>
-              <div><Label>Snapchat (optional)</Label><Input placeholder="handle or profile link" value={eSnapchat} onChange={(e) => setESnapchat(e.target.value)} /></div>
+              <div>
+                <Label>Bio (max 150 chars)</Label>
+                <Textarea maxLength={150} value={eBio} onChange={(e) => setEBio(e.target.value)} />
+              </div>
+              <div>
+                <Label>WhatsApp number</Label>
+                <Input value={eWhatsapp} onChange={(e) => setEWhatsapp(e.target.value)} />
+              </div>
+              <div>
+                <Label>Instagram (optional)</Label>
+                <Input
+                  placeholder="handle or profile link"
+                  value={eInstagram}
+                  onChange={(e) => setEInstagram(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>Snapchat (optional)</Label>
+                <Input
+                  placeholder="handle or profile link"
+                  value={eSnapchat}
+                  onChange={(e) => setESnapchat(e.target.value)}
+                />
+              </div>
             </div>
           ) : (
             <>
               <div className="flex items-start gap-2">
-                <h1 className="font-serif text-3xl leading-tight sm:text-4xl">{seller.business_name}</h1>
+                <h1 className="font-serif text-3xl leading-tight sm:text-4xl">
+                  {seller.business_name}
+                </h1>
                 {seller.is_verified && (
                   <TooltipProvider>
                     <Tooltip>
@@ -563,23 +736,31 @@ function StorePage() {
                           <VerifiedBadge className="h-6 w-6" />
                         </span>
                       </TooltipTrigger>
-                      <TooltipContent>Vouched for by {localVouchCount ?? 0}+ trusted sellers</TooltipContent>
+                      <TooltipContent>
+                        Vouched for by {localVouchCount ?? 0}+ trusted sellers
+                      </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 )}
               </div>
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                <span className="rounded-full bg-secondary px-3 py-1 font-medium text-secondary-foreground">{seller.category}</span>
+                <span className="rounded-full bg-secondary px-3 py-1 font-medium text-secondary-foreground">
+                  {seller.category}
+                </span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-muted-foreground">
-                  <MapPin className="h-3 w-3" />{seller.city}
+                  <MapPin className="h-3 w-3" />
+                  {seller.city}
                 </span>
                 {(localVouchCount ?? 0) > 0 && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-amber-700 text-xs font-medium">
-                    <Heart className="h-3 w-3 fill-amber-400 text-amber-400" /> {localVouchCount} vouch{localVouchCount !== 1 ? "es" : ""}
+                    <Heart className="h-3 w-3 fill-amber-400 text-amber-400" /> {localVouchCount}{" "}
+                    vouch{localVouchCount !== 1 ? "es" : ""}
                   </span>
                 )}
               </div>
-              {seller.bio && <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{seller.bio}</p>}
+              {seller.bio && (
+                <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{seller.bio}</p>
+              )}
             </>
           )}
 
@@ -587,11 +768,25 @@ function StorePage() {
           <div className="mt-5 flex gap-2">
             {isOwner ? (
               <>
-                <Button onClick={() => setEditMode(!editMode)} variant={editMode ? "outline" : "default"} className="flex-1 rounded-full">
-                  {editMode ? <><X className="mr-1.5 h-4 w-4" /> Exit edit mode</> : <><Pencil className="mr-1.5 h-4 w-4" /> Edit store</>}
+                <Button
+                  onClick={() => setEditMode(!editMode)}
+                  variant={editMode ? "outline" : "default"}
+                  className="flex-1 rounded-full"
+                >
+                  {editMode ? (
+                    <>
+                      <X className="mr-1.5 h-4 w-4" /> Exit edit mode
+                    </>
+                  ) : (
+                    <>
+                      <Pencil className="mr-1.5 h-4 w-4" /> Edit store
+                    </>
+                  )}
                 </Button>
                 <Button asChild variant="outline" className="flex-1 rounded-full">
-                  <Link to="/seller/vendor-card"><Share2 className="mr-1.5 h-4 w-4" /> Vendor card</Link>
+                  <Link to="/seller/vendor-card">
+                    <Share2 className="mr-1.5 h-4 w-4" /> Vendor card
+                  </Link>
                 </Button>
               </>
             ) : (
@@ -606,9 +801,13 @@ function StorePage() {
                     variant="outline"
                     className={`rounded-full transition-colors ${hasVouched ? "border-rose-300 bg-rose-50 text-rose-600 hover:bg-rose-100" : "hover:border-rose-300 hover:text-rose-500"}`}
                   >
-                    {vouchLoading
-                      ? <Loader2 className="h-4 w-4 animate-spin" />
-                      : <Heart className={`mr-1.5 h-4 w-4 transition-all ${hasVouched ? "fill-rose-500 text-rose-500 scale-110" : ""}`} />}
+                    {vouchLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Heart
+                        className={`mr-1.5 h-4 w-4 transition-all ${hasVouched ? "fill-rose-500 text-rose-500 scale-110" : ""}`}
+                      />
+                    )}
                     {hasVouched ? "Vouched" : "Vouch"}
                   </Button>
                 )}
@@ -616,35 +815,72 @@ function StorePage() {
             )}
             {seller.instagram && (
               <Button asChild variant="outline" size="icon" className="rounded-full shrink-0">
-                <a href={`https://instagram.com/${seller.instagram}`} target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                <a
+                  href={`https://instagram.com/${seller.instagram}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Instagram"
+                >
                   <Instagram className="h-4 w-4" />
                 </a>
               </Button>
             )}
             {seller.snapchat && (
               <Button asChild variant="outline" size="icon" className="rounded-full shrink-0">
-                <a href={`https://snapchat.com/add/${seller.snapchat}`} target="_blank" rel="noopener noreferrer" aria-label="Snapchat">
+                <a
+                  href={`https://snapchat.com/add/${seller.snapchat}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Snapchat"
+                >
                   <SnapchatIcon className="h-4 w-4" />
                 </a>
               </Button>
             )}
           </div>
 
+          {/* Vendor status banners & announcements — positioned directly above analytics */}
+          {isOwner && (
+            <div className="mt-5 space-y-3">
+              {seller.verification_status && seller.verification_status !== "approved" && (
+                <VerificationBanner
+                  status={seller.verification_status as any}
+                  reason={rejectionReason}
+                />
+              )}
+              {seller.verification_status === "approved" && (
+                <ApprovedBanner productCount={activeProducts.length} clicks7d={clicks} />
+              )}
+              {!editMode && (
+                <SocialLinksAnnouncement
+                  sellerId={seller.id}
+                  hasSocialLinks={Boolean(seller.instagram || seller.snapchat)}
+                  onAddNow={() => setEditMode(true)}
+                />
+              )}
+            </div>
+          )}
+
           {/* Owner analytics — shown always (not just edit mode) */}
           {isOwner && (
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
               <div className="rounded-xl border bg-card p-3.5 shadow-warm">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Products live</p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Products live
+                </p>
                 <p className="mt-1.5 font-serif text-2xl text-primary">{activeProducts.length}</p>
               </div>
               <div className="rounded-xl border bg-card p-3.5 shadow-warm">
                 <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                  <MessageCircle className="mr-1 inline h-3 w-3" />WhatsApp (7d)
+                  <MessageCircle className="mr-1 inline h-3 w-3" />
+                  WhatsApp (7d)
                 </p>
                 <p className="mt-1.5 font-serif text-2xl text-primary">{clicks}</p>
               </div>
               <div className="col-span-2 sm:col-span-1 rounded-xl border bg-card p-3.5 shadow-warm">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Vouches</p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Vouches
+                </p>
                 <p className="mt-1.5 font-serif text-2xl text-primary">{localVouchCount ?? 0}</p>
               </div>
             </div>
@@ -659,22 +895,39 @@ function StorePage() {
             <form onSubmit={addProduct} className="space-y-4">
               <div>
                 <Label>Product name *</Label>
-                <Input required placeholder="e.g. Suya Plate" value={pName} onChange={(e) => setPName(e.target.value)} />
+                <Input
+                  required
+                  placeholder="e.g. Suya Plate"
+                  value={pName}
+                  onChange={(e) => setPName(e.target.value)}
+                />
               </div>
               <div>
                 <Label>Price (₦) *</Label>
-                <Input required type="number" min="1" placeholder="e.g. 2500" value={pPrice} onChange={(e) => setPPrice(e.target.value)} />
+                <Input
+                  required
+                  type="number"
+                  min="1"
+                  placeholder="e.g. 2500"
+                  value={pPrice}
+                  onChange={(e) => setPPrice(e.target.value)}
+                />
               </div>
 
               {/* Product image — REQUIRED, uses ImageUploader for crop + compress */}
               <div>
                 <Label className="mb-1.5 block">
                   Product image *
-                  <span className="ml-1.5 text-[10px] font-normal text-muted-foreground">(required — cropped & compressed automatically)</span>
+                  <span className="ml-1.5 text-[10px] font-normal text-muted-foreground">
+                    (required — cropped & compressed automatically)
+                  </span>
                 </Label>
                 <ImageUploader
                   value={pImgUrl}
-                  onChange={(url) => { setPImgUrl(url); if (url) setPImgError(""); }}
+                  onChange={(url) => {
+                    setPImgUrl(url);
+                    if (url) setPImgError("");
+                  }}
                   aspect={1}
                   pathPrefix="product"
                   label=""
@@ -688,7 +941,11 @@ function StorePage() {
 
               <div>
                 <Label>Description</Label>
-                <Textarea placeholder="Short product description…" value={pDesc} onChange={(e) => setPDesc(e.target.value)} />
+                <Textarea
+                  placeholder="Short product description…"
+                  value={pDesc}
+                  onChange={(e) => setPDesc(e.target.value)}
+                />
               </div>
 
               <Button
@@ -696,9 +953,15 @@ function StorePage() {
                 disabled={adding}
                 className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
               >
-                {adding
-                  ? <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Adding…</>
-                  : <><Plus className="mr-1.5 h-4 w-4" /> Add Product</>}
+                {adding ? (
+                  <>
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Adding…
+                  </>
+                ) : (
+                  <>
+                    <Plus className="mr-1.5 h-4 w-4" /> Add Product
+                  </>
+                )}
               </Button>
             </form>
           </section>
@@ -708,7 +971,9 @@ function StorePage() {
         <div className="mt-10 mb-4 flex items-end justify-between">
           <h2 className="font-serif text-2xl">Products</h2>
           {products && products.length > 0 && (
-            <span className="text-xs text-muted-foreground">{products.length} item{products.length !== 1 ? "s" : ""}</span>
+            <span className="text-xs text-muted-foreground">
+              {products.length} item{products.length !== 1 ? "s" : ""}
+            </span>
           )}
         </div>
 
@@ -724,7 +989,11 @@ function StorePage() {
                   stock_status={(p as any).stock_status}
                   status={(p as any).status}
                   seller_id={seller.id}
+                  seller_name={seller.business_name}
+                  seller_city={seller.city}
+                  seller_slug={seller.slug}
                   whatsapp_number={seller.whatsapp_number}
+                  seller_is_verified={seller.is_verified}
                   isAdmin={isAdmin}
                   onBlockToggle={() => refetchProducts()}
                 />
@@ -751,7 +1020,9 @@ function StorePage() {
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-            {isOwner ? "No products yet. Enter edit mode and add your first product." : "No products yet."}
+            {isOwner
+              ? "No products yet. Enter edit mode and add your first product."
+              : "No products yet."}
           </div>
         )}
       </div>
@@ -761,18 +1032,42 @@ function StorePage() {
       {/* ── Edit product dialog ── */}
       <Dialog open={!!editingProduct} onOpenChange={(o) => !o && setEditingProduct(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Edit product</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Edit product</DialogTitle>
+          </DialogHeader>
           <div className="space-y-3">
-            <div><Label>Name</Label><Input value={ePName} onChange={(e) => setEPName(e.target.value)} /></div>
-            <div><Label>Price (₦)</Label><Input type="number" min="0" value={ePPrice} onChange={(e) => setEPPrice(e.target.value)} /></div>
+            <div>
+              <Label>Name</Label>
+              <Input value={ePName} onChange={(e) => setEPName(e.target.value)} />
+            </div>
+            <div>
+              <Label>Price (₦)</Label>
+              <Input
+                type="number"
+                min="0"
+                value={ePPrice}
+                onChange={(e) => setEPPrice(e.target.value)}
+              />
+            </div>
             <div>
               <Label>Stock status</Label>
               <Select value={ePStock} onValueChange={setEPStock}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{STOCK_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {STOCK_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </div>
-            <div><Label>Description</Label><Textarea value={ePDesc} onChange={(e) => setEPDesc(e.target.value)} /></div>
+            <div>
+              <Label>Description</Label>
+              <Textarea value={ePDesc} onChange={(e) => setEPDesc(e.target.value)} />
+            </div>
             <div>
               <Label className="mb-1.5 block">Product photo</Label>
               <ImageUploader
@@ -783,13 +1078,16 @@ function StorePage() {
                 label=""
               />
             </div>
-            <Button onClick={saveEditProduct} disabled={ePSaving} className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button
+              onClick={saveEditProduct}
+              disabled={ePSaving}
+              className="w-full rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+            >
               {ePSaving ? "Saving…" : "Save changes"}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
-
     </div>
   );
 }

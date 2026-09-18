@@ -41,14 +41,20 @@ export function SellerProfileProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isReady) return;
-    if (!user) { setSeller(null); setLoading(false); return; }
+    if (!user) {
+      setSeller(null);
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     setLoading(true);
     (async () => {
       try {
         const { data } = await supabase
           .from("sellers")
-          .select("id, slug, business_name, verification_status, is_verified, is_blocked, city, whatsapp_number, profile_photo_url, cover_photo_url, bio, category, rating, created_at")
+          .select(
+            "id, slug, business_name, verification_status, is_verified, is_blocked, city, whatsapp_number, profile_photo_url, cover_photo_url, bio, category, rating, created_at",
+          )
           .eq("user_id", user.id)
           .abortSignal(AbortSignal.timeout(8000))
           .maybeSingle();
@@ -62,7 +68,9 @@ export function SellerProfileProvider({ children }: { children: ReactNode }) {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [isReady, user, tick]);
 
   return (
@@ -72,4 +80,6 @@ export function SellerProfileProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useSellerProfile() { return useContext(SellerCtx); }
+export function useSellerProfile() {
+  return useContext(SellerCtx);
+}

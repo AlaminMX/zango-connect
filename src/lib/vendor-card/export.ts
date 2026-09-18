@@ -1,17 +1,23 @@
 import { vendorCardFormats } from "./themes";
 import type { VendorCardExportOptions, VendorCardFormat } from "./types";
 
-async function exportVendorCard({ node, filename = "zango-vendor-card", format = "instagram-portrait", pixelRatio = 2 }: VendorCardExportOptions) {
+async function exportVendorCard({
+  node,
+  filename = "zango-vendor-card",
+  format = "landscape",
+  pixelRatio = 2,
+}: VendorCardExportOptions) {
   const { toPng } = await import("html-to-image");
   const dimensions = vendorCardFormats[format];
   const dataUrl = await toPng(node, {
     cacheBust: true,
+    skipFonts: true,
     pixelRatio,
     width: dimensions.width,
     height: dimensions.height,
     canvasWidth: dimensions.width,
     canvasHeight: dimensions.height,
-    backgroundColor: "#FCF9F5",
+    backgroundColor: "#F7F2EB",
     style: { transform: "none", width: `${dimensions.width}px`, height: `${dimensions.height}px` },
   });
   const link = document.createElement("a");
@@ -25,7 +31,11 @@ export function generateVendorCard(options: VendorCardExportOptions) {
   return exportVendorCard(options);
 }
 
-export function downloadVendorCard(node: HTMLElement, filename?: string, format: VendorCardFormat = "instagram-portrait") {
+export function downloadVendorCard(
+  node: HTMLElement,
+  filename?: string,
+  format: VendorCardFormat = "landscape",
+) {
   return exportVendorCard({ node, filename, format });
 }
 

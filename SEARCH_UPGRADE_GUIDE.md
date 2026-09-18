@@ -7,18 +7,23 @@ This guide explains the new advanced search metadata system that has been implem
 ## What Was Built
 
 ### 1. **Metadata Generation Service** (`src/lib/search-metadata.functions.ts`)
+
 Automatically generates rich metadata for every product:
+
 - **Search Keywords**: Extracted from title, description, and category
 - **Search Index**: Full-text searchable index combining keywords and category
 - **Attributes**: Category-specific structured data (size, color, brand, etc.)
 
 **Key Features:**
+
 - Auto-generation triggered when products are created/updated
 - Category-specific attribute schemas for Fashion, Beauty, Home, Food, Accessories, and Crafts
 - Default synonym groups for common product variations (perfume↔fragrance, phone↔smartphone)
 
 ### 2. **Admin Metadata Manager** (`src/components/AdminMetadataManager.tsx`)
+
 Complete admin UI for managing product metadata:
+
 - View and edit search keywords for any product
 - Manage category-specific attributes
 - Batch regenerate metadata for all products or by category
@@ -27,7 +32,9 @@ Complete admin UI for managing product metadata:
 **Location**: Added as a tab in the admin dashboard
 
 ### 3. **Advanced Search Algorithm** (`src/lib/advanced-search.ts`)
+
 Sophisticated search ranking system with multiple scoring tiers:
+
 - **Tier 1 (100 points)**: Exact title match
 - **Tier 2 (90 points)**: Title starts with query
 - **Tier 3 (80 points)**: Title contains query
@@ -36,26 +43,33 @@ Sophisticated search ranking system with multiple scoring tiers:
 - **Synonym matches**: Expanded search queries (perfume finds fragrance products)
 
 **Features:**
+
 - Relevance-based ranking
 - Price filtering
 - Synonym expansion
 - Search suggestions
 
 ### 4. **Server-Side Search Function** (`src/lib/search.functions.ts`)
+
 Enhanced search API that leverages metadata:
+
 - Uses product metadata for improved ranking
 - Supports city and category filtering
 - Returns scored results for optimal presentation
 - Includes suggestion generation
 
-### 5. **Product Enhancement UI** 
+### 5. **Product Enhancement UI**
+
 Updated product creation/editing flow:
+
 - **ProductSheet Component**: Now includes category selection and category attributes
 - **CategoryAttributesForm Component**: Displays context-specific fields (size, color, brand, etc.)
 - Attributes are stored with metadata for better search and filtering
 
 ### 6. **Performance & Caching** (`src/lib/search-cache.ts`)
+
 Utilities for optimized performance:
+
 - **TTLCache**: In-memory caching with configurable time-to-live
 - **Debounce/Throttle**: Reduces API calls during search
 - **LocalStorage/SessionStorage**: Type-safe browser storage
@@ -103,6 +117,7 @@ CREATE INDEX idx_product_metadata_index ON product_metadata USING GIN(search_ind
 ## How to Use
 
 ### For Sellers (Automatic)
+
 1. When creating a product, optionally fill in:
    - Product category (autocompleted from seller's category)
    - Category-specific attributes (brand, size, color, etc.)
@@ -110,12 +125,14 @@ CREATE INDEX idx_product_metadata_index ON product_metadata USING GIN(search_ind
 3. Updated whenever product is edited
 
 ### For Admins
+
 1. Go to Admin Dashboard → Metadata Manager tab
 2. Use "Regenerate All" to batch update all products or by category
 3. Click edit icon on any product to manually adjust keywords and attributes
 4. Manage synonym groups to expand search capabilities
 
 ### For Search Integration
+
 ```typescript
 import { advancedSearchProducts } from "@/lib/search.functions";
 
@@ -129,6 +146,7 @@ const results = await advancedSearchProducts({
 ```
 
 ### For Client-Side Optimization
+
 ```typescript
 import { searchCache, debounce } from "@/lib/search-cache";
 
@@ -145,18 +163,19 @@ const debouncedSearch = debounce((query) => {
 
 The system supports these category attributes:
 
-| Category | Attributes |
-|----------|-----------|
-| Fashion & Clothing | Size, Color, Material, Condition |
-| Beauty & Skincare | Brand, Product Type, Skin Type, Volume |
-| Home & Living | Material, Color, Size/Capacity, Condition |
+| Category              | Attributes                                     |
+| --------------------- | ---------------------------------------------- |
+| Fashion & Clothing    | Size, Color, Material, Condition               |
+| Beauty & Skincare     | Brand, Product Type, Skin Type, Volume         |
+| Home & Living         | Material, Color, Size/Capacity, Condition      |
 | Food & Homemade Goods | Type, Weight/Quantity, Ingredients, Shelf Life |
-| Accessories | Type, Material, Color, Condition |
-| Crafts & Handmade | Type, Materials Used, Size, Customization |
+| Accessories           | Type, Material, Color, Condition               |
+| Crafts & Handmade     | Type, Materials Used, Size, Customization      |
 
 ## Default Synonym Groups
 
 Pre-loaded synonyms for common product variations:
+
 - perfume ↔ fragrance, scent, cologne, spray
 - phone ↔ smartphone, mobile, cellular, handset
 - shoes ↔ footwear, sneakers, boots, sandals, heels
@@ -169,21 +188,25 @@ Admins can add custom synonym groups via the Metadata Manager.
 ## Performance Optimization
 
 ### Search Result Caching
+
 - Results cached for 5 minutes
 - Cache cleared when products are modified
 - Reduces database queries significantly
 
 ### Debouncing
+
 - Search input debounced by 300ms
 - Prevents excessive API calls during typing
 - Can be adjusted per implementation
 
 ### Database Indexes
+
 - `search_keywords` indexed for fast keyword matching
 - `search_index` GIN-indexed for full-text search
 - `product_id` unique constraint prevents duplicates
 
 ### Batch Operations
+
 - Metadata regeneration processes multiple products efficiently
 - Batch queue groups requests to reduce API calls
 
@@ -214,23 +237,30 @@ supabase db push
 ## Common Issues & Solutions
 
 ### Issue: Metadata not generating
+
 **Solution**: Check that `product_metadata` table exists and `generateProductMetadata` is called after product creation.
 
 ### Issue: Slow search results
-**Solution**: 
+
+**Solution**:
+
 - Ensure database indexes are created
 - Check that search_index is properly populated
 - Implement caching layer
 - Increase `limit` in batches if regenerating
 
 ### Issue: Synonyms not working
-**Solution**: 
+
+**Solution**:
+
 - Verify `synonym_groups` table has data
 - Check synonym terms are lowercase
 - Rebuild search metadata after adding synonyms
 
 ### Issue: Attributes not showing
-**Solution**: 
+
+**Solution**:
+
 - Confirm `CATEGORY_ATTRIBUTES` in `search-metadata.functions.ts` includes the category
 - Check product has `category` field set
 - Verify attributes JSONB is properly stored
@@ -257,6 +287,7 @@ supabase db push
 ## Support
 
 For issues or questions:
+
 1. Check this guide's "Common Issues" section
 2. Review admin logs for errors
 3. Verify database tables and indexes exist

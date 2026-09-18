@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 export async function trackView(
   targetType: "store" | "product",
   targetId: string,
-  sellerId: string
+  sellerId: string,
 ) {
   try {
     await supabase.from("page_views").insert({

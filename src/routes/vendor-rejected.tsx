@@ -29,7 +29,8 @@ function VendorRejectedPage() {
         <AlertCircle className="h-16 w-16 text-destructive mb-4" />
         <h1 className="font-serif text-3xl mb-2">Application Not Approved</h1>
         <p className="text-muted-foreground mb-6">
-          Your store application was not approved at this time. Please contact our support team for more information.
+          Your store application was not approved at this time. Please contact our support team for
+          more information.
         </p>
         <div className="space-y-2 w-full">
           <Link to="/">

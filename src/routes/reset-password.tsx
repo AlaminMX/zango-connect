@@ -87,7 +87,13 @@ function ResetPasswordPage() {
         <TopBar />
         <div className="mx-auto max-w-md px-5 py-20 flex flex-col items-center text-center">
           <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
-            <svg className="h-10 w-10 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg
+              className="h-10 w-10 text-primary"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
@@ -113,8 +119,19 @@ function ResetPasswordPage() {
         <TopBar />
         <div className="mx-auto max-w-md px-5 py-20 flex flex-col items-center text-center">
           <svg className="h-8 w-8 animate-spin text-primary" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
           </svg>
           <p className="mt-4 text-sm text-muted-foreground">Verifying your reset link…</p>
         </div>
@@ -129,8 +146,18 @@ function ResetPasswordPage() {
         <TopBar />
         <div className="mx-auto max-w-md px-5 py-20 flex flex-col items-center text-center">
           <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-destructive/10">
-            <svg className="h-10 w-10 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            <svg
+              className="h-10 w-10 text-destructive"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+              />
             </svg>
           </div>
           <h1 className="font-serif text-3xl font-semibold">Invalid reset link</h1>
@@ -156,8 +183,18 @@ function ResetPasswordPage() {
         {/* Header */}
         <div className="mb-8 text-center">
           <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <svg className="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            <svg
+              className="h-8 w-8 text-primary"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+              />
             </svg>
           </div>
           <h1 className="font-serif text-3xl font-semibold">Set new password</h1>
@@ -200,7 +237,13 @@ function ResetPasswordPage() {
             )}
             {confirmPassword && newPassword === confirmPassword && confirmPassword.length >= 6 && (
               <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <svg
+                  className="h-3 w-3"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
                 Passwords match
@@ -217,18 +260,30 @@ function ResetPasswordPage() {
                   key={i}
                   className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
                     newPassword.length >= threshold
-                      ? i < 1 ? "bg-destructive" : i < 2 ? "bg-amber-400" : i < 3 ? "bg-yellow-400" : "bg-green-500"
+                      ? i < 1
+                        ? "bg-destructive"
+                        : i < 2
+                          ? "bg-amber-400"
+                          : i < 3
+                            ? "bg-yellow-400"
+                            : "bg-green-500"
                       : "bg-border"
                   }`}
                 />
               ))}
             </div>
             <p className="text-xs text-muted-foreground mt-1.5">
-              {newPassword.length === 0 ? "Enter a password" :
-               newPassword.length < 6 ? "Too short" :
-               newPassword.length < 8 ? "Weak" :
-               newPassword.length < 10 ? "Fair" :
-               newPassword.length < 12 ? "Good" : "Strong"}
+              {newPassword.length === 0
+                ? "Enter a password"
+                : newPassword.length < 6
+                  ? "Too short"
+                  : newPassword.length < 8
+                    ? "Weak"
+                    : newPassword.length < 10
+                      ? "Fair"
+                      : newPassword.length < 12
+                        ? "Good"
+                        : "Strong"}
             </p>
           </div>
 
@@ -240,12 +295,25 @@ function ResetPasswordPage() {
             {loading ? (
               <span className="flex items-center gap-2">
                 <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
                 </svg>
                 Updating password…
               </span>
-            ) : "Update password"}
+            ) : (
+              "Update password"
+            )}
           </Button>
 
           <button

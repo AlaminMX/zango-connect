@@ -4,5 +4,8 @@
 // % _ * as ilike/like wildcards. Stripping them prevents a search term from
 // changing which filter conditions are evaluated.
 export function sanitizePostgrestLike(input: string): string {
-  return input.replace(/[,()."%*_\\:]/g, " ").replace(/\s+/g, " ").trim();
+  return input
+    .replace(/[,()."%*_\\:]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }

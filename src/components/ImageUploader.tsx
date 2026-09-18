@@ -7,7 +7,13 @@ import Cropper from "react-easy-crop";
 import imageCompression from "browser-image-compression";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { Loader2, Upload, X, Pencil } from "lucide-react";
 import { toast } from "sonner";
@@ -25,7 +31,10 @@ interface Props {
   className?: string;
 }
 
-async function getCroppedBlob(src: string, area: { x: number; y: number; width: number; height: number }): Promise<Blob> {
+async function getCroppedBlob(
+  src: string,
+  area: { x: number; y: number; width: number; height: number },
+): Promise<Blob> {
   const img = await new Promise<HTMLImageElement>((resolve, reject) => {
     const i = new Image();
     i.crossOrigin = "anonymous";
@@ -57,7 +66,12 @@ export function ImageUploader({
   const [srcDataUrl, setSrcDataUrl] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const [pixels, setPixels] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const [pixels, setPixels] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
   const [busy, setBusy] = useState(false);
 
   const handleFile = (file: File) => {
@@ -74,14 +88,18 @@ export function ImageUploader({
     reader.onload = () => {
       setSrcDataUrl(reader.result as string);
       setCropOpen(true);
-      setZoom(1); setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCrop({ x: 0, y: 0 });
     };
     reader.readAsDataURL(file);
   };
 
-  const onCropComplete = useCallback((_: unknown, areaPixels: { x: number; y: number; width: number; height: number }) => {
-    setPixels(areaPixels);
-  }, []);
+  const onCropComplete = useCallback(
+    (_: unknown, areaPixels: { x: number; y: number; width: number; height: number }) => {
+      setPixels(areaPixels);
+    },
+    [],
+  );
 
   const upload = async () => {
     if (!srcDataUrl || !pixels) return;
@@ -96,17 +114,22 @@ export function ImageUploader({
       const cropped = await getCroppedBlob(srcDataUrl, pixels);
       const file = new File([cropped], "image.jpg", { type: "image/jpeg" });
       const compressed = await imageCompression(file, {
-        maxSizeMB: 1, maxWidthOrHeight: 1600, useWebWorker: true, fileType: "image/jpeg",
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1600,
+        useWebWorker: true,
+        fileType: "image/jpeg",
       });
       const path = `${uid}/${pathPrefix}-${Date.now()}.jpg`;
       const { error } = await supabase.storage.from(bucket).upload(path, compressed, {
-        upsert: true, contentType: "image/jpeg",
+        upsert: true,
+        contentType: "image/jpeg",
       });
       if (error) throw error;
       const { data } = supabase.storage.from(bucket).getPublicUrl(path);
       onChange(data.publicUrl);
       toast.success("Uploaded");
-      setCropOpen(false); setSrcDataUrl(null);
+      setCropOpen(false);
+      setSrcDataUrl(null);
     } catch (e: any) {
       toast.error(humanizeError(e?.message ?? e));
     } finally {
@@ -119,8 +142,14 @@ export function ImageUploader({
   return (
     <div className={className}>
       {label && <p className="mb-1.5 text-sm font-medium">{label}</p>}
-      <div className={`relative overflow-hidden border bg-muted ${roundedCls} ${shape === "circle" ? "h-24 w-24" : "aspect-[var(--ar)] w-full"}`}
-        style={shape === "rect" ? ({ ["--ar" as any]: String(aspect) } as React.CSSProperties) : undefined}>
+      <div
+        className={`relative overflow-hidden border bg-muted ${roundedCls} ${shape === "circle" ? "h-24 w-24" : "aspect-[var(--ar)] w-full"}`}
+        style={
+          shape === "rect"
+            ? ({ ["--ar" as any]: String(aspect) } as React.CSSProperties)
+            : undefined
+        }
+      >
         {value ? (
           <img src={value} alt="" className="h-full w-full object-cover" />
         ) : (
@@ -128,15 +157,36 @@ export function ImageUploader({
             <Upload className="mr-1 h-4 w-4" /> No image
           </div>
         )}
-        <input ref={inputRef} type="file" accept="image/*" className="sr-only"
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }} />
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleFile(f);
+            e.target.value = "";
+          }}
+        />
       </div>
       <div className="mt-2 flex gap-2">
-        <Button type="button" size="sm" variant="outline" className="rounded-full" onClick={() => inputRef.current?.click()}>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="rounded-full"
+          onClick={() => inputRef.current?.click()}
+        >
           <Pencil className="mr-1 h-3.5 w-3.5" /> {value ? "Replace" : "Upload"}
         </Button>
         {value && (
-          <Button type="button" size="sm" variant="ghost" className="rounded-full text-destructive" onClick={() => onChange(null)}>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="rounded-full text-destructive"
+            onClick={() => onChange(null)}
+          >
             <X className="mr-1 h-3.5 w-3.5" /> Remove
           </Button>
         )}
@@ -144,7 +194,9 @@ export function ImageUploader({
 
       <Dialog open={cropOpen} onOpenChange={(o) => !o && !busy && setCropOpen(false)}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Adjust image</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Adjust image</DialogTitle>
+          </DialogHeader>
           <div className="relative h-72 w-full overflow-hidden rounded-xl bg-black">
             {srcDataUrl && (
               <Cropper
@@ -161,12 +213,26 @@ export function ImageUploader({
           </div>
           <div className="space-y-2 pt-2">
             <p className="text-xs text-muted-foreground">Zoom</p>
-            <Slider min={1} max={3} step={0.05} value={[zoom]} onValueChange={(v) => setZoom(v[0])} />
+            <Slider
+              min={1}
+              max={3}
+              step={0.05}
+              value={[zoom]}
+              onValueChange={(v) => setZoom(v[0])}
+            />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCropOpen(false)} disabled={busy}>Cancel</Button>
+            <Button variant="outline" onClick={() => setCropOpen(false)} disabled={busy}>
+              Cancel
+            </Button>
             <Button onClick={upload} disabled={busy}>
-              {busy ? <><Loader2 className="mr-1 h-4 w-4 animate-spin" /> Uploading…</> : "Save"}
+              {busy ? (
+                <>
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" /> Uploading…
+                </>
+              ) : (
+                "Save"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

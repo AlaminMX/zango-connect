@@ -32,8 +32,7 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
 
   // Restore persisted selection
   useEffect(() => {
-    const stored =
-      typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+    const stored = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
     if (stored) setSelectedCityState(stored);
   }, []);
 
@@ -44,13 +43,17 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
       .then((data) => {
         if (!cancelled) {
           setActiveCities(
-            data.map((c) => ({ id: c.id, name: c.name, state: c.state, slug: c.slug }))
+            data.map((c) => ({ id: c.id, name: c.name, state: c.state, slug: c.slug })),
           );
         }
       })
       .catch(console.error)
-      .finally(() => { if (!cancelled) setCitiesLoading(false); });
-    return () => { cancelled = true; };
+      .finally(() => {
+        if (!cancelled) setCitiesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const setSelectedCity = (city: string) => {
@@ -65,4 +68,6 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useCity() { return useContext(CityContext); }
+export function useCity() {
+  return useContext(CityContext);
+}

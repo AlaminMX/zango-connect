@@ -4,36 +4,15 @@
  */
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { MapPin, ArrowUpRight, ArrowRight } from "lucide-react";
-
-interface StateRow {
-  id: string; name: string; slug: string;
-  is_featured_home?: boolean;
-  sellers_count?: number; products_count?: number;
-}
+import { getNormalizedStatesWithStats, StateStatRow } from "@/lib/states-data";
 
 export function ExploreStates() {
   const { data: states, isLoading } = useQuery({
     queryKey: ["explore-states-home"],
     staleTime: 5 * 60_000,
-    queryFn: async (): Promise<StateRow[]> => {
-      const { data, error } = await (supabase as any)
-        .from("states_with_stats")
-        .select("id, name, slug, is_active, is_featured_home, sort_order, sellers_count, products_count")
-        .eq("is_active", true);
-      if (error) return [];
-      const rows = (data ?? []) as StateRow[];
-      rows.sort((a, b) => {
-        const af = a.is_featured_home ? 1 : 0;
-        const bf = b.is_featured_home ? 1 : 0;
-        if (af !== bf) return bf - af;
-        const ac = a.sellers_count ?? 0;
-        const bc = b.sellers_count ?? 0;
-        if (ac !== bc) return bc - ac;
-        return a.name.localeCompare(b.name);
-      });
-      return rows;
+    queryFn: async (): Promise<StateStatRow[]> => {
+      return getNormalizedStatesWithStats();
     },
   });
 
@@ -45,8 +24,12 @@ export function ExploreStates() {
     <section className="mx-auto max-w-6xl px-4 py-12 sm:px-5 sm:py-14 lg:py-16">
       <div className="mb-7 flex items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-sage-deep">Regional hubs</p>
-          <h2 className="mt-1 font-display text-3xl leading-tight text-espresso sm:text-4xl">Explore by state</h2>
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-sage-deep">
+            Regional hubs
+          </p>
+          <h2 className="mt-1 font-display text-3xl leading-tight text-espresso sm:text-4xl">
+            Explore by state
+          </h2>
         </div>
         <Link
           to="/states"
@@ -70,11 +53,14 @@ export function ExploreStates() {
               <ArrowUpRight className="h-4 w-4 text-sage-deep transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
             </div>
             <div className="mt-6">
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-sage-deep">State</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-sage-deep">
+                State
+              </p>
               <p className="mt-1 font-display text-2xl text-espresso">{s.name}</p>
               {typeof s.sellers_count === "number" && (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {s.sellers_count} {s.sellers_count === 1 ? "vendor" : "vendors"} · {s.products_count ?? 0} products
+                  {s.sellers_count} {s.sellers_count === 1 ? "vendor" : "vendors"} ·{" "}
+                  {s.products_count ?? 0} products
                 </p>
               )}
             </div>
@@ -90,7 +76,9 @@ export function ExploreStates() {
             </div>
           </div>
           <div className="mt-6">
-            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-primary">Discover</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-primary">
+              Discover
+            </p>
             <p className="mt-1 font-display text-2xl text-espresso">More states</p>
             <p className="mt-1 text-xs text-muted-foreground">
               Browse & search every state and city

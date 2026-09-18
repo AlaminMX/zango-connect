@@ -29,14 +29,17 @@ export function VerificationBanner({
       bg: "bg-rose-50 border-rose-200 text-rose-900",
       iconColor: "text-rose-600",
       title: "Verification Rejected",
-      body: reason || "Your store was not approved. Please review your information and contact support.",
+      body:
+        reason ||
+        "Your store was not approved. Please review your information and contact support.",
     },
     suspended: {
       icon: AlertCircle,
       bg: "bg-rose-50 border-rose-200 text-rose-900",
       iconColor: "text-rose-600",
       title: "Store Suspended",
-      body: reason || "Your store has been suspended by administration. Contact support for details.",
+      body:
+        reason || "Your store has been suspended by administration. Contact support for details.",
     },
   } as const;
 

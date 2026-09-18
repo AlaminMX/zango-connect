@@ -10,21 +10,30 @@ const APP_SHELL = [
   "/icons/icon-192x192.png",
   "/icons/icon-512x512.png",
   "/icons/maskable-icon-512x512.png",
-  "/apple-touch-icon.png"
+  "/apple-touch-icon.png",
 ];
 const MAX_RUNTIME_ENTRIES = 80;
 const MAX_IMAGE_ENTRIES = 120;
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(APP_SHELL_CACHE).then((cache) => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
+  event.waitUntil(
+    caches
+      .open(APP_SHELL_CACHE)
+      .then((cache) => cache.addAll(APP_SHELL))
+      .then(() => self.skipWaiting()),
+  );
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil((async () => {
-    const keys = await caches.keys();
-    await Promise.all(keys.filter((key) => !key.startsWith(VERSION)).map((key) => caches.delete(key)));
-    await self.clients.claim();
-  })());
+  event.waitUntil(
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
+        keys.filter((key) => !key.startsWith(VERSION)).map((key) => caches.delete(key)),
+      );
+      await self.clients.claim();
+    })(),
+  );
 });
 
 self.addEventListener("message", (event) => {
@@ -38,7 +47,11 @@ async function trimCache(cacheName, maxEntries) {
 }
 
 function isApiRequest(url) {
-  return url.pathname.includes("/api/") || url.hostname.includes("supabase.co") || url.pathname.includes("/.netlify/functions/");
+  return (
+    url.pathname.includes("/api/") ||
+    url.hostname.includes("supabase.co") ||
+    url.pathname.includes("/.netlify/functions/")
+  );
 }
 
 async function networkFirst(request) {
@@ -57,13 +70,15 @@ async function networkFirst(request) {
 async function staleWhileRevalidate(request, cacheName, maxEntries) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
-  const fetchPromise = fetch(request).then((response) => {
-    if (response.ok) {
-      cache.put(request, response.clone());
-      trimCache(cacheName, maxEntries);
-    }
-    return response;
-  }).catch(() => cached);
+  const fetchPromise = fetch(request)
+    .then((response) => {
+      if (response.ok) {
+        cache.put(request, response.clone());
+        trimCache(cacheName, maxEntries);
+      }
+      return response;
+    })
+    .catch(() => cached);
   return cached || fetchPromise;
 }
 
@@ -79,7 +94,13 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (["style", "script", "worker", "font"].includes(request.destination)) {
-    event.respondWith(staleWhileRevalidate(request, request.destination === "font" ? FONT_CACHE : RUNTIME_CACHE, MAX_RUNTIME_ENTRIES));
+    event.respondWith(
+      staleWhileRevalidate(
+        request,
+        request.destination === "font" ? FONT_CACHE : RUNTIME_CACHE,
+        MAX_RUNTIME_ENTRIES,
+      ),
+    );
     return;
   }
 
@@ -87,4 +108,3 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(staleWhileRevalidate(request, IMAGE_CACHE, MAX_IMAGE_ENTRIES));
   }
 });
-    

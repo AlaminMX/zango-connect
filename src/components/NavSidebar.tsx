@@ -48,7 +48,7 @@ export function NavSidebar({ open, onOpenChange }: NavSidebarProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="flex w-72 flex-col gap-1 p-4">
+      <SheetContent side="right" className="flex w-72 flex-col gap-1 p-4">
         <SheetHeader className="mb-2 text-left">
           <SheetTitle className="font-display text-xl text-espresso">Menu</SheetTitle>
         </SheetHeader>

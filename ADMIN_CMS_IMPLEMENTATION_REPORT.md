@@ -1,11 +1,13 @@
 # Admin CMS & Vendor Approval Workflow - Implementation Report
 
 ## Overview
+
 Successfully implemented a comprehensive Content Management System (CMS) for the Sutura Market admin dashboard, transforming it from a monitoring panel into a full management system. All homepage content is now managed through dedicated admin pages without code changes.
 
 ## Part 1: Database Schema & Migrations
 
 ### New Tables Created
+
 **File:** `supabase/migrations/20260703140000_add_cms_and_vendor_workflow.sql`
 
 1. **featured_products_admin**
@@ -28,12 +30,16 @@ Successfully implemented a comprehensive Content Management System (CMS) for the
    - Indexed by created_at and admin_id
 
 ### Vendor Workflow Enhancement
+
 Modified **sellers** table:
+
 - Added `onboarding_status` column with enum: draft → step1_complete → step2_complete → pending_approval → approved/rejected
 - Indexed for fast filtering
 
 ### RLS Policies
+
 All CMS tables have Row Level Security policies:
+
 - Public read access for featured_products_admin and trending_sellers_admin (homepage needs to read)
 - Admin-only write/update access (verified via email pattern or is_admin flag)
 - Admin-only read access for admin_audit_log
@@ -43,11 +49,13 @@ All CMS tables have Row Level Security policies:
 ### Changes Made
 
 **File:** `src/routes/register.tsx`
+
 - Step 1 completion: Sets `onboarding_status = "step1_complete"` when vendor submits business info
 - Step 2 completion: Sets `onboarding_status = "step2_complete"` when vendor uploads photos
 - Vendors only appear in admin approval queue after BOTH steps complete
 
 ### Workflow
+
 ```
 Draft (no action) → Step 1 Complete (business info submitted)
                  → Step 2 Complete (photos uploaded)
@@ -60,6 +68,7 @@ Draft (no action) → Step 1 Complete (business info submitted)
 **File:** `src/routes/admin.featured-products.tsx`
 
 ### Features Implemented
+
 - Search products by name or seller
 - Add products to featured list (prevents duplicates)
 - Remove products from featured list
@@ -70,6 +79,7 @@ Draft (no action) → Step 1 Complete (business info submitted)
 - Empty state messaging
 
 ### Database Integration
+
 - Queries from featured_products_admin table
 - Joins with products and sellers tables
 - Auto-increments display_order
@@ -80,6 +90,7 @@ Draft (no action) → Step 1 Complete (business info submitted)
 **File:** `src/routes/admin.trending-sellers.tsx`
 
 ### Features Implemented
+
 - Search sellers by business name or category
 - Add sellers to trending list (max 12)
 - Remove sellers from trending list
@@ -90,6 +101,7 @@ Draft (no action) → Step 1 Complete (business info submitted)
 - Empty state messaging
 
 ### Constraints
+
 - Maximum 12 trending sellers (extendable)
 - Only approved & non-blocked sellers shown in available list
 - Homepage displays first 3 trending sellers horizontally
@@ -97,23 +109,29 @@ Draft (no action) → Step 1 Complete (business info submitted)
 ## Part 5: Homepage CMS Architecture
 
 ### New Service Layer
+
 **File:** `src/lib/homepage-cms.ts`
 
 Two main functions:
+
 1. `getFeaturedProducts()` - Fetches featured products from admin-managed table
 2. `getTrendingSellers(limit)` - Fetches trending sellers (default: 3 for homepage)
 
 ### Homepage Integration
+
 **File:** `src/routes/explore.tsx`
 
 **Changes:**
+
 - Replaced trending sellers hardcoded/dynamically calculated logic with CMS fetch
 - Trending sellers now display horizontally in 3-column grid (max 3 visible)
 - Updated styling for responsive layout (gap-4 md:gap-6)
 - Featured products remain as-is (can be CMS-managed in future)
 
 ### Future Extensibility
+
 Architecture designed to easily add CMS sections:
+
 - Hero banners
 - Promotional campaigns
 - Seasonal collections
@@ -127,6 +145,7 @@ Simply add a new function in `homepage-cms.ts` and integrate into page.
 **File:** `src/lib/audit-log.ts`
 
 ### Audit Actions Tracked
+
 - featured_product_added
 - featured_product_removed
 - featured_products_reordered
@@ -139,6 +158,7 @@ Simply add a new function in `homepage-cms.ts` and integrate into page.
 - vendor_unblocked
 
 ### Integration
+
 - Featured Products page logs all add/remove/reorder actions
 - Trending Sellers page logs all add/remove/reorder actions
 - Includes admin_id, action, entity_type, entity_id, and details (JSON)
@@ -147,12 +167,14 @@ Simply add a new function in `homepage-cms.ts` and integrate into page.
 ## Part 7: Homepage Synchronization
 
 ### Real-time Updates
+
 - Featured products homepage shows immediately after saving (no deploy needed)
 - Trending sellers update immediately after saving
 - Frontend caches for 5 minutes (staleTime), but force refresh works instantly
 - No code changes required to update homepage content
 
 ### User Flow
+
 1. Admin goes to /admin/featured-products
 2. Adds/removes/reorders products
 3. Clicks "Save order"
@@ -164,6 +186,7 @@ Simply add a new function in `homepage-cms.ts` and integrate into page.
 **File:** `src/routes/admin.tsx`
 
 ### Changes
+
 - Updated seller query to filter by `onboarding_status = "step2_complete"`
 - Added `onboarding_status` field to SellerRow interface
 - Only vendors with complete onboarding appear in approval queue
@@ -172,6 +195,7 @@ Simply add a new function in `homepage-cms.ts` and integrate into page.
 ## Files Created/Modified
 
 ### Created
+
 1. `supabase/migrations/20260703140000_add_cms_and_vendor_workflow.sql` - Database schema
 2. `src/routes/admin.featured-products.tsx` - Featured products management page
 3. `src/routes/admin.trending-sellers.tsx` - Trending sellers management page
@@ -179,6 +203,7 @@ Simply add a new function in `homepage-cms.ts` and integrate into page.
 5. `src/lib/audit-log.ts` - Audit logging utility
 
 ### Modified
+
 1. `src/routes/register.tsx` - Added onboarding_status updates
 2. `src/routes/admin.tsx` - Filter vendors by onboarding_status
 3. `src/routes/explore.tsx` - Integrated CMS for trending sellers display
@@ -200,6 +225,7 @@ Simply add a new function in `homepage-cms.ts` and integrate into page.
 ## Regression Testing Recommendations
 
 ### Critical Paths to Test
+
 1. Vendor onboarding - ensure step 1 → step 2 → approval works
 2. Admin approval workflow - verify pending vendors show correctly
 3. Featured products add/remove/reorder - test drag-drop and persistence
@@ -210,6 +236,7 @@ Simply add a new function in `homepage-cms.ts` and integrate into page.
 8. Mobile responsiveness - trending sellers grid on mobile
 
 ### Recommended Next Steps
+
 1. Add admin links to Featured Products and Trending Sellers in admin dashboard nav
 2. Build audit log viewer page for admins to see action history
 3. Add bulk operations (delete all, reorder by category, etc.)
@@ -218,6 +245,7 @@ Simply add a new function in `homepage-cms.ts` and integrate into page.
 6. Build analytics on what content drives the most engagement
 
 ## Performance Notes
+
 - All queries optimized with proper indexes
 - Featured/Trending queries cached 5 minutes on frontend
 - No N+1 queries (uses JOINs)
@@ -225,6 +253,7 @@ Simply add a new function in `homepage-cms.ts` and integrate into page.
 - Audit logs indexed for fast historical lookups
 
 ## Security Considerations
+
 - RLS policies enforce admin-only access
 - Audit log prevents unauthorized changes (admin_id tracked)
 - No client-side checks only (all validation server-side)

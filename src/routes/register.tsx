@@ -35,6 +35,8 @@ import {
   AlertCircle,
   Check,
   MessageCircle,
+  Mail,
+  KeyRound,
 } from "lucide-react";
 import { listActiveStates, listCitiesForState } from "@/lib/states.functions";
 
@@ -76,6 +78,15 @@ function Register() {
   // Step 1 — auth
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  // Account conflict resolution state (for accounts where auth user exists e.g. deleted vendor)
+  const [accountConflict, setAccountConflict] = useState<{
+    email: string;
+    attemptedPassword?: string;
+  } | null>(null);
+  const [conflictPassword, setConflictPassword] = useState("");
+  const [conflictBusy, setConflictBusy] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   // Step 1 — business
   const [name, setName] = useState("");
@@ -163,69 +174,7 @@ function Register() {
     return e;
   };
 
-  const submitStep1 = async () => {
-    const errs = validateStep1();
-    if (Object.keys(errs).length) {
-      setErrors(errs);
-      return;
-    }
-    setErrors({});
-    setBusy(true);
-
-    let uid = userId;
-
-    if (!hasAccount) {
-      const { data: signUp, error: signErr } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-      });
-      if (signErr) {
-        if (
-          signErr.message.toLowerCase().includes("registered") ||
-          signErr.message.toLowerCase().includes("exists")
-        ) {
-          const { data: signIn, error: inErr } = await supabase.auth.signInWithPassword({
-            email: email.trim(),
-            password,
-          });
-          if (inErr || !signIn.user) {
-            setBusy(false);
-            setErrors({ email: "An account exists for this email. The password didn't match." });
-            return;
-          }
-          uid = signIn.user.id;
-        } else {
-          setBusy(false);
-          toast.error(signErr.message);
-          return;
-        }
-      } else if (signUp.user) {
-        uid = signUp.user.id;
-      }
-
-      if (!uid) {
-        setBusy(false);
-        toast.error("Couldn't create your account. Please try again.");
-        return;
-      }
-      setUserId(uid);
-      setHasAccount(true);
-
-      const { data: existing } = await supabase
-        .from("sellers")
-        .select("id, profile_photo_url, cover_photo_url")
-        .eq("user_id", uid)
-        .maybeSingle();
-      if (existing) {
-        setSellerId(existing.id);
-        setProfileUrl(existing.profile_photo_url ?? null);
-        setCoverUrl(existing.cover_photo_url ?? null);
-        setBusy(false);
-        setStep(existing.profile_photo_url ? 3 : 2);
-        return;
-      }
-    }
-
+  const saveSellerStep1 = async (targetUid: string) => {
     const baseSlug = slugify(businessName);
     let slug = baseSlug;
     for (let i = 0; i < 5; i++) {
@@ -265,7 +214,7 @@ function Register() {
     const { data, error } = await supabase
       .from("sellers")
       .insert({
-        user_id: uid!,
+        user_id: targetUid,
         name,
         business_name: businessName.trim(),
         slug,
@@ -289,6 +238,162 @@ function Register() {
     setSellerId(data.id);
     toast.success("Business information saved.");
     setStep(2);
+  };
+
+  const handleVerifyExistingPassword = async () => {
+    const targetEmail = accountConflict?.email || email.trim();
+    if (!targetEmail || !conflictPassword) return;
+    setConflictBusy(true);
+
+    const { data: signIn, error: inErr } = await supabase.auth.signInWithPassword({
+      email: targetEmail,
+      password: conflictPassword,
+    });
+
+    if (inErr || !signIn.user) {
+      setConflictBusy(false);
+      toast.error(inErr?.message || "Incorrect password. Please check and try again.");
+      return;
+    }
+
+    const uid = signIn.user.id;
+    setUserId(uid);
+    setHasAccount(true);
+    setAccountConflict(null);
+    setErrors({});
+
+    // If user specified a new password in the form, smoothly update it
+    if (password && password !== conflictPassword && password.length >= 6) {
+      try {
+        await supabase.auth.updateUser({ password });
+      } catch {
+        // non-blocking
+      }
+    }
+
+    // Check if seller profile already exists
+    const { data: existing } = await supabase
+      .from("sellers")
+      .select("id, profile_photo_url, cover_photo_url")
+      .eq("user_id", uid)
+      .maybeSingle();
+
+    if (existing) {
+      setSellerId(existing.id);
+      setProfileUrl(existing.profile_photo_url ?? null);
+      setCoverUrl(existing.cover_photo_url ?? null);
+      setConflictBusy(false);
+      setBusy(false);
+      setStep(existing.profile_photo_url ? 3 : 2);
+      toast.success("Account connected! Resuming store onboarding.");
+      return;
+    }
+
+    // Clean slate (e.g. deleted vendor re-registering) — save step 1 details now
+    setConflictBusy(false);
+    setBusy(true);
+    await saveSellerStep1(uid);
+  };
+
+  const handleSendPasswordReset = async () => {
+    const targetEmail = accountConflict?.email || email.trim();
+    if (!targetEmail) return;
+    setConflictBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setConflictBusy(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      setResetSent(true);
+      toast.success(`Password reset link sent to ${targetEmail}`);
+    }
+  };
+
+  const submitStep1 = async () => {
+    const errs = validateStep1();
+    if (Object.keys(errs).length) {
+      setErrors(errs);
+      return;
+    }
+    setErrors({});
+    setBusy(true);
+
+    let uid = userId;
+
+    if (!hasAccount) {
+      const { data: signUp, error: signErr } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+      });
+
+      if (signErr) {
+        const isRegistered =
+          signErr.message.toLowerCase().includes("registered") ||
+          signErr.message.toLowerCase().includes("exists") ||
+          ("status" in signErr && (signErr as { status?: number }).status === 422);
+
+        if (isRegistered) {
+          // Email exists in Auth (e.g. from previously deleted vendor or prior account).
+          // Attempt silent sign-in with the password provided:
+          const { data: signIn, error: inErr } = await supabase.auth.signInWithPassword({
+            email: email.trim(),
+            password,
+          });
+
+          if (inErr || !signIn.user) {
+            // Password didn't match the old account password.
+            // Provide friendly, non-blocking inline resolution:
+            setBusy(false);
+            setAccountConflict({ email: email.trim(), attemptedPassword: password });
+            return;
+          }
+
+          // Password matched! Use this user
+          uid = signIn.user.id;
+          toast.info("Account recognized! Linking to your store.");
+        } else {
+          setBusy(false);
+          toast.error(signErr.message);
+          return;
+        }
+      } else if (signUp.user) {
+        uid = signUp.user.id;
+      }
+
+      if (!uid) {
+        setBusy(false);
+        toast.error("Couldn't create your account. Please try again.");
+        return;
+      }
+      setUserId(uid);
+      setHasAccount(true);
+
+      const { data: existing } = await supabase
+        .from("sellers")
+        .select("id, profile_photo_url, cover_photo_url")
+        .eq("user_id", uid)
+        .maybeSingle();
+
+      if (existing) {
+        setSellerId(existing.id);
+        setProfileUrl(existing.profile_photo_url ?? null);
+        setCoverUrl(existing.cover_photo_url ?? null);
+        setBusy(false);
+        setStep(existing.profile_photo_url ? 3 : 2);
+        toast.info("Welcome back! Resuming your store setup.");
+        return;
+      }
+    }
+
+    if (!uid) {
+      setBusy(false);
+      toast.error("Session error. Please try again.");
+      return;
+    }
+
+    await saveSellerStep1(uid);
   };
 
   const submitStep2 = async () => {
@@ -426,6 +531,88 @@ function Register() {
                     />
                     <FieldError msg={errors.password} />
                   </div>
+
+                  {accountConflict && !hasAccount && (
+                    <div className="rounded-2xl border border-amber-300 bg-amber-50/90 p-5 text-sm shadow-sm space-y-3">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+                        <div className="space-y-1">
+                          <p className="font-semibold text-amber-950">
+                            Account already exists for {accountConflict.email}
+                          </p>
+                          <p className="text-xs text-amber-800 leading-relaxed">
+                            If your previous vendor profile was deleted or you already have an account, enter your account password below to link this email to your new store, or request a password reset.
+                          </p>
+                        </div>
+                      </div>
+
+                      {resetSent ? (
+                        <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3.5 text-xs text-emerald-900 flex items-start gap-2.5">
+                          <Check className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" />
+                          <div>
+                            <p className="font-medium text-emerald-950">Password reset link sent!</p>
+                            <p className="mt-0.5 text-emerald-800">
+                              Check your inbox at <strong>{accountConflict.email}</strong>. Once reset, return here and enter your new password to link your store.
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-3 pt-1">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-semibold text-amber-950">
+                              Enter account password to link & continue:
+                            </Label>
+                            <div className="flex gap-2">
+                              <PasswordInput
+                                value={conflictPassword}
+                                onChange={(e) => setConflictPassword(e.target.value)}
+                                placeholder="Your account password"
+                                className="bg-white text-xs h-10"
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    handleVerifyExistingPassword();
+                                  }
+                                }}
+                              />
+                              <Button
+                                type="button"
+                                onClick={handleVerifyExistingPassword}
+                                disabled={conflictBusy || !conflictPassword}
+                                className="shrink-0 rounded-full px-4 text-xs font-semibold bg-amber-900 text-amber-50 hover:bg-amber-800"
+                              >
+                                {conflictBusy ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  "Link & Continue"
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-3 pt-1 border-t border-amber-200 text-xs">
+                            <button
+                              type="button"
+                              onClick={handleSendPasswordReset}
+                              disabled={conflictBusy}
+                              className="font-medium text-amber-900 hover:underline inline-flex items-center gap-1.5"
+                            >
+                              <Mail className="h-3.5 w-3.5" />
+                              Send password reset link to this email
+                            </button>
+                            <span className="text-amber-400">•</span>
+                            <Link
+                              to="/auth"
+                              className="font-medium text-amber-900 hover:underline"
+                            >
+                              Sign in to existing account
+                            </Link>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="my-2 h-px bg-border" />
                 </>
               )}

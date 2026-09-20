@@ -1,6 +1,6 @@
 {
-  "name": "Zango Connect",
-  "description": "A vibrant marketplace connecting local vendors and buyers across cities.",
+  "name": "ZANGO — Your Business, Discovered.",
+  "description": "The marketplace built for northern Nigeria's entrepreneurs. Discover sellers, order on WhatsApp.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

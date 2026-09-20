@@ -9,17 +9,30 @@ async function exportVendorCard({
 }: VendorCardExportOptions) {
   const { toPng } = await import("html-to-image");
   const dimensions = vendorCardFormats[format];
-  const dataUrl = await toPng(node, {
-    cacheBust: true,
-    skipFonts: true,
-    pixelRatio,
-    width: dimensions.width,
-    height: dimensions.height,
-    canvasWidth: dimensions.width,
-    canvasHeight: dimensions.height,
-    backgroundColor: "#F7F2EB",
-    style: { transform: "none", width: `${dimensions.width}px`, height: `${dimensions.height}px` },
-  });
+
+  let dataUrl: string;
+  try {
+    dataUrl = await toPng(node, {
+      cacheBust: false,
+      skipFonts: true,
+      pixelRatio,
+      width: dimensions.width,
+      height: dimensions.height,
+      canvasWidth: dimensions.width,
+      canvasHeight: dimensions.height,
+      backgroundColor: "#F7F2EB",
+      style: { transform: "none", width: `${dimensions.width}px`, height: `${dimensions.height}px` },
+    });
+  } catch (err) {
+    console.warn("Retrying card export with fallback...", err);
+    dataUrl = await toPng(node, {
+      cacheBust: false,
+      skipFonts: true,
+      pixelRatio: 1.5,
+      backgroundColor: "#F7F2EB",
+    });
+  }
+
   const link = document.createElement("a");
   link.download = `${filename}-${format}.png`;
   link.href = dataUrl;

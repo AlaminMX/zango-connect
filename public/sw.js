@@ -1,4 +1,4 @@
-const VERSION = "zango-pwa-v2";
+const VERSION = "zango-pwa-v3";
 const APP_SHELL_CACHE = `${VERSION}-shell`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const IMAGE_CACHE = `${VERSION}-images`;
@@ -19,7 +19,20 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(APP_SHELL_CACHE)
-      .then((cache) => cache.addAll(APP_SHELL))
+      .then(async (cache) => {
+        await Promise.allSettled(
+          APP_SHELL.map(async (url) => {
+            try {
+              const res = await fetch(url);
+              if (res.ok) {
+                await cache.put(url, res);
+              }
+            } catch {
+              // Ignore individual asset fetch failures during install
+            }
+          }),
+        );
+      })
       .then(() => self.skipWaiting()),
   );
 });
@@ -46,8 +59,16 @@ async function trimCache(cacheName, maxEntries) {
   if (keys.length > maxEntries) await cache.delete(keys[0]);
 }
 
-function isApiRequest(url) {
+function isBypassed(url) {
   return (
+    url.hostname === "localhost" ||
+    url.hostname.includes("run.app") ||
+    url.port === "3000" ||
+    url.pathname.includes("/node_modules/") ||
+    url.pathname.includes("/src/") ||
+    url.pathname.includes("/@") ||
+    url.pathname.includes("/__vite") ||
+    url.pathname.includes("/_server") ||
     url.pathname.includes("/api/") ||
     url.hostname.includes("supabase.co") ||
     url.pathname.includes("/.netlify/functions/")
@@ -86,7 +107,9 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
   const url = new URL(request.url);
-  if (isApiRequest(url)) return;
+
+  // Always bypass dev endpoints, Vite modules, and API calls
+  if (isBypassed(url)) return;
 
   if (request.mode === "navigate") {
     event.respondWith(networkFirst(request));

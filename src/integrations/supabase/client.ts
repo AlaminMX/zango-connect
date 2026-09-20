@@ -5,14 +5,14 @@ import type { Database } from "./types";
 function createSupabaseClient() {
   const SUPABASE_URL =
     (typeof import.meta !== "undefined" && import.meta.env?.VITE_SUPABASE_URL) ||
-    process.env.VITE_SUPABASE_URL ||
-    process.env.SUPABASE_URL ||
-    "https://demo.supabase.co";
+    (typeof process !== "undefined" && process.env?.VITE_SUPABASE_URL) ||
+    (typeof process !== "undefined" && process.env?.SUPABASE_URL) ||
+    "https://pozputxlgfbqywlvxfot.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY =
     (typeof import.meta !== "undefined" && import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY) ||
-    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    process.env.SUPABASE_PUBLISHABLE_KEY ||
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.demo";
+    (typeof process !== "undefined" && process.env?.VITE_SUPABASE_PUBLISHABLE_KEY) ||
+    (typeof process !== "undefined" && process.env?.SUPABASE_PUBLISHABLE_KEY) ||
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvenB1dHhsZ2ZicXl3bHZ4Zm90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NTY4NjIsImV4cCI6MjA5NTEzMjg2Mn0.dRs7lB5JaY2hgRN_y63rw4JHWgYV6XVYXaLANTFOFso";
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {

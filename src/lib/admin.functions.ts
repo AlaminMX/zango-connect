@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 async function assertAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase
@@ -15,19 +14,24 @@ async function assertAdmin(supabase: any, userId: string) {
 }
 
 async function audit(
+  supabase: any,
   adminId: string,
   action: string,
   targetType: string,
   targetId: string | null,
   metadata: Record<string, unknown> = {},
 ) {
-  await supabaseAdmin.from("admin_audit_log").insert({
-    admin_id: adminId,
-    action,
-    target_type: targetType,
-    target_id: targetId,
-    metadata: metadata as never,
-  });
+  try {
+    await supabase.from("admin_audit_log").insert({
+      admin_id: adminId,
+      action,
+      target_type: targetType,
+      target_id: targetId,
+      metadata: metadata as never,
+    });
+  } catch (err) {
+    console.warn("[admin audit] failed to log:", err);
+  }
 }
 
 const sellerStatusSchema = z.object({
@@ -49,12 +53,12 @@ export const setSellerStatus = createServerFn({ method: "POST" })
       updates.blocked_at = null;
       updates.blocked_reason = null;
     }
-    const { error } = await supabaseAdmin
+    const { error } = await context.supabase
       .from("sellers")
       .update(updates as never)
       .eq("id", data.sellerId);
     if (error) throw new Error(error.message);
-    await audit(context.userId, `seller.${data.status}`, "seller", data.sellerId, {
+    await audit(context.supabase, context.userId, `seller.${data.status}`, "seller", data.sellerId, {
       reason: data.reason,
     });
     return { ok: true };
@@ -70,12 +74,12 @@ export const setSubscriptionExpiry = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => setExpirySchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
-    const { error } = await supabaseAdmin
+    const { error } = await context.supabase
       .from("sellers")
       .update({ subscription_expires_at: data.expiresAt })
       .eq("id", data.sellerId);
     if (error) throw new Error(error.message);
-    await audit(context.userId, "subscription.change", "seller", data.sellerId, {
+    await audit(context.supabase, context.userId, "subscription.change", "seller", data.sellerId, {
       expiresAt: data.expiresAt,
     });
     return { ok: true };
@@ -88,26 +92,65 @@ export const deleteSeller = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => deleteSellerSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
-    // Capture user_id BEFORE deleting so we can hard-delete the auth account.
-    const { data: sellerRow } = await supabaseAdmin
+    const db = context.supabase;
+
+    // Capture user_id and business_name BEFORE deleting so we can clean up the auth account.
+    const { data: sellerRow, error: findErr } = await db
       .from("sellers")
-      .select("user_id")
+      .select("user_id, business_name")
       .eq("id", data.sellerId)
       .maybeSingle();
-    await supabaseAdmin.from("products").delete().eq("seller_id", data.sellerId);
-    await supabaseAdmin.from("seller_notices").delete().eq("seller_id", data.sellerId);
-    await supabaseAdmin
+    if (findErr) throw new Error(findErr.message);
+
+    const targetUserId = sellerRow?.user_id;
+
+    // 1. Delete associated child records safely
+    await db.from("products").delete().eq("seller_id", data.sellerId);
+    await db.from("seller_notices").delete().eq("seller_id", data.sellerId);
+    await db.from("seller_warnings").delete().eq("seller_id", data.sellerId);
+    await db.from("page_views").delete().eq("seller_id", data.sellerId);
+    await db
       .from("vouches")
       .delete()
       .or(`vouched_seller_id.eq.${data.sellerId},voucher_seller_id.eq.${data.sellerId}`);
-    await supabaseAdmin.from("whatsapp_clicks").delete().eq("seller_id", data.sellerId);
-    const { error } = await supabaseAdmin.from("sellers").delete().eq("id", data.sellerId);
+    await db.from("whatsapp_clicks").delete().eq("seller_id", data.sellerId);
+
+    // 2. Delete the seller record
+    const { error } = await db.from("sellers").delete().eq("id", data.sellerId);
     if (error) throw new Error(error.message);
-    if (sellerRow?.user_id) {
-      const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(sellerRow.user_id);
-      if (authErr) console.warn("[admin] auth user delete failed:", authErr.message);
+
+    // 3. If target user exists, clean up user roles and auth
+    if (targetUserId) {
+      await db.from("user_roles").delete().eq("user_id", targetUserId);
+
+      // Attempt hard-delete of the auth user via RPC if available
+      try {
+        const { error: rpcErr } = await db.rpc("admin_delete_user", {
+          target_user_id: targetUserId,
+        });
+        if (rpcErr) {
+          console.warn("[admin] admin_delete_user RPC warning:", rpcErr.message);
+        }
+      } catch (err: any) {
+        console.warn("[admin] admin_delete_user call failed:", err?.message);
+      }
+
+      // If service role key is configured, also call Supabase Auth Admin API
+      if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        try {
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(targetUserId);
+          if (authErr) console.warn("[admin] auth user delete failed:", authErr.message);
+        } catch (err: any) {
+          console.warn("[admin] auth admin deleteUser error:", err?.message);
+        }
+      }
     }
-    await audit(context.userId, "seller.delete", "seller", data.sellerId);
+
+    await audit(db, context.userId, "seller.delete", "seller", data.sellerId, {
+      business_name: sellerRow?.business_name,
+      deleted_user_id: targetUserId,
+    });
     return { ok: true };
   });
 
@@ -130,12 +173,12 @@ export const setProductStatus = createServerFn({ method: "POST" })
       updates.blocked_at = null;
       updates.blocked_reason = null;
     }
-    const { error } = await supabaseAdmin
+    const { error } = await context.supabase
       .from("products")
       .update(updates as never)
       .eq("id", data.productId);
     if (error) throw new Error(error.message);
-    await audit(context.userId, `product.${data.status}`, "product", data.productId, {
+    await audit(context.supabase, context.userId, `product.${data.status}`, "product", data.productId, {
       reason: data.reason,
     });
     return { ok: true };
@@ -148,26 +191,20 @@ export const deleteProduct = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => deleteProductSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
-    const { error } = await supabaseAdmin.from("products").delete().eq("id", data.productId);
+    const { error } = await context.supabase.from("products").delete().eq("id", data.productId);
     if (error) throw new Error(error.message);
-    await audit(context.userId, "product.delete", "product", data.productId);
+    await audit(context.supabase, context.userId, "product.delete", "product", data.productId);
     return { ok: true };
   });
 
 const vendorAuthInfoSchema = z.object({ sellerId: z.string().uuid() });
 
-// Email and last-login live in auth.users, which is never reachable via
-// PostgREST/RLS regardless of role — Supabase blocks it at the schema
-// level. This is the one piece of the Vendor Details page that genuinely
-// needs the service-role client; everything else on that page (warnings,
-// notes, page_views, seller/product rows) goes through normal RLS-gated
-// reads because the admin's own session already satisfies has_role(admin).
 export const getVendorAuthInfo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => vendorAuthInfoSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
-    const { data: seller, error: sellerError } = await supabaseAdmin
+    const { data: seller, error: sellerError } = await context.supabase
       .from("sellers")
       .select("user_id")
       .eq("id", data.sellerId)
@@ -175,15 +212,24 @@ export const getVendorAuthInfo = createServerFn({ method: "POST" })
     if (sellerError) throw new Error(sellerError.message);
     if (!seller) throw new Error("Seller not found");
 
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(
-      seller.user_id,
-    );
-    if (authError) throw new Error(authError.message);
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return { email: null, lastSignInAt: null };
+    }
 
-    return {
-      email: authUser.user?.email ?? null,
-      lastSignInAt: authUser.user?.last_sign_in_at ?? null,
-    };
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(
+        seller.user_id,
+      );
+      if (authError) throw new Error(authError.message);
+
+      return {
+        email: authUser.user?.email ?? null,
+        lastSignInAt: authUser.user?.last_sign_in_at ?? null,
+      };
+    } catch (err) {
+      return { email: null, lastSignInAt: null };
+    }
   });
 
 const noticeSchema = z.object({
@@ -198,7 +244,7 @@ export const sendNotice = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => noticeSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
-    const { data: row, error } = await supabaseAdmin
+    const { data: row, error } = await context.supabase
       .from("seller_notices")
       .insert({
         seller_id: data.sellerId,
@@ -210,6 +256,6 @@ export const sendNotice = createServerFn({ method: "POST" })
       .select()
       .single();
     if (error) throw new Error(error.message);
-    await audit(context.userId, "notice.send", "notice", row.id, { severity: data.severity });
+    await audit(context.supabase, context.userId, "notice.send", "notice", row.id, { severity: data.severity });
     return { ok: true, id: row.id };
   });

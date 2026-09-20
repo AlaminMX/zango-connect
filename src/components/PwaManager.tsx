@@ -60,28 +60,37 @@ export function PwaManager() {
     window.addEventListener("offline", onOffline);
 
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("/sw.js", { scope: "/" })
-        .then((registration) => {
-          const notifyUpdate = (worker?: ServiceWorker | null) =>
-            worker && setWaitingWorker(worker);
-          notifyUpdate(registration.waiting);
-          registration.addEventListener("updatefound", () => {
-            const worker = registration.installing;
-            worker?.addEventListener("statechange", () => {
-              if (worker.state === "installed" && navigator.serviceWorker.controller)
-                notifyUpdate(worker);
+      if (import.meta.env.DEV) {
+        // In development mode, unregister active service workers so Vite ESM dynamic imports are never intercepted
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          for (const reg of registrations) {
+            void reg.unregister();
+          }
+        });
+      } else {
+        navigator.serviceWorker
+          .register("/sw.js", { scope: "/" })
+          .then((registration) => {
+            const notifyUpdate = (worker?: ServiceWorker | null) =>
+              worker && setWaitingWorker(worker);
+            notifyUpdate(registration.waiting);
+            registration.addEventListener("updatefound", () => {
+              const worker = registration.installing;
+              worker?.addEventListener("statechange", () => {
+                if (worker.state === "installed" && navigator.serviceWorker.controller)
+                  notifyUpdate(worker);
+              });
             });
-          });
-        })
-        .catch((error) => console.warn("ZANGO service worker registration failed", error));
+          })
+          .catch((error) => console.warn("ZANGO service worker registration failed", error));
 
-      let refreshing = false;
-      navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (refreshing) return;
-        refreshing = true;
-        window.location.reload();
-      });
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+          if (refreshing) return;
+          refreshing = true;
+          window.location.reload();
+        });
+      }
     }
 
     return () => {

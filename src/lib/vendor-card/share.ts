@@ -5,11 +5,16 @@ export interface ShareStoreOptions {
   slug: string;
 }
 
+export const ZANGO_STORE_ORIGIN = "https://zango-connect.vercel.app";
+
 export function getVendorStoreUrl(slug: string): string {
-  if (typeof window !== "undefined" && window.location?.origin) {
-    return `${window.location.origin}/store/${slug}`;
-  }
-  return `https://zango-connect.vercel.app/store/${slug}`;
+  const cleanSlug = (slug || "").trim().replace(/^\/+|\/+$/g, "");
+  return `${ZANGO_STORE_ORIGIN}/store/${cleanSlug}`;
+}
+
+export function getVendorStoreDisplayUrl(slug: string): string {
+  const cleanSlug = (slug || "").trim().replace(/^\/+|\/+$/g, "");
+  return `zango-connect.vercel.app/store/${cleanSlug}`;
 }
 
 export async function shareVendorStore({

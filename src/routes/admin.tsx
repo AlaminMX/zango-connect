@@ -180,17 +180,34 @@ function slugify(s: string) {
 }
 
 /** Badge colour for verification_status */
-function VerifBadge({ status }: { status: string }) {
+function VerifBadge({ status, onboarding }: { status: string; onboarding?: string }) {
   const cfg: Record<string, { label: string; cls: string }> = {
-    pending: { label: "Pending", cls: "bg-amber-100 text-amber-700" },
-    approved: { label: "Approved", cls: "bg-emerald-100 text-emerald-700" },
-    rejected: { label: "Rejected", cls: "bg-rose-100 text-rose-700" },
-    suspended: { label: "Suspended", cls: "bg-gray-100 text-gray-600" },
+    pending: { label: "Pending Approval", cls: "bg-amber-100 text-amber-800 border-amber-300" },
+    unapproved: { label: "Unapproved", cls: "bg-amber-100 text-amber-800 border-amber-300" },
+    approved: { label: "Approved", cls: "bg-emerald-100 text-emerald-800 border-emerald-300" },
+    rejected: { label: "Rejected", cls: "bg-rose-100 text-rose-800 border-rose-300" },
+    suspended: { label: "Suspended", cls: "bg-gray-100 text-gray-700 border-gray-300" },
+    draft: { label: "Draft / Incomplete", cls: "bg-blue-100 text-blue-800 border-blue-300" },
   };
-  const { label, cls } = cfg[status] ?? { label: status, cls: "bg-muted text-muted-foreground" };
+  const key =
+    status === "approved"
+      ? "approved"
+      : status === "rejected"
+        ? "rejected"
+        : status === "suspended"
+          ? "suspended"
+          : status === "pending"
+            ? "pending"
+            : onboarding === "step1_complete" || onboarding === "draft"
+              ? "draft"
+              : "unapproved";
+  const { label, cls } = cfg[key] ?? {
+    label: key || "Unapproved",
+    cls: "bg-amber-50 text-amber-700 border-amber-200",
+  };
   return (
     <span
-      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${cls}`}
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${cls}`}
     >
       {label}
     </span>
@@ -237,6 +254,12 @@ function AdminPage() {
   const [activeTab, setActiveTab] = useState<
     "sellers" | "categories" | "products" | "vouches" | "homepage" | "cities" | "cms"
   >("sellers");
+
+  // Seller management filter and search
+  const [sellerFilter, setSellerFilter] = useState<
+    "all" | "unapproved" | "approved" | "draft" | "rejected"
+  >("all");
+  const [sellerSearch, setSellerSearch] = useState("");
 
   // Category editor state
   const [editingCat, setEditingCat] = useState<Category | null>(null);
@@ -641,7 +664,12 @@ function AdminPage() {
   const approveSeller = async (id: string, name: string) => {
     const { error } = await supabase
       .from("sellers")
-      .update({ verification_status: "approved", rejection_reason: null })
+      .update({
+        verification_status: "approved",
+        status: "active",
+        is_blocked: false,
+        rejection_reason: null,
+      })
       .eq("id", id);
     if (error) {
       toast.error(error.message);
@@ -649,7 +677,15 @@ function AdminPage() {
     }
     setSellers((prev) =>
       prev.map((s) =>
-        s.id === id ? { ...s, verification_status: "approved", rejection_reason: null } : s,
+        s.id === id
+          ? {
+              ...s,
+              verification_status: "approved",
+              status: "active",
+              is_blocked: false,
+              rejection_reason: null,
+            }
+          : s,
       ),
     );
     toast.success(`"${name}" approved ✅ — their store is now live`);
@@ -1327,12 +1363,47 @@ function AdminPage() {
     .sort((a, b) => a.featured_order - b.featured_order);
   const unfeaturedProducts = products.filter((p) => !p.is_featured);
 
-  // Group sellers by verification status for a cleaner list
-  const pendingSellers = sellers.filter((s) => s.verification_status === "pending");
-  const approvedSellers = sellers.filter((s) => s.verification_status === "approved");
-  const otherSellers = sellers.filter(
-    (s) => s.verification_status !== "pending" && s.verification_status !== "approved",
+  // Comprehensive seller groupings covering 100% of rows
+  const approvedSellers = sellers.filter(
+    (s) => s.verification_status === "approved" && !s.is_blocked,
   );
+  const pendingSellers = sellers.filter(
+    (s) =>
+      (s.verification_status === "pending" || s.verification_status === "unapproved") &&
+      !s.is_blocked,
+  );
+  const draftSellers = sellers.filter(
+    (s) =>
+      !s.is_blocked &&
+      s.verification_status !== "approved" &&
+      s.verification_status !== "pending" &&
+      s.verification_status !== "unapproved" &&
+      s.verification_status !== "rejected" &&
+      s.verification_status !== "suspended",
+  );
+  const rejectedOrBlockedSellers = sellers.filter(
+    (s) =>
+      s.is_blocked ||
+      s.verification_status === "rejected" ||
+      s.verification_status === "suspended",
+  );
+  // All sellers that are not approved (pending + draft + unapproved + rejected/blocked)
+  const unapprovedSellers = sellers.filter(
+    (s) => s.verification_status !== "approved" || s.is_blocked,
+  );
+
+  const applySearch = (list: SellerRow[]) => {
+    if (!sellerSearch.trim()) return list;
+    const q = sellerSearch.trim().toLowerCase();
+    return list.filter(
+      (s) =>
+        (s.business_name || "").toLowerCase().includes(q) ||
+        (s.slug || "").toLowerCase().includes(q) ||
+        (s.city || "").toLowerCase().includes(q) ||
+        (s.category || "").toLowerCase().includes(q) ||
+        (s.whatsapp_number || "").includes(q),
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -1341,36 +1412,99 @@ function AdminPage() {
         <h1 className="font-serif text-3xl">Admin Panel</h1>
 
         {/* Stats */}
-        <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-3">
-          {[
-            { label: "Sellers", value: stats.sellers },
-            { label: "Products", value: stats.products },
-            { label: "WA clicks", value: stats.clicks, onClick: openWaDetail },
-          ].map((s) => (
-            <button
-              key={s.label}
-              type="button"
-              onClick={s.onClick}
-              disabled={!s.onClick}
-              className="rounded-2xl border bg-card p-3 text-left shadow-warm transition sm:p-4 disabled:cursor-default enabled:hover:-translate-y-0.5 enabled:hover:border-primary/40 enabled:cursor-pointer"
+        <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-5 sm:gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab("sellers");
+              setSellerFilter("all");
+            }}
+            className="rounded-2xl border bg-card p-3 text-left shadow-warm transition sm:p-4 hover:-translate-y-0.5 hover:border-primary/40 cursor-pointer"
+          >
+            <p className="text-xs text-muted-foreground">All Sellers</p>
+            <p className="mt-1 font-serif text-2xl text-primary sm:text-3xl">
+              {sellers.length || stats.sellers}
+            </p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">Total registered</p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab("sellers");
+              setSellerFilter("approved");
+            }}
+            className="rounded-2xl border bg-card p-3 text-left shadow-warm transition sm:p-4 hover:-translate-y-0.5 hover:border-emerald-400 cursor-pointer"
+          >
+            <p className="text-xs text-muted-foreground">Approved</p>
+            <p className="mt-1 font-serif text-2xl text-emerald-600 sm:text-3xl">
+              {approvedSellers.length}
+            </p>
+            <p className="mt-0.5 text-[11px] text-emerald-700">Live stores</p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab("sellers");
+              setSellerFilter("unapproved");
+            }}
+            className="rounded-2xl border bg-card p-3 text-left shadow-warm transition sm:p-4 hover:-translate-y-0.5 hover:border-amber-400 cursor-pointer"
+          >
+            <p className="text-xs text-muted-foreground">Unapproved</p>
+            <p
+              className={`mt-1 font-serif text-2xl sm:text-3xl ${unapprovedSellers.length > 0 ? "text-amber-600 font-bold" : "text-muted-foreground"}`}
             >
-              <p className="text-xs text-muted-foreground">{s.label}</p>
-              <p className="mt-1 font-serif text-2xl text-primary sm:text-3xl">{s.value}</p>
-            </button>
-          ))}
+              {unapprovedSellers.length}
+            </p>
+            <p className="mt-0.5 text-[11px] text-amber-700">
+              {pendingSellers.length > 0
+                ? `${pendingSellers.length} awaiting review`
+                : "Non-approved"}
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("products")}
+            className="rounded-2xl border bg-card p-3 text-left shadow-warm transition sm:p-4 hover:-translate-y-0.5 hover:border-primary/40 cursor-pointer"
+          >
+            <p className="text-xs text-muted-foreground">Products</p>
+            <p className="mt-1 font-serif text-2xl text-primary sm:text-3xl">{stats.products}</p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">Catalog items</p>
+          </button>
+
+          <button
+            type="button"
+            onClick={openWaDetail}
+            className="rounded-2xl border bg-card p-3 text-left shadow-warm transition sm:p-4 hover:-translate-y-0.5 hover:border-primary/40 cursor-pointer"
+          >
+            <p className="text-xs text-muted-foreground">WA Clicks</p>
+            <p className="mt-1 font-serif text-2xl text-primary sm:text-3xl">{stats.clicks}</p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">Buyer inquiries</p>
+          </button>
         </div>
 
         {/* Pending approval alert */}
-        {pendingSellers.length > 0 && (
-          <div className="mt-5 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            <Clock className="h-4 w-4 shrink-0 text-amber-600" />
-            <span>
-              <strong>{pendingSellers.length}</strong> seller
-              {pendingSellers.length !== 1 ? "s are" : " is"} waiting for approval.{" "}
-              <button onClick={() => setActiveTab("sellers")} className="underline">
-                Review now →
-              </button>
-            </span>
+        {unapprovedSellers.length > 0 && (
+          <div className="mt-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <div className="flex items-center gap-2.5">
+              <Clock className="h-4 w-4 shrink-0 text-amber-600" />
+              <span>
+                <strong>{unapprovedSellers.length}</strong> unapproved seller
+                {unapprovedSellers.length !== 1 ? "s" : ""} on the platform
+                {pendingSellers.length > 0 ? ` (${pendingSellers.length} pending review)` : ""}.
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                setActiveTab("sellers");
+                setSellerFilter("unapproved");
+              }}
+              className="font-medium text-amber-800 underline hover:text-amber-950 text-left sm:text-right"
+            >
+              Review unapproved sellers →
+            </button>
           </div>
         )}
 
@@ -1381,7 +1515,7 @@ function AdminPage() {
           ).map((t) => (
             <button key={t} onClick={() => setActiveTab(t)} className={`shrink-0 ${tabCls(t)}`}>
               {t === "sellers"
-                ? `Sellers ${pendingSellers.length > 0 ? `(${pendingSellers.length} pending)` : ""}`
+                ? `Sellers (${sellers.length}${unapprovedSellers.length > 0 ? ` · ${unapprovedSellers.length} unapproved` : ""})`
                 : t === "categories"
                   ? "Categories"
                   : t === "products"
@@ -1399,44 +1533,263 @@ function AdminPage() {
 
         {/* ── Sellers tab ── */}
         {activeTab === "sellers" && (
-          <section className="mt-6 space-y-8">
+          <section className="mt-6 space-y-6">
             {sellersState === "loading" && <SectionSkeleton />}
             {sellersState === "error" && <SectionError label="sellers" onRetry={loadSellers} />}
             {sellersState === "ok" && (
               <>
-                {/* Pending sellers — shown at top, action required */}
-                {pendingSellers.length > 0 && (
+                {/* Filter pills & search toolbar */}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  {/* Category Pills */}
+                  <div className="-mx-5 flex items-center gap-1.5 overflow-x-auto px-5 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
+                    {[
+                      { key: "all", label: "All Sellers", count: sellers.length },
+                      {
+                        key: "unapproved",
+                        label: "Unapproved / Pending",
+                        count: unapprovedSellers.length,
+                        alert: unapprovedSellers.length > 0,
+                      },
+                      { key: "approved", label: "Approved", count: approvedSellers.length },
+                      {
+                        key: "draft",
+                        label: "Draft / Incomplete",
+                        count: draftSellers.length,
+                        alert: false,
+                      },
+                      {
+                        key: "rejected",
+                        label: "Rejected / Blocked",
+                        count: rejectedOrBlockedSellers.length,
+                        alert: false,
+                      },
+                    ].map((tab) => (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        onClick={() => setSellerFilter(tab.key as any)}
+                        className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                          sellerFilter === tab.key
+                            ? tab.key === "unapproved"
+                              ? "bg-amber-600 text-white shadow-sm"
+                              : "bg-primary text-primary-foreground shadow-sm"
+                            : tab.alert
+                              ? "border border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100"
+                              : "border border-border-warm bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
+                        }`}
+                      >
+                        <span>{tab.label}</span>
+                        <span
+                          className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                            sellerFilter === tab.key
+                              ? "bg-white/25 text-white"
+                              : tab.alert
+                                ? "bg-amber-200 text-amber-900"
+                                : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {tab.count}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Search bar */}
+                  <div className="relative sm:w-72">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={sellerSearch}
+                      onChange={(e) => setSellerSearch(e.target.value)}
+                      placeholder="Search sellers, phone, city..."
+                      className="h-9 rounded-full pl-8 pr-8 text-xs"
+                    />
+                    {sellerSearch && (
+                      <button
+                        onClick={() => setSellerSearch("")}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        title="Clear search"
+                      >
+                        <XCircle className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── FILTER: ALL SELLERS ── */}
+                {sellerFilter === "all" && (
+                  <div className="space-y-8">
+                    {/* Unapproved sellers (Awaiting Approval) */}
+                    {unapprovedSellers.length > 0 && (
+                      <div>
+                        <div className="mb-3 flex items-center justify-between">
+                          <h2 className="flex items-center gap-2 font-serif text-xl text-amber-900">
+                            <Clock className="h-5 w-5 text-amber-500" />
+                            Unapproved & Awaiting Review ({applySearch(unapprovedSellers).length})
+                          </h2>
+                          <span className="text-xs text-amber-700">
+                            Action required: Stores are hidden & product upload is locked
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          {applySearch(unapprovedSellers).map((s) => (
+                            <SellerRow
+                              key={s.id}
+                              s={s}
+                              onApprove={() => approveSeller(s.id, s.business_name)}
+                              onReject={() => openRejectDialog(s.id, s.business_name)}
+                              onResetPending={
+                                s.verification_status === "rejected"
+                                  ? () => resetToPending(s.id, s.business_name)
+                                  : null
+                              }
+                              onToggleVerify={() => toggleVerify(s.id, s.is_verified)}
+                              onToggleBlock={() => toggleBlock(s.id, s.is_blocked)}
+                              onDelete={() => deleteSeller(s.id, s.business_name)}
+                            />
+                          ))}
+                          {applySearch(unapprovedSellers).length === 0 && (
+                            <p className="text-xs text-muted-foreground italic">
+                              No unapproved sellers match your search.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Approved sellers */}
+                    <div>
+                      <h2 className="mb-3 flex items-center gap-2 font-serif text-xl">
+                        <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                        Approved Sellers ({applySearch(approvedSellers).length})
+                      </h2>
+                      <div className="space-y-2">
+                        {applySearch(approvedSellers).map((s) => (
+                          <SellerRow
+                            key={s.id}
+                            s={s}
+                            onApprove={null}
+                            onReject={() => openRejectDialog(s.id, s.business_name)}
+                            onResetPending={null}
+                            onToggleVerify={() => toggleVerify(s.id, s.is_verified)}
+                            onToggleBlock={() => toggleBlock(s.id, s.is_blocked)}
+                            onDelete={() => deleteSeller(s.id, s.business_name)}
+                          />
+                        ))}
+                        {applySearch(approvedSellers).length === 0 && (
+                          <p className="text-xs text-muted-foreground italic">
+                            No approved sellers match your search.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Draft / incomplete sellers */}
+                    {draftSellers.length > 0 && (
+                      <div>
+                        <h2 className="mb-3 flex items-center gap-2 font-serif text-xl text-blue-900">
+                          <AlertCircle className="h-5 w-5 text-blue-500" />
+                          Draft / Incomplete Registrations ({applySearch(draftSellers).length})
+                        </h2>
+                        <div className="space-y-2">
+                          {applySearch(draftSellers).map((s) => (
+                            <SellerRow
+                              key={s.id}
+                              s={s}
+                              onApprove={() => approveSeller(s.id, s.business_name)}
+                              onReject={() => openRejectDialog(s.id, s.business_name)}
+                              onResetPending={null}
+                              onToggleVerify={() => toggleVerify(s.id, s.is_verified)}
+                              onToggleBlock={() => toggleBlock(s.id, s.is_blocked)}
+                              onDelete={() => deleteSeller(s.id, s.business_name)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Rejected / blocked sellers */}
+                    {rejectedOrBlockedSellers.length > 0 && (
+                      <div>
+                        <h2 className="mb-3 flex items-center gap-2 font-serif text-xl text-rose-900">
+                          <XCircle className="h-5 w-5 text-rose-400" />
+                          Rejected / Suspended / Blocked (
+                          {applySearch(rejectedOrBlockedSellers).length})
+                        </h2>
+                        <div className="space-y-2">
+                          {applySearch(rejectedOrBlockedSellers).map((s) => (
+                            <SellerRow
+                              key={s.id}
+                              s={s}
+                              onApprove={() => approveSeller(s.id, s.business_name)}
+                              onReject={null}
+                              onResetPending={() => resetToPending(s.id, s.business_name)}
+                              onToggleVerify={() => toggleVerify(s.id, s.is_verified)}
+                              onToggleBlock={() => toggleBlock(s.id, s.is_blocked)}
+                              onDelete={() => deleteSeller(s.id, s.business_name)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {sellers.length === 0 && (
+                      <p className="text-sm text-muted-foreground">No sellers registered yet.</p>
+                    )}
+                  </div>
+                )}
+
+                {/* ── FILTER: UNAPPROVED SELLERS ── */}
+                {sellerFilter === "unapproved" && (
                   <div>
-                    <h2 className="mb-3 flex items-center gap-2 font-serif text-xl">
-                      <Clock className="h-5 w-5 text-amber-500" />
-                      Awaiting Approval ({pendingSellers.length})
-                    </h2>
+                    <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50/80 p-4 text-sm text-amber-900">
+                      <div className="flex items-center gap-2 font-semibold">
+                        <Clock className="h-4 w-4 text-amber-600" />
+                        Unapproved Sellers ({applySearch(unapprovedSellers).length})
+                      </div>
+                      <p className="mt-1 text-xs text-amber-800 leading-relaxed">
+                        These sellers are not approved yet. Their storefronts are hidden from
+                        customers and they are blocked from uploading products. Click{" "}
+                        <strong>Approve</strong> to make any seller live.
+                      </p>
+                    </div>
+
                     <div className="space-y-2">
-                      {pendingSellers.map((s) => (
+                      {applySearch(unapprovedSellers).map((s) => (
                         <SellerRow
                           key={s.id}
                           s={s}
                           onApprove={() => approveSeller(s.id, s.business_name)}
                           onReject={() => openRejectDialog(s.id, s.business_name)}
-                          onResetPending={null}
+                          onResetPending={
+                            s.verification_status === "rejected"
+                              ? () => resetToPending(s.id, s.business_name)
+                              : null
+                          }
                           onToggleVerify={() => toggleVerify(s.id, s.is_verified)}
                           onToggleBlock={() => toggleBlock(s.id, s.is_blocked)}
                           onDelete={() => deleteSeller(s.id, s.business_name)}
                         />
                       ))}
+                      {applySearch(unapprovedSellers).length === 0 && (
+                        <div className="rounded-xl border border-dashed border-border-warm p-8 text-center text-sm text-muted-foreground">
+                          {sellerSearch
+                            ? `No unapproved sellers match "${sellerSearch}"`
+                            : "No unapproved sellers! All vendors on the platform are currently approved."}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
 
-                {/* Approved sellers */}
-                {approvedSellers.length > 0 && (
+                {/* ── FILTER: APPROVED SELLERS ── */}
+                {sellerFilter === "approved" && (
                   <div>
                     <h2 className="mb-3 flex items-center gap-2 font-serif text-xl">
                       <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                      Approved Sellers ({approvedSellers.length})
+                      Approved Sellers ({applySearch(approvedSellers).length})
                     </h2>
                     <div className="space-y-2">
-                      {approvedSellers.map((s) => (
+                      {applySearch(approvedSellers).map((s) => (
                         <SellerRow
                           key={s.id}
                           s={s}
@@ -1448,19 +1801,57 @@ function AdminPage() {
                           onDelete={() => deleteSeller(s.id, s.business_name)}
                         />
                       ))}
+                      {applySearch(approvedSellers).length === 0 && (
+                        <div className="rounded-xl border border-dashed border-border-warm p-8 text-center text-sm text-muted-foreground">
+                          {sellerSearch
+                            ? `No approved sellers match "${sellerSearch}"`
+                            : "No approved sellers yet."}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
 
-                {/* Rejected / other sellers */}
-                {otherSellers.length > 0 && (
+                {/* ── FILTER: DRAFT SELLERS ── */}
+                {sellerFilter === "draft" && (
                   <div>
-                    <h2 className="mb-3 flex items-center gap-2 font-serif text-xl">
-                      <XCircle className="h-5 w-5 text-rose-400" />
-                      Rejected / Suspended ({otherSellers.length})
+                    <h2 className="mb-3 flex items-center gap-2 font-serif text-xl text-blue-900">
+                      <AlertCircle className="h-5 w-5 text-blue-500" />
+                      Draft / Incomplete Registrations ({applySearch(draftSellers).length})
                     </h2>
                     <div className="space-y-2">
-                      {otherSellers.map((s) => (
+                      {applySearch(draftSellers).map((s) => (
+                        <SellerRow
+                          key={s.id}
+                          s={s}
+                          onApprove={() => approveSeller(s.id, s.business_name)}
+                          onReject={() => openRejectDialog(s.id, s.business_name)}
+                          onResetPending={null}
+                          onToggleVerify={() => toggleVerify(s.id, s.is_verified)}
+                          onToggleBlock={() => toggleBlock(s.id, s.is_blocked)}
+                          onDelete={() => deleteSeller(s.id, s.business_name)}
+                        />
+                      ))}
+                      {applySearch(draftSellers).length === 0 && (
+                        <div className="rounded-xl border border-dashed border-border-warm p-8 text-center text-sm text-muted-foreground">
+                          {sellerSearch
+                            ? `No draft sellers match "${sellerSearch}"`
+                            : "No draft or incomplete sellers."}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── FILTER: REJECTED SELLERS ── */}
+                {sellerFilter === "rejected" && (
+                  <div>
+                    <h2 className="mb-3 flex items-center gap-2 font-serif text-xl text-rose-900">
+                      <XCircle className="h-5 w-5 text-rose-400" />
+                      Rejected / Blocked Sellers ({applySearch(rejectedOrBlockedSellers).length})
+                    </h2>
+                    <div className="space-y-2">
+                      {applySearch(rejectedOrBlockedSellers).map((s) => (
                         <SellerRow
                           key={s.id}
                           s={s}
@@ -1472,12 +1863,15 @@ function AdminPage() {
                           onDelete={() => deleteSeller(s.id, s.business_name)}
                         />
                       ))}
+                      {applySearch(rejectedOrBlockedSellers).length === 0 && (
+                        <div className="rounded-xl border border-dashed border-border-warm p-8 text-center text-sm text-muted-foreground">
+                          {sellerSearch
+                            ? `No rejected sellers match "${sellerSearch}"`
+                            : "No rejected or blocked sellers."}
+                        </div>
+                      )}
                     </div>
                   </div>
-                )}
-
-                {sellers.length === 0 && (
-                  <p className="text-sm text-muted-foreground">No sellers yet.</p>
                 )}
               </>
             )}
@@ -2593,7 +2987,7 @@ function SellerRow({
               {s.business_name}
             </Link>
             {s.is_verified && <VerifiedBadge className="h-4 w-4" />}
-            <VerifBadge status={s.verification_status} />
+            <VerifBadge status={s.verification_status} onboarding={s.onboarding_status} />
             {s.is_blocked && (
               <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
                 BLOCKED

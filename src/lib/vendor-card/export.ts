@@ -10,8 +10,38 @@ async function exportVendorCard({
   const { toPng } = await import("html-to-image");
   const dimensions = vendorCardFormats[format];
 
+  // Wait for all web fonts to finish loading so the typography exactly matches the preview
+  if (typeof document !== "undefined" && document.fonts) {
+    try {
+      await document.fonts.ready;
+    } catch {
+      // Ignore font readiness errors if unsupported
+    }
+  }
+
+  const exportStyle: Partial<CSSStyleDeclaration> = {
+    transform: "none",
+    transformOrigin: "top left",
+    width: `${dimensions.width}px`,
+    height: `${dimensions.height}px`,
+    maxWidth: "none",
+    maxHeight: "none",
+    margin: "0",
+  };
+
   let dataUrl: string;
   try {
+    dataUrl = await toPng(node, {
+      cacheBust: false,
+      pixelRatio,
+      width: dimensions.width,
+      height: dimensions.height,
+      canvasWidth: dimensions.width,
+      canvasHeight: dimensions.height,
+      style: exportStyle,
+    });
+  } catch (err) {
+    console.warn("Retrying card export with fallback...", err);
     dataUrl = await toPng(node, {
       cacheBust: false,
       skipFonts: true,
@@ -20,16 +50,7 @@ async function exportVendorCard({
       height: dimensions.height,
       canvasWidth: dimensions.width,
       canvasHeight: dimensions.height,
-      backgroundColor: "#F7F2EB",
-      style: { transform: "none", width: `${dimensions.width}px`, height: `${dimensions.height}px` },
-    });
-  } catch (err) {
-    console.warn("Retrying card export with fallback...", err);
-    dataUrl = await toPng(node, {
-      cacheBust: false,
-      skipFonts: true,
-      pixelRatio: 1.5,
-      backgroundColor: "#F7F2EB",
+      style: exportStyle,
     });
   }
 

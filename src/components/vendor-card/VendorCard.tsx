@@ -5,6 +5,7 @@ import { CheckCircle2, Heart, MapPin, Phone, ShieldCheck, ShoppingBag, Star } fr
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { cn } from "@/lib/utils";
 import {
+  getVendorStoreDisplayUrl,
   getVendorStoreUrl,
   resolveVendorCardTheme,
   vendorCardFormats,
@@ -165,28 +166,38 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
     },
     ref,
   ) => {
-    const resolvedTheme = resolveVendorCardTheme(vendor.category, theme);
+    const resolvedTheme = resolveVendorCardTheme(
+      vendor.category,
+      theme,
+      `${vendor.business_name} ${vendor.bio || ""}`,
+    );
     const dimensions = vendorCardFormats[format];
     const storeUrl = getVendorStoreUrl(vendor.slug);
+    const storeDisplayUrl = getVendorStoreDisplayUrl(vendor.slug);
     const isVertical = dimensions.height / dimensions.width > 1.1;
 
-    // Available showcase images from vendor products, cover photo, or theme fallback
+    // Available showcase images from vendor products, curated auto-generated theme lifestyle, or cover photo
     const availableImages = React.useMemo(() => {
-      const list: { url: string; label: string }[] = [];
+      const list: { url: string; label: string; tag: string }[] = [];
       products.forEach((p, idx) => {
         const url = p.image_urls?.[0] || p.image_url;
         if (url) {
-          list.push({ url, label: p.name || `Product #${idx + 1}` });
+          list.push({ url, label: p.name || `Product #${idx + 1}`, tag: `Product ${idx + 1}` });
         }
       });
-      if (vendor.cover_photo_url) {
-        list.push({ url: vendor.cover_photo_url, label: "Store Cover Photo" });
-      }
+      // The auto-generated curated lifestyle photograph is always included for every vendor
       if (resolvedTheme.lifestyleImage) {
-        list.push({ url: resolvedTheme.lifestyleImage, label: "Editorial Lifestyle" });
+        list.push({
+          url: resolvedTheme.lifestyleImage,
+          label: `Auto-Generated (${resolvedTheme.label})`,
+          tag: "Auto-Generated",
+        });
+      }
+      if (vendor.cover_photo_url) {
+        list.push({ url: vendor.cover_photo_url, label: "Store Cover Photo", tag: "Cover" });
       }
       return list;
-    }, [products, vendor.cover_photo_url, resolvedTheme.lifestyleImage]);
+    }, [products, vendor.cover_photo_url, resolvedTheme.lifestyleImage, resolvedTheme.label]);
 
     // Active showcase hero image (controllable via selectedProductIndex or selectedImageUrl)
     const heroImage =
@@ -256,15 +267,30 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
               )}
             </div>
 
-            {/* Category Pill */}
-            <div className="mt-6 inline-flex items-center gap-2.5 rounded-full bg-[#804723] px-6 py-2.5 text-[18px] font-black uppercase tracking-wider text-white shadow-md">
-              <ShoppingBag className="h-5.5 w-5.5" />
-              <span>{vendor.category || resolvedTheme.badge}</span>
+            {/* Category Pill with Ellipsis Truncation */}
+            <div
+              title={vendor.category || resolvedTheme.badge}
+              className="mt-6 inline-flex items-center gap-2.5 rounded-full bg-[#804723] px-6 py-2 text-[18px] font-black uppercase tracking-wider text-white shadow-md max-w-[340px] overflow-hidden shrink-0"
+            >
+              <ShoppingBag className="h-5 w-5 shrink-0" />
+              <span className="truncate block max-w-full">{vendor.category || resolvedTheme.badge}</span>
             </div>
 
-            {/* Business Name - 50px */}
-            <h1 className="mt-3.5 font-serif text-[50px] leading-[1.05] tracking-tight text-[#24150E] max-w-[840px] truncate font-black">
-              {vendor.business_name}
+            {/* Business Name - Responsive typography with natural word-wrap & 2-line clamp */}
+            <h1
+              className={cn(
+                "mt-3 font-serif tracking-tight text-[#24150E] font-black break-words line-clamp-2 max-w-[840px] text-center overflow-hidden text-ellipsis",
+                (vendor.business_name || "").length <= 14
+                  ? "text-[48px] leading-[1.04]"
+                  : (vendor.business_name || "").length <= 22
+                    ? "text-[40px] leading-[1.06]"
+                    : (vendor.business_name || "").length <= 32
+                      ? "text-[32px] leading-[1.08]"
+                      : "text-[26px] leading-[1.10]",
+              )}
+              title={vendor.business_name || "Store Name"}
+            >
+              {vendor.business_name || "Store Name"}
             </h1>
 
             {/* Location & Specialty */}
@@ -278,8 +304,11 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
             </div>
 
             {/* Accurate Store URL Pill */}
-            <div className="mt-5 inline-flex items-center rounded-full bg-[#3A2013] px-8 py-3 text-[20px] font-bold text-white shadow-md">
-              <span>zango.com/{vendor.slug}</span>
+            <div
+              title={storeDisplayUrl}
+              className="mt-5 inline-flex items-center rounded-full bg-[#3A2013] px-7 py-2.5 text-[18px] font-bold text-white shadow-md max-w-[85%] overflow-hidden"
+            >
+              <span className="truncate block max-w-full">{storeDisplayUrl}</span>
             </div>
           </div>
 
@@ -350,13 +379,29 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
             <div className="flex items-center gap-5">
               <VendorLogoBadge vendor={vendor} className="h-40 w-40" />
               <div className="min-w-0 flex-1">
-                <div className="inline-flex items-center gap-2 rounded-lg bg-[#804723] px-5 py-2 text-[18px] font-black uppercase tracking-wider text-white shadow-sm">
-                  <ShoppingBag className="h-5 w-5" />
-                  <span>{vendor.category || resolvedTheme.badge}</span>
+                {/* Category Pill with Ellipsis Truncation */}
+                <div
+                  title={vendor.category || resolvedTheme.badge}
+                  className="inline-flex items-center gap-2 rounded-lg bg-[#804723] px-4 py-1.5 text-[17px] font-black uppercase tracking-wider text-white shadow-sm max-w-[240px] overflow-hidden shrink-0"
+                >
+                  <ShoppingBag className="h-4.5 w-4.5 shrink-0" />
+                  <span className="truncate block max-w-full">{vendor.category || resolvedTheme.badge}</span>
                 </div>
-                {/* Business Name - 50px */}
-                <h1 className="mt-2.5 font-serif text-[50px] leading-[1.04] tracking-tight text-[#24150E] font-black">
-                  {vendor.business_name}
+                {/* Business Name - Responsive typography with natural word-wrap & 2-line clamp */}
+                <h1
+                  className={cn(
+                    "mt-2 font-serif tracking-tight text-[#24150E] font-black break-words line-clamp-2 max-w-full overflow-hidden text-ellipsis",
+                    (vendor.business_name || "").length <= 14
+                      ? "text-[44px] leading-[1.04]"
+                      : (vendor.business_name || "").length <= 22
+                        ? "text-[36px] leading-[1.06]"
+                        : (vendor.business_name || "").length <= 32
+                          ? "text-[30px] leading-[1.08]"
+                          : "text-[24px] leading-[1.10]",
+                  )}
+                  title={vendor.business_name || "Store Name"}
+                >
+                  {vendor.business_name || "Store Name"}
                 </h1>
               </div>
             </div>
@@ -369,34 +414,34 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
               <div className="h-px flex-1 bg-[#D9C6B6]" />
             </div>
 
-            <div className="grid gap-3.5 text-[28px] font-bold text-[#24150E]">
-              <div className="flex items-center gap-4 border-b border-dashed border-[#D9C6B6] pb-3">
+            <div className="grid gap-3 text-[27px] font-bold text-[#24150E]">
+              <div className="flex items-center gap-4 border-b border-dashed border-[#D9C6B6] pb-2.5 min-w-0">
                 <div className="grid h-13 w-13 shrink-0 place-items-center rounded-full bg-[#4A2C1D] text-white shadow-sm">
-                  <MapPin className="h-7 w-7 text-[#F5EFE6]" />
+                  <MapPin className="h-6.5 w-6.5 text-[#F5EFE6]" />
                 </div>
-                <span>{formatLocation(vendor.city)}</span>
+                <span className="truncate block whitespace-nowrap">{formatLocation(vendor.city)}</span>
               </div>
-              <div className="flex items-center gap-4 border-b border-dashed border-[#D9C6B6] pb-3">
+              <div className="flex items-center gap-4 border-b border-dashed border-[#D9C6B6] pb-2.5 min-w-0">
                 <div className="grid h-13 w-13 shrink-0 place-items-center rounded-full bg-[#4A2C1D] text-white shadow-sm">
-                  <ShoppingBag className="h-7 w-7 text-[#F5EFE6]" />
+                  <ShoppingBag className="h-6.5 w-6.5 text-[#F5EFE6]" />
                 </div>
-                <span>{offerings}</span>
+                <span className="truncate block whitespace-nowrap" title={offerings}>{offerings}</span>
               </div>
-              <div className="flex items-center gap-4 border-b border-dashed border-[#D9C6B6] pb-3">
+              <div className="flex items-center gap-4 border-b border-dashed border-[#D9C6B6] pb-2.5 min-w-0">
                 <div className="grid h-13 w-13 shrink-0 place-items-center rounded-full bg-[#4A2C1D] text-white shadow-sm">
-                  <Phone className="h-7 w-7 text-[#F5EFE6]" />
+                  <Phone className="h-6.5 w-6.5 text-[#F5EFE6]" />
                 </div>
-                <span>{formatPhoneNumber(vendor.whatsapp_number)}</span>
+                <span className="whitespace-nowrap font-sans font-bold tracking-wide">{formatPhoneNumber(vendor.whatsapp_number)}</span>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 min-w-0">
                 <div className="grid h-13 w-13 shrink-0 place-items-center rounded-full bg-[#4A2C1D] text-white shadow-sm">
-                  <ShieldCheck className="h-7 w-7 text-[#F5EFE6]" />
+                  <ShieldCheck className="h-6.5 w-6.5 text-[#F5EFE6]" />
                 </div>
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2.5 whitespace-nowrap">
                   <span>{vendor.is_verified ? "Verified Vendor" : "Registered Vendor"}</span>
                   {vendor.is_verified && (
-                    <div className="grid h-7 w-7 place-items-center rounded-full bg-[#C5A059] text-white shadow-sm">
-                      <CheckCircle2 className="h-5 w-5 fill-current" />
+                    <div className="grid h-6 w-6 place-items-center rounded-full bg-[#C5A059] text-white shadow-sm">
+                      <CheckCircle2 className="h-4.5 w-4.5 fill-current" />
                     </div>
                   )}
                 </div>
@@ -422,7 +467,7 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
                   size={144}
                   bgColor="#FFFFFF"
                   fgColor="#24150E"
-                  level="M"
+                  level="Q"
                 />
               </div>
               <div className="min-w-0 flex-1">
@@ -432,10 +477,13 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
                   </div>
                   <span>Visit My Store</span>
                 </div>
-                <div className="mt-2 inline-block rounded-full bg-[#3A2013] px-5 py-2 text-[18px] font-bold text-white max-w-full truncate">
-                  zango.com/{vendor.slug}
+                <div
+                  title={storeDisplayUrl}
+                  className="mt-2 inline-flex items-center rounded-full bg-[#3A2013] px-4 py-1.5 text-[17px] font-bold text-white max-w-[340px] overflow-hidden"
+                >
+                  <span className="truncate block max-w-full">{storeDisplayUrl}</span>
                 </div>
-                <p className="mt-2 text-[23px] font-semibold text-[#6E5A4E]">Scan to explore my products.</p>
+                <p className="mt-2 text-[22px] font-semibold text-[#6E5A4E]">Scan to explore my products.</p>
               </div>
             </div>
           </div>
@@ -551,7 +599,7 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
         </svg>
 
         {/* Left Column Content - Adjusted to accommodate 110px bottom bar */}
-        <div className="relative z-20 flex h-[calc(100%-110px)] w-[54%] max-w-[860px] flex-col justify-between p-12 lg:p-14">
+        <div className="relative z-20 flex h-[calc(100%-110px)] w-[54%] max-w-[860px] flex-col justify-between p-12">
           {/* Top Left: Zango Brand Logo & Tagline - h-30 w-30 logo */}
           <div className="flex items-center gap-4">
             <img
@@ -576,74 +624,82 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
               <VendorLogoBadge vendor={vendor} className="h-44 w-44" />
 
               <div className="min-w-0 flex-1">
-                {/* Category Pill */}
-                <div className="inline-flex items-center gap-2 rounded-lg bg-[#804723] px-5 py-2 text-[18px] font-extrabold uppercase tracking-wider text-white shadow-md">
-                  <ShoppingBag className="h-5 w-5" />
-                  <span>{vendor.category || resolvedTheme.badge}</span>
+                {/* Category Pill with Ellipsis Truncation */}
+                <div
+                  title={vendor.category || resolvedTheme.badge}
+                  className="inline-flex items-center gap-2 rounded-lg bg-[#804723] px-4 py-1.5 text-[17px] font-extrabold uppercase tracking-wider text-white shadow-md max-w-[240px] overflow-hidden shrink-0"
+                >
+                  <ShoppingBag className="h-4.5 w-4.5 shrink-0" />
+                  <span className="truncate block max-w-full">{vendor.category || resolvedTheme.badge}</span>
                 </div>
 
-                {/* Business Name - Reduced to 50px display serif */}
-                <h1 className="mt-3 font-serif text-[50px] leading-[1.04] tracking-tight text-[#24150E] font-black">
-                  {nameWords.length >= 2 ? (
-                    <>
-                      <span className="block">{nameWords[0]}</span>
-                      <span className="block">{nameWords.slice(1).join(" ")}</span>
-                    </>
-                  ) : (
-                    vendor.business_name || "Store Name"
+                {/* Business Name - Responsive typography with natural word-wrap & 2-line clamp */}
+                <h1
+                  className={cn(
+                    "mt-2 font-serif tracking-tight text-[#24150E] font-black break-words line-clamp-2 max-w-full overflow-hidden text-ellipsis",
+                    (vendor.business_name || "").length <= 14
+                      ? "text-[46px] leading-[1.04]"
+                      : (vendor.business_name || "").length <= 22
+                        ? "text-[38px] leading-[1.06]"
+                        : (vendor.business_name || "").length <= 32
+                          ? "text-[30px] leading-[1.08]"
+                          : "text-[24px] leading-[1.10]",
                   )}
+                  title={vendor.business_name || "Store Name"}
+                >
+                  {vendor.business_name || "Store Name"}
                 </h1>
               </div>
             </div>
 
             {/* Slogan / Bio */}
-            <p className="mt-3.5 font-serif text-[26px] italic leading-snug text-[#784A33] max-w-xl font-semibold">
+            <p className="mt-3 font-serif text-[25px] italic leading-snug text-[#784A33] max-w-xl font-semibold line-clamp-2 overflow-hidden text-ellipsis">
               {bioText}
             </p>
 
             {/* Ornamental Divider with Diamond */}
-            <div className="my-3.5 flex max-w-[480px] items-center gap-2.5">
+            <div className="my-3 flex max-w-[480px] items-center gap-2.5">
               <div className="h-px flex-1 bg-[#D9C6B6]" />
               <div className="h-2 w-2 rotate-45 bg-[#9E6F4E]" />
               <div className="h-px flex-1 bg-[#D9C6B6]" />
             </div>
 
-            {/* 4 Info Rows - Explicitly 28px font size */}
-            <div className="grid gap-3.5 max-w-[540px] text-[28px] font-bold text-[#24150E]">
+            {/* 4 Info Rows - Explicitly sized with whitespace-nowrap and truncation */}
+            <div className="grid gap-3 max-w-[540px] text-[27px] font-bold text-[#24150E]">
               {/* Location */}
-              <div className="flex items-center gap-4 border-b border-dashed border-[#D9C6B6] pb-3">
-                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[#4A2C1D] text-white shadow-md">
-                  <MapPin className="h-7 w-7 text-[#F5EFE6]" />
+              <div className="flex items-center gap-3.5 border-b border-dashed border-[#D9C6B6] pb-2.5 min-w-0">
+                <div className="grid h-13 w-13 shrink-0 place-items-center rounded-full bg-[#4A2C1D] text-white shadow-md">
+                  <MapPin className="h-6.5 w-6.5 text-[#F5EFE6]" />
                 </div>
-                <span>{formatLocation(vendor.city)}</span>
+                <span className="truncate block whitespace-nowrap">{formatLocation(vendor.city)}</span>
               </div>
 
               {/* Offerings */}
-              <div className="flex items-center gap-4 border-b border-dashed border-[#D9C6B6] pb-3">
-                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[#4A2C1D] text-white shadow-md">
-                  <ShoppingBag className="h-7 w-7 text-[#F5EFE6]" />
+              <div className="flex items-center gap-3.5 border-b border-dashed border-[#D9C6B6] pb-2.5 min-w-0">
+                <div className="grid h-13 w-13 shrink-0 place-items-center rounded-full bg-[#4A2C1D] text-white shadow-md">
+                  <ShoppingBag className="h-6.5 w-6.5 text-[#F5EFE6]" />
                 </div>
-                <span>{offerings}</span>
+                <span className="truncate block whitespace-nowrap" title={offerings}>{offerings}</span>
               </div>
 
               {/* Contact */}
-              <div className="flex items-center gap-4 border-b border-dashed border-[#D9C6B6] pb-3">
-                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[#4A2C1D] text-white shadow-md">
-                  <Phone className="h-7 w-7 text-[#F5EFE6]" />
+              <div className="flex items-center gap-3.5 border-b border-dashed border-[#D9C6B6] pb-2.5 min-w-0">
+                <div className="grid h-13 w-13 shrink-0 place-items-center rounded-full bg-[#4A2C1D] text-white shadow-md">
+                  <Phone className="h-6.5 w-6.5 text-[#F5EFE6]" />
                 </div>
-                <span>{formatPhoneNumber(vendor.whatsapp_number)}</span>
+                <span className="whitespace-nowrap font-sans font-bold tracking-wide">{formatPhoneNumber(vendor.whatsapp_number)}</span>
               </div>
 
               {/* Verification */}
-              <div className="flex items-center gap-4">
-                <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[#4A2C1D] text-white shadow-md">
-                  <ShieldCheck className="h-7 w-7 text-[#F5EFE6]" />
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="grid h-13 w-13 shrink-0 place-items-center rounded-full bg-[#4A2C1D] text-white shadow-md">
+                  <ShieldCheck className="h-6.5 w-6.5 text-[#F5EFE6]" />
                 </div>
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2.5 whitespace-nowrap">
                   <span>{vendor.is_verified ? "Verified Vendor" : "Registered Vendor"}</span>
                   {vendor.is_verified && (
-                    <div className="grid h-7 w-7 place-items-center rounded-full bg-[#C5A059] text-white shadow-md">
-                      <CheckCircle2 className="h-5 w-5 fill-current" />
+                    <div className="grid h-6 w-6 place-items-center rounded-full bg-[#C5A059] text-white shadow-md">
+                      <CheckCircle2 className="h-4.5 w-4.5 fill-current" />
                     </div>
                   )}
                 </div>
@@ -653,7 +709,7 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
         </div>
 
         {/* Floating "Visit My Store" Card (Bottom Right) - Positioned cleanly above 110px bottom bar */}
-        <div className="absolute right-10 bottom-[128px] z-20 flex items-center gap-5 rounded-[28px] border-2 border-[#E5D7C8] bg-white p-5 pr-6 shadow-[0_24px_50px_rgba(36,21,14,0.3)] max-w-[580px]">
+        <div className="absolute right-10 bottom-[128px] z-20 flex items-center gap-5 rounded-[28px] border-2 border-[#E5D7C8] bg-white p-5 pr-6 shadow-[0_24px_50px_rgba(36,21,14,0.3)] max-w-[620px]">
           {/* QR Code inside brown-bordered rounded container */}
           <div className="rounded-[18px] border-2 border-[#804723] bg-white p-3.5 shadow-md shrink-0">
             <QRCodeSVG
@@ -661,7 +717,7 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
               size={144}
               bgColor="#FFFFFF"
               fgColor="#24150E"
-              level="M"
+              level="Q"
             />
           </div>
 
@@ -675,12 +731,15 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
             </div>
 
             {/* URL Pill Button with clean domain matching reference */}
-            <div className="mt-2 inline-flex items-center rounded-full bg-[#3A2013] px-5 py-2 text-[18px] font-bold tracking-wide text-white shadow-xs self-start max-w-[340px] truncate whitespace-nowrap">
-              <span>zango.com/{vendor.slug || "hafsah"}</span>
+            <div
+              title={storeDisplayUrl}
+              className="mt-2 inline-flex items-center rounded-full bg-[#3A2013] px-4 py-1.5 text-[17px] font-bold tracking-wide text-white shadow-xs self-start max-w-[380px] overflow-hidden"
+            >
+              <span className="truncate block max-w-full">{storeDisplayUrl}</span>
             </div>
 
-            {/* Subtitle with curved doodle arrow - 23px font size */}
-            <div className="mt-2 flex items-center gap-2.5 text-[23px] leading-snug font-semibold text-[#6E5A4E]">
+            {/* Subtitle with curved doodle arrow - 22px font size */}
+            <div className="mt-2 flex items-center gap-2.5 text-[22px] leading-snug font-semibold text-[#6E5A4E]">
               <span className="max-w-[240px]">
                 Scan to explore my products and shop with confidence.
               </span>

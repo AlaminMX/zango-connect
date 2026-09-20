@@ -38,6 +38,8 @@ import {
   Loader2,
   ImageOff,
   Instagram,
+  Copy,
+  QrCode,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,11 +52,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCity } from "@/lib/cityContext";
 import { validateNigerianPhone } from "@/lib/whatsapp";
+import { QRCodeSVG } from "qrcode.react";
+import { getVendorStoreUrl, getVendorStoreDisplayUrl } from "@/lib/vendor-card/share";
 
 function prettifySlug(slug: string) {
   return slug
@@ -68,7 +78,7 @@ export const Route = createFileRoute("/store/$slug")({
   component: StorePage,
   head: ({ params }) => {
     const name = prettifySlug(params.slug);
-    const url = `https://sutura-connect.lovable.app/store/${params.slug}`;
+    const url = `https://zango-connect.vercel.app/store/${params.slug}`;
     const title = `${name} — ZANGO`;
     const description = `Shop ${name} on ZANGO. Browse products and order directly on WhatsApp.`;
     return {
@@ -165,6 +175,8 @@ function StorePage() {
 
   const [clicks, setClicks] = useState(0);
   const [categories, setCategories] = useState<{ name: string }[]>([]);
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [hasCopiedLink, setHasCopiedLink] = useState(false);
 
   useEffect(() => {
     supabase
@@ -361,18 +373,55 @@ function StorePage() {
       </div>
     );
 
-  const shareUrl =
-    typeof window !== "undefined" ? `${window.location.origin}/store/${seller.slug}` : "";
+  // If store is unapproved, do not expose active storefront to public visitors
+  if (!isOwner && !isAdmin && seller.verification_status !== "approved") {
+    return (
+      <div className="min-h-screen bg-background">
+        <TopBar />
+        <div className="mx-auto max-w-md px-5 py-20 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+            <Clock className="h-8 w-8" />
+          </div>
+          <h1 className="font-serif text-2xl font-bold">Store Under Review</h1>
+          <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+            <strong>{seller.business_name}</strong> has submitted their store application and is currently awaiting administrator review and approval.
+          </p>
+          <div className="mt-6 flex flex-col gap-2">
+            <Link to="/">
+              <Button variant="outline" className="w-full rounded-full">
+                Explore Marketplace
+              </Button>
+            </Link>
+          </div>
+        </div>
+        <BottomNav />
+      </div>
+    );
+  }
+
+  const productionStoreUrl = getVendorStoreUrl(seller.slug);
+  const productionStorePill = getVendorStoreDisplayUrl(seller.slug);
 
   const handleShare = async () => {
     try {
-      await navigator.clipboard.writeText(shareUrl);
-      toast.success("Link copied!");
+      await navigator.clipboard.writeText(productionStoreUrl);
+      toast.success("Store link copied!");
     } catch {}
     window.open(
-      `https://wa.me/?text=${encodeURIComponent(`Check out my store on ZANGO 🛍️ ${shareUrl}`)}`,
+      `https://wa.me/?text=${encodeURIComponent(`Check out my store on ZANGO 🛍️ ${productionStoreUrl}`)}`,
       "_blank",
     );
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(productionStoreUrl);
+      setHasCopiedLink(true);
+      toast.success("Store link copied!");
+      setTimeout(() => setHasCopiedLink(false), 2000);
+    } catch {
+      toast.error("Failed to copy link");
+    }
   };
 
   const handleVouch = async () => {
@@ -474,6 +523,10 @@ function StorePage() {
   // Add product — image is now REQUIRED
   const addProduct = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (seller.verification_status !== "approved") {
+      toast.error("Your store must be approved by an administrator before you can upload products.");
+      return;
+    }
     if (!pName.trim()) {
       toast.error("Product name is required");
       return;
@@ -788,11 +841,31 @@ function StorePage() {
                     <Share2 className="mr-1.5 h-4 w-4" /> Vendor card
                   </Link>
                 </Button>
+                <Button
+                  onClick={() => setShowQrModal(true)}
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full shrink-0"
+                  title="Store QR code"
+                  aria-label="Store QR code"
+                >
+                  <QrCode className="h-4 w-4 text-primary" />
+                </Button>
               </>
             ) : (
               <>
                 <Button onClick={handleShare} variant="outline" className="flex-1 rounded-full">
                   <Share2 className="mr-1.5 h-4 w-4" /> Share store
+                </Button>
+                <Button
+                  onClick={() => setShowQrModal(true)}
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full shrink-0"
+                  title="Scan store QR code"
+                  aria-label="Scan store QR code"
+                >
+                  <QrCode className="h-4 w-4 text-primary" />
                 </Button>
                 {canVouch && (
                   <Button
@@ -886,6 +959,19 @@ function StorePage() {
             </div>
           )}
         </div>
+
+        {/* ── Product uploads locked notice if unapproved owner in edit mode ── */}
+        {isOwner && editMode && seller.verification_status !== "approved" && (
+          <section className="mt-8 rounded-2xl border border-amber-300 bg-amber-50/80 p-5 text-amber-900 shadow-warm">
+            <div className="flex items-center gap-2 font-semibold">
+              <Clock className="h-5 w-5 text-amber-600" />
+              Product Uploads Locked
+            </div>
+            <p className="mt-1.5 text-xs leading-relaxed text-amber-800">
+              Your vendor application is currently under review by our admin team. You cannot upload products or publish new inventory until an administrator approves your store.
+            </p>
+          </section>
+        )}
 
         {/* ── Add product form (owner + edit mode + approved) ── */}
         {isOwner && editMode && seller.verification_status === "approved" && (
@@ -1086,6 +1172,85 @@ function StorePage() {
               {ePSaving ? "Saving…" : "Save changes"}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Storefront Scannable QR Code Modal */}
+      <Dialog open={showQrModal} onOpenChange={setShowQrModal}>
+        <DialogContent className="sm:max-w-md text-center p-6 bg-[#FAF6F0] border-2 border-border-warm">
+          <DialogHeader className="text-center sm:text-center">
+            <DialogTitle className="font-serif text-2xl font-black text-[#24150E]">
+              {seller.business_name}
+            </DialogTitle>
+            <DialogDescription className="text-sm font-medium text-[#7C6556]">
+              Scan with your phone camera to visit this verified storefront directly.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="my-4 flex flex-col items-center justify-center">
+            {/* Scannable QR Code linking to store */}
+            <div className="rounded-2xl border-2 border-[#804723] bg-white p-4 shadow-xl">
+              <QRCodeSVG
+                value={productionStoreUrl}
+                size={190}
+                bgColor="#FFFFFF"
+                fgColor="#24150E"
+                level="Q"
+              />
+            </div>
+
+            {/* Accurate Production URL Pill */}
+            <div className="mt-4 inline-flex items-center rounded-full bg-[#3A2013] px-4 py-1.5 text-xs sm:text-sm font-bold tracking-wide text-white shadow-xs max-w-full truncate">
+              <span className="truncate">{productionStorePill}</span>
+            </div>
+
+            <p className="mt-2 text-xs font-medium text-[#7C6556]">
+              Instant access • No app install needed
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2 pt-1 sm:flex-row">
+            <Button
+              onClick={handleCopyLink}
+              variant="outline"
+              className="flex-1 rounded-full gap-1.5 h-10 text-xs font-semibold bg-white border-border-warm text-[#24150E] hover:bg-muted/50"
+            >
+              {hasCopiedLink ? (
+                <>
+                  <Check className="h-4 w-4 text-emerald-600" />
+                  <span className="text-emerald-700">Copied to Clipboard!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="h-4 w-4" />
+                  <span>Copy Store Link</span>
+                </>
+              )}
+            </Button>
+
+            <Button
+              onClick={() => {
+                window.open(
+                  `https://wa.me/?text=${encodeURIComponent(`Check out ${seller.business_name} on ZANGO 🛍️ ${productionStoreUrl}`)}`,
+                  "_blank",
+                );
+              }}
+              className="flex-1 rounded-full gap-1.5 h-10 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold shadow-xs"
+            >
+              <MessageCircle className="h-4 w-4" />
+              <span>Share on WhatsApp</span>
+            </Button>
+          </div>
+
+          {isOwner && (
+            <div className="pt-3 border-t border-[#D9C6B6]/60 mt-3">
+              <Button asChild variant="ghost" className="w-full text-xs text-[#804723] hover:text-[#5c3014] font-bold">
+                <Link to="/seller/vendor-card">
+                  Open Marketing Card Studio & Download Graphics →
+                </Link>
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

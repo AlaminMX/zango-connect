@@ -9,7 +9,7 @@
  */
 import { useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Home, Compass, Bookmark, Plus, Store, LayoutGrid, Shield, LogOut } from "lucide-react";
+import { Home, Compass, Bookmark, Plus, Store, LayoutGrid, Shield, LogOut, Clock } from "lucide-react";
 import { useAuth } from "@/lib/authContext";
 import { useSellerProfile } from "@/lib/sellerProfile";
 import { useWishlistCount } from "@/lib/wishlist";
@@ -60,6 +60,39 @@ export function BottomNav() {
           </Link>
           <Link to="/admin" className={cls("/admin")}>
             <Shield className="h-5 w-5" /> Admin
+          </Link>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className={`${tabBase} text-muted-foreground hover:text-destructive`}
+          >
+            <LogOut className="h-5 w-5" /> Sign out
+          </button>
+        </nav>
+      </>
+    );
+  }
+
+  // ── UNAPPROVED / PENDING SELLER ──
+  if (seller && seller.verification_status !== "approved") {
+    const isPending = seller.verification_status === "pending";
+    const statusHref = isPending ? "/vendor-approval-pending" : "/vendor-rejected";
+    return (
+      <>
+        <div className="h-16" aria-hidden />
+        <nav className="fixed bottom-0 inset-x-0 z-50 flex h-16 items-stretch border-t border-border-warm bg-card/95 backdrop-blur-md shadow-[0_-2px_12px_rgba(62,39,35,0.08)]">
+          <Link to="/" className={cls("/")}>
+            <Home className="h-5 w-5" /> Home
+          </Link>
+          <Link to="/explore" className={cls("/explore")}>
+            <Compass className="h-5 w-5" /> Explore
+          </Link>
+          <Link to={statusHref} className={cls(statusHref)}>
+            <Clock className="h-5 w-5 text-amber-500" />
+            <span className="text-[10px] text-amber-600 font-medium">Under Review</span>
+          </Link>
+          <Link to="/wishlist" className={cls("/wishlist")}>
+            <Bookmark className="h-5 w-5" /> Saved
           </Link>
           <button
             type="button"

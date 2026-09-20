@@ -147,6 +147,18 @@ export function ProductSheet({
         payload.price = priceVal;
       }
 
+      // Strictly verify seller is approved by admin before creating products
+      const { data: sRow } = await supabase
+        .from("sellers")
+        .select("verification_status")
+        .eq("id", sellerId)
+        .maybeSingle();
+
+      if (!sRow || sRow.verification_status !== "approved") {
+        toast.error("Your store must be approved by an administrator before you can upload products.");
+        return;
+      }
+
       const op =
         mode === "add"
           ? supabase.from("products").insert(payload).select("id").single()

@@ -197,35 +197,97 @@ export const vendorCardThemes: Record<VendorCardThemeName, VendorCardTheme> = {
 export function resolveVendorCardTheme(
   category?: string | null,
   preferred?: VendorCardThemeName,
+  extraContext?: string | null,
 ): VendorCardTheme {
   if (preferred && vendorCardThemes[preferred]) return vendorCardThemes[preferred];
-  const key = (category ?? "").toLowerCase();
+  const combined = `${category ?? ""} ${extraContext ?? ""}`.toLowerCase();
   if (
-    key.includes("fashion") ||
-    key.includes("cloth") ||
-    key.includes("shoe") ||
-    key.includes("bag")
+    combined.includes("fashion") ||
+    combined.includes("cloth") ||
+    combined.includes("shoe") ||
+    combined.includes("bag") ||
+    combined.includes("abaya") ||
+    combined.includes("textile") ||
+    combined.includes("wear") ||
+    combined.includes("apparel") ||
+    combined.includes("jewelry") ||
+    combined.includes("jewel")
   )
     return vendorCardThemes.fashion;
   if (
-    key.includes("beauty") ||
-    key.includes("makeup") ||
-    key.includes("skin") ||
-    key.includes("perfume")
+    combined.includes("beauty") ||
+    combined.includes("makeup") ||
+    combined.includes("skin") ||
+    combined.includes("perfume") ||
+    combined.includes("scent") ||
+    combined.includes("cosmetic") ||
+    combined.includes("fragrance") ||
+    combined.includes("oil")
   )
     return vendorCardThemes.beauty;
-  if (key.includes("food") || key.includes("drink") || key.includes("cater"))
+  if (
+    combined.includes("food") ||
+    combined.includes("drink") ||
+    combined.includes("cater") ||
+    combined.includes("bak") ||
+    combined.includes("cake") ||
+    combined.includes("kitchen") ||
+    combined.includes("snack") ||
+    combined.includes("restaurant") ||
+    combined.includes("gourmet")
+  )
     return vendorCardThemes.food;
-  if (key.includes("elect") || key.includes("phone") || key.includes("gadget"))
+  if (
+    combined.includes("elect") ||
+    combined.includes("phone") ||
+    combined.includes("gadget") ||
+    combined.includes("computer") ||
+    combined.includes("laptop") ||
+    combined.includes("tech") ||
+    combined.includes("audio")
+  )
     return vendorCardThemes.electronics;
-  if (key.includes("auto") || key.includes("car")) return vendorCardThemes.automotive;
-  if (key.includes("home") || key.includes("decor") || key.includes("interior"))
+  if (
+    combined.includes("auto") ||
+    combined.includes("car") ||
+    combined.includes("motor") ||
+    combined.includes("vehicle") ||
+    combined.includes("tyre") ||
+    combined.includes("tire")
+  )
+    return vendorCardThemes.automotive;
+  if (
+    combined.includes("home") ||
+    combined.includes("decor") ||
+    combined.includes("interior") ||
+    combined.includes("furniture") ||
+    combined.includes("living")
+  )
     return vendorCardThemes.home;
-  if (key.includes("book")) return vendorCardThemes.books;
-  if (key.includes("service")) return vendorCardThemes.services;
+  if (
+    combined.includes("book") ||
+    combined.includes("station") ||
+    combined.includes("print") ||
+    combined.includes("paper") ||
+    combined.includes("art")
+  )
+    return vendorCardThemes.books;
+  if (
+    combined.includes("service") ||
+    combined.includes("consult") ||
+    combined.includes("repair") ||
+    combined.includes("agency")
+  )
+    return vendorCardThemes.services;
   return vendorCardThemes.default;
 }
 
 export function getVendorStoreUrl(slug: string) {
-  return `${ZANGO_STORE_ORIGIN}/store/${slug}`;
+  const cleanSlug = (slug || "").trim().replace(/^\/+|\/+$/g, "");
+  return `${ZANGO_STORE_ORIGIN}/store/${cleanSlug}`;
+}
+
+export function getVendorStoreDisplayUrl(slug: string) {
+  const cleanSlug = (slug || "").trim().replace(/^\/+|\/+$/g, "");
+  return `zango-connect.vercel.app/store/${cleanSlug}`;
 }

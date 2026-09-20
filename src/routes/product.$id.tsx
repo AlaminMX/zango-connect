@@ -102,8 +102,11 @@ function ProductDetail() {
   const mainImg = imgs[activeImg] ?? imgs[0];
   const soldOut = p.stock_status === "sold_out";
 
-  const storeUrl =
-    typeof window !== "undefined" ? `${window.location.origin}/store/${seller.slug}` : undefined;
+  const storeUrl = seller.slug
+    ? `https://zango-connect.vercel.app/store/${seller.slug}`
+    : typeof window !== "undefined"
+      ? window.location.origin
+      : undefined;
   const priceLabel = p.price != null ? `₦${Number(p.price).toLocaleString()}` : "Price on request";
   const waMessage = `Hi! I found your product on ZANGO — ${p.name}${p.price != null ? ` (${priceLabel})` : ""}. Is it available?${storeUrl ? `\n\nStore: ${storeUrl}` : ""}`;
   const waUrl = `https://wa.me/${(seller.whatsapp_number ?? "").replace(/\D/g, "").replace(/^0/, "234")}?text=${encodeURIComponent(waMessage)}`;

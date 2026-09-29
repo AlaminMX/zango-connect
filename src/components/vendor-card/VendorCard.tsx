@@ -488,9 +488,9 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
             </div>
           </div>
 
-          {/* Bottom Dark Bar - Expanded size with 30px text, 32px icons, enlarged pill */}
-          <div className="relative z-30 flex h-[110px] shrink-0 items-center justify-between bg-[#24150E] px-10 text-white shadow-2xl">
-            <div className="flex items-center gap-6 text-[30px] font-extrabold tracking-wide">
+          {/* Bottom Dark Bar - Centered 3 trust pillars across full width */}
+          <div className="relative z-30 flex h-[110px] shrink-0 items-center justify-center bg-[#24150E] px-8 text-white shadow-2xl">
+            <div className="flex items-center justify-center gap-6 text-[29px] font-extrabold tracking-wide">
               <div className="flex items-center gap-3">
                 <Heart className="h-[32px] w-[32px] text-[#C5A059] stroke-[2.2]" />
                 <span>Shop Local</span>
@@ -505,16 +505,6 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
                 <Star className="h-[32px] w-[32px] text-[#C5A059] stroke-[2.2]" />
                 <span>Empowering Women</span>
               </div>
-            </div>
-            <div className="flex items-center gap-3 rounded-full bg-white px-7 py-3.5 text-[#24150E] shadow-xl">
-              <span className="font-medium text-[#4A3B32] text-[19px]">Powered by</span>
-              <img
-                src="/zango-logo.png"
-                alt=""
-                className="h-[32px] w-[32px] object-contain"
-                crossOrigin="anonymous"
-              />
-              <span className="font-sans font-black tracking-wider text-[22px] text-[#24150E]">ZANGO</span>
             </div>
           </div>
         </div>
@@ -600,12 +590,12 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
 
         {/* Left Column Content - Adjusted to accommodate 110px bottom bar */}
         <div className="relative z-20 flex h-[calc(100%-110px)] w-[54%] max-w-[860px] flex-col justify-between p-12">
-          {/* Top Left: Zango Brand Logo & Tagline - h-30 w-30 logo */}
+          {/* Top Left: Zango Brand Logo & Tagline */}
           <div className="flex items-center gap-4">
             <img
               src="/zango-logo.png"
               alt="ZANGO"
-              className="h-30 w-30 h-[120px] w-[120px] object-contain shrink-0"
+              className="h-[120px] w-[120px] object-contain shrink-0"
               crossOrigin="anonymous"
             />
             <div className="text-left whitespace-nowrap flex flex-col justify-center">
@@ -759,35 +749,23 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
           </div>
         </div>
 
-        {/* Bottom Value Bar across full width - Increased bar size to 110px with 30px font, 32px icons, enlarged Powered by ZANGO pill */}
-        <div className="absolute inset-x-0 bottom-0 z-30 flex h-[110px] items-center justify-between bg-[#24150E] px-12 text-white shadow-2xl">
-          <div className="flex items-center text-[30px] font-extrabold tracking-wide whitespace-nowrap">
+        {/* Bottom Value Bar across full width - Centered trust pillars */}
+        <div className="absolute inset-x-0 bottom-0 z-30 flex h-[110px] items-center justify-center bg-[#24150E] px-12 text-white shadow-2xl">
+          <div className="flex items-center justify-center text-[30px] font-extrabold tracking-wide whitespace-nowrap">
             <div className="flex items-center gap-3.5">
               <Heart className="h-[32px] w-[32px] text-[#C5A059] stroke-[2.2]" />
               <span>Shop Local</span>
             </div>
-            <div className="h-8 w-px bg-white/25 mx-8" />
+            <div className="h-8 w-px bg-white/25 mx-12" />
             <div className="flex items-center gap-3.5">
               <ShieldCheck className="h-[32px] w-[32px] text-[#C5A059] stroke-[2.2]" />
               <span>Trusted Seller</span>
             </div>
-            <div className="h-8 w-px bg-white/25 mx-8" />
+            <div className="h-8 w-px bg-white/25 mx-12" />
             <div className="flex items-center gap-3.5">
               <Star className="h-[32px] w-[32px] text-[#C5A059] stroke-[2.2]" />
               <span>Empowering Women</span>
             </div>
-          </div>
-
-          {/* Powered by ZANGO Enlarged White Pill */}
-          <div className="flex items-center gap-3 rounded-full bg-white px-8 py-3.5 text-[#24150E] shadow-xl whitespace-nowrap">
-            <span className="font-semibold text-[#4A3B32] text-[20px]">Powered by</span>
-            <img
-              src="/zango-logo.png"
-              alt=""
-              className="h-[34px] w-[34px] object-contain"
-              crossOrigin="anonymous"
-            />
-            <span className="font-sans font-black tracking-wider text-[24px] text-[#24150E]">ZANGO</span>
           </div>
         </div>
       </div>

@@ -19,6 +19,28 @@ async function exportVendorCard({
     }
   }
 
+  // Wait for all images within the element to be fully loaded and decoded
+  if (typeof window !== "undefined" && node) {
+    const images = Array.from(node.querySelectorAll("img"));
+    await Promise.all(
+      images.map(async (img) => {
+        if (!img.complete) {
+          await new Promise<void>((resolve) => {
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+          });
+        }
+        if ("decode" in img) {
+          try {
+            await img.decode();
+          } catch {
+            // Ignore decoding failure on SVG/cross-origin
+          }
+        }
+      }),
+    );
+  }
+
   const exportStyle: Partial<CSSStyleDeclaration> = {
     transform: "none",
     transformOrigin: "top left",

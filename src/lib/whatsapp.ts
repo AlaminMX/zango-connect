@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { attributionFields } from "@/lib/attribution";
 
 // Validates and normalises a Nigerian phone number.
 // Accepts: 08012345678 (11 digits), 2348012345678 (13 digits), 8012345678 (10 digits)
@@ -34,11 +35,32 @@ export function buildWhatsAppUrl(phone: string, productName?: string, storeUrl?:
   return `https://wa.me/${clean}?text=${encodeURIComponent(msg)}`;
 }
 
+// Ignore an identical tap (same vendor + product) within this window so a
+// double-tap doesn't count as two leads.
+const TAP_GUARD_MS = 3000;
+const lastTap = new Map<string, number>();
+
+// Logs a WhatsApp tap, tagged with the visitor's ?ref= channel and anonymous
+// visitor id. Best effort: never throws, never blocks the click. supabase-js
+// returns { error } instead of throwing, so the error is checked and logged.
 export async function trackClick(sellerId: string, productId?: string) {
+  if (typeof window === "undefined") return;
   try {
-    await supabase
-      .from("whatsapp_clicks")
-      .insert({ seller_id: sellerId, product_id: productId ?? null });
+    const key = `${sellerId}:${productId ?? ""}`;
+    const now = Date.now();
+    const prev = lastTap.get(key);
+    if (prev && now - prev < TAP_GUARD_MS) return;
+    lastTap.set(key, now);
+
+    const row = {
+      seller_id: sellerId,
+      product_id: productId ?? null,
+      ...attributionFields(),
+    };
+    // Cast: `ref` / `visitor_id` are new columns; this stays valid whether or
+    // not types.ts has been regenerated yet.
+    const { error } = await supabase.from("whatsapp_clicks").insert(row as never);
+    if (error) console.warn("[trackClick] insert rejected:", error.message);
   } catch {
     // best effort
   }
@@ -51,4 +73,5 @@ export function slugify(s: string) {
     .replace(/[^\w\s-]/g, "")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
-}
+  }
+    

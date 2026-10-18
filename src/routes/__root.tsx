@@ -14,6 +14,8 @@ import { SellerProfileProvider } from "@/lib/sellerProfile";
 import { BottomNav } from "@/components/BottomNav";
 import { PwaManager } from "@/components/PwaManager";
 
+import { SITE_ORIGIN, DEFAULT_OG_IMAGE, absoluteUrl } from "@/lib/site";
+
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
@@ -83,7 +85,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "The marketplace built for northern Nigeria's entrepreneurs. Discover sellers, order on WhatsApp.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://sutura-connect.lovable.app/" },
+      { property: "og:url", content: absoluteUrl("/") },
       { name: "twitter:title", content: "ZANGO — Your Business, Discovered." },
       {
         name: "twitter:description",
@@ -91,16 +93,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "The marketplace built for northern Nigeria's entrepreneurs. Discover sellers, order on WhatsApp.",
       },
       { name: "twitter:card", content: "summary_large_image" },
-      {
-        property: "og:image",
-        content:
-          "https://storage.googleapis.com/gpt-engineer-file-uploads/sgPidVUphLSGVGq51GiPoIX6I323/social-images/social-1784011047122-ChatGPT_Image_Jul_14,_2026,_07_37_16_AM.webp",
-      },
-      {
-        name: "twitter:image",
-        content:
-          "https://storage.googleapis.com/gpt-engineer-file-uploads/sgPidVUphLSGVGq51GiPoIX6I323/social-images/social-1784011047122-ChatGPT_Image_Jul_14,_2026,_07_37_16_AM.webp",
-      },
+      { property: "og:image", content: DEFAULT_OG_IMAGE },
+      { name: "twitter:image", content: DEFAULT_OG_IMAGE },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -124,11 +118,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "@context": "https://schema.org",
           "@type": "WebSite",
           name: "ZANGO",
-          url: "https://sutura-connect.lovable.app/",
+          url: absoluteUrl("/"),
           description: "The marketplace built for northern Nigeria's women entrepreneurs.",
           potentialAction: {
             "@type": "SearchAction",
-            target: "https://sutura-connect.lovable.app/search?q={search_term_string}",
+            target: `${SITE_ORIGIN}/search?q={search_term_string}`,
             "query-input": "required name=search_term_string",
           },
         }),
@@ -139,7 +133,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "@context": "https://schema.org",
           "@type": "Organization",
           name: "ZANGO",
-          url: "https://sutura-connect.lovable.app/",
+          url: absoluteUrl("/"),
           description: "WhatsApp-first marketplace for northern Nigeria's women entrepreneurs.",
         }),
       },
@@ -185,4 +179,5 @@ function RootComponent() {
       </AuthProvider>
     </QueryClientProvider>
   );
-}
+  }
+       

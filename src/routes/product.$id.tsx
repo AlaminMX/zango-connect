@@ -21,8 +21,17 @@ import { Heart, MessageCircle, MapPin } from "lucide-react";
 import { toast } from "sonner";
 
 import { assertLaunchGate } from "@/lib/launchGate";
+import { storeUrl as getStoreUrl } from "@/lib/site";
+import { fetchProductShareMeta, buildProductHead } from "@/lib/share-meta";
 export const Route = createFileRoute("/product/$id")({
   beforeLoad: assertLaunchGate,
+  // Server only: link-preview crawlers read the server-rendered <head>. On
+  // in-app navigation we skip the extra request and keep the page fast.
+  loader: async ({ params }) => {
+    if (typeof window !== "undefined") return null;
+    return fetchProductShareMeta(params.id);
+  },
+  head: ({ loaderData, params }) => buildProductHead(loaderData, params.id),
   component: ProductDetail,
 });
 
@@ -103,7 +112,7 @@ function ProductDetail() {
   const soldOut = p.stock_status === "sold_out";
 
   const storeUrl = seller.slug
-    ? `https://zango-connect.vercel.app/store/${seller.slug}`
+    ? getStoreUrl(seller.slug)
     : typeof window !== "undefined"
       ? window.location.origin
       : undefined;
@@ -352,4 +361,5 @@ function RelatedProducts({ sellerId, excludeId }: { sellerId: string; excludeId:
       </div>
     </section>
   );
-}
+  }
+  

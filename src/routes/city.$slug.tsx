@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Store, ArrowRight } from "lucide-react";
 import { getCityMarketplace } from "@/lib/city-marketplace.functions";
 import { iconFor } from "@/lib/categories";
+import { absoluteUrl } from "@/lib/site";
 
 const cityQuery = (slug: string) =>
   queryOptions({
@@ -31,7 +32,7 @@ export const Route = createFileRoute("/city/$slug")({
     const { city } = loaderData;
     const title = `${city.name} Marketplace — ZANGO`;
     const desc = `Discover sellers and products in ${city.name}, ${city.state}. Shop locally on ZANGO — northern Nigeria's WhatsApp-first marketplace.`;
-    const url = `/city/${city.slug}`;
+    const url = absoluteUrl(`/city/${city.slug}`);
     return {
       meta: [
         { title },
@@ -51,7 +52,7 @@ export const Route = createFileRoute("/city/$slug")({
             "@context": "https://schema.org",
             "@type": "BreadcrumbList",
             itemListElement: [
-              { "@type": "ListItem", position: 1, name: "Home", item: "/" },
+              { "@type": "ListItem", position: 1, name: "Home", item: absoluteUrl("/") },
               { "@type": "ListItem", position: 2, name: `${city.name} Marketplace`, item: url },
             ],
           }),
@@ -199,4 +200,5 @@ function CityPage() {
       <Footer />
     </div>
   );
-}
+      }
+  

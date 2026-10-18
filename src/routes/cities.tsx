@@ -10,6 +10,7 @@ import { TopBar } from "@/components/TopBar";
 import { BottomNav } from "@/components/BottomNav";
 import { Footer } from "@/components/Footer";
 import { MapPin, Search, ArrowUpRight } from "lucide-react";
+import { absoluteUrl } from "@/lib/site";
 
 import { assertLaunchGate } from "@/lib/launchGate";
 export const Route = createFileRoute("/cities")({
@@ -27,7 +28,7 @@ export const Route = createFileRoute("/cities")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
-    links: [{ rel: "canonical", href: "https://sutura-connect.lovable.app/cities" }],
+    links: [{ rel: "canonical", href: absoluteUrl("/cities") }],
     scripts: [
       {
         type: "application/ld+json",
@@ -35,7 +36,7 @@ export const Route = createFileRoute("/cities")({
           "@context": "https://schema.org",
           "@type": "CollectionPage",
           name: "All cities on ZANGO",
-          url: "https://sutura-connect.lovable.app/cities",
+          url: absoluteUrl("/cities"),
         }),
       },
     ],
@@ -156,4 +157,5 @@ function CitiesPage() {
       <BottomNav />
     </div>
   );
-}
+      }
+        

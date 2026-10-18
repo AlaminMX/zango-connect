@@ -8,6 +8,7 @@ import { Footer } from "@/components/Footer";
 import { BackButton } from "@/components/BackButton";
 import { MapPin } from "lucide-react";
 import { assertLaunchGate } from "@/lib/launchGate";
+import { absoluteUrl } from "@/lib/site";
 import { getNormalizedStateWithCities, CityStatRow } from "@/lib/states-data";
 
 interface StateData {
@@ -45,7 +46,7 @@ export const Route = createFileRoute("/state/$slug")({
     const { state } = loaderData;
     const title = `${state.name} — Vendors & products on ZANGO`;
     const desc = `Explore ${state.sellers_count} vendors and ${state.products_count} products across ${state.cities_count} ${state.cities_count === 1 ? "city" : "cities"} in ${state.name}.`;
-    const url = `/state/${state.slug}`;
+    const url = absoluteUrl(`/state/${state.slug}`);
     return {
       meta: [
         { title },

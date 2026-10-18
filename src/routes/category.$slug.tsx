@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { hausaFor, iconFor } from "@/lib/categories";
 import { useCity } from "@/lib/cityContext";
+import { absoluteUrl } from "@/lib/site";
 
 function prettifySlug(slug: string) {
   return slug
@@ -30,7 +31,7 @@ export const Route = createFileRoute("/category/$slug")({
   component: CategoryPage,
   head: ({ params }) => {
     const name = prettifySlug(params.slug);
-    const url = `https://sutura-connect.lovable.app/category/${params.slug}`;
+    const url = absoluteUrl(`/category/${params.slug}`);
     const title = `${name} — ZANGO`;
     const description = `Browse ${name} sellers and products across northern Nigeria. Order on WhatsApp.`;
     return {
@@ -224,4 +225,5 @@ function CategoryPage() {
       <Footer />
     </div>
   );
-}
+         }
+               

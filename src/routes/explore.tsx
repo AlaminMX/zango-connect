@@ -467,7 +467,9 @@ async function fetchExploreProducts({
   if (state?.toLowerCase() === "kaduna") {
     sellers = sellers.filter((s: any) => s.city?.toLowerCase() !== "zaria");
   } else if (state?.toLowerCase() === "zaria") {
-    sellers = sellers.filter((s: any) => s.city?.toLowerCase().includes("zaria") || s.state?.toLowerCase() === "zaria");
+    sellers = sellers.filter(
+      (s: any) => s.city?.toLowerCase().includes("zaria") || s.state?.toLowerCase() === "zaria",
+    );
   }
   if (sellers.length === 0) return { items: [], nextCursor: null, hasMore: false };
 

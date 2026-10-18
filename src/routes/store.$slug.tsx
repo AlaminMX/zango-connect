@@ -355,7 +355,8 @@ function StorePage() {
           </div>
           <h1 className="font-serif text-2xl font-bold">Store Under Review</h1>
           <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-            <strong>{seller.business_name}</strong> has submitted their store application and is currently awaiting administrator review and approval.
+            <strong>{seller.business_name}</strong> has submitted their store application and is
+            currently awaiting administrator review and approval.
           </p>
           <div className="mt-6 flex flex-col gap-2">
             <Link to="/">
@@ -494,7 +495,9 @@ function StorePage() {
   const addProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (seller.verification_status !== "approved") {
-      toast.error("Your store must be approved by an administrator before you can upload products.");
+      toast.error(
+        "Your store must be approved by an administrator before you can upload products.",
+      );
       return;
     }
     if (!pName.trim()) {
@@ -938,7 +941,8 @@ function StorePage() {
               Product Uploads Locked
             </div>
             <p className="mt-1.5 text-xs leading-relaxed text-amber-800">
-              Your vendor application is currently under review by our admin team. You cannot upload products or publish new inventory until an administrator approves your store.
+              Your vendor application is currently under review by our admin team. You cannot upload
+              products or publish new inventory until an administrator approves your store.
             </p>
           </section>
         )}
@@ -1214,7 +1218,11 @@ function StorePage() {
 
           {isOwner && (
             <div className="pt-3 border-t border-[#D9C6B6]/60 mt-3">
-              <Button asChild variant="ghost" className="w-full text-xs text-[#804723] hover:text-[#5c3014] font-bold">
+              <Button
+                asChild
+                variant="ghost"
+                className="w-full text-xs text-[#804723] hover:text-[#5c3014] font-bold"
+              >
                 <Link to="/seller/vendor-card">
                   Open Marketing Card Studio & Download Graphics →
                 </Link>

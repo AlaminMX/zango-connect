@@ -225,5 +225,4 @@ function CategoryPage() {
       <Footer />
     </div>
   );
-         }
-               
+}

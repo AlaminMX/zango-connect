@@ -12,14 +12,7 @@
  * read, never the service-role key.
  */
 import { supabase } from "@/integrations/supabase/client";
-import {
-  SITE_NAME,
-  absoluteImage,
-  productUrl,
-  safeJsonLd,
-  storeUrl,
-  truncate,
-} from "@/lib/site";
+import { SITE_NAME, absoluteImage, productUrl, safeJsonLd, storeUrl, truncate } from "@/lib/site";
 
 const FETCH_TIMEOUT_MS = 3000; // crawlers give up fast — never hang the page on this
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -88,16 +81,16 @@ export async function fetchProductShareMeta(id: string): Promise<ProductShareMet
   }
 }
 
-export function buildProductHead(meta: ProductShareMeta | null | undefined, id: string): HeadResult {
+export function buildProductHead(
+  meta: ProductShareMeta | null | undefined,
+  id: string,
+): HeadResult {
   const url = productUrl(id);
 
   // No data (client navigation, timeout, bad id): keep canonical right, skip the rest.
   if (!meta) {
     return {
-      meta: [
-        { title: `Product — ${SITE_NAME}` },
-        { property: "og:url", content: url },
-      ],
+      meta: [{ title: `Product — ${SITE_NAME}` }, { property: "og:url", content: url }],
       links: [{ rel: "canonical", href: url }],
     };
   }
@@ -115,10 +108,7 @@ export function buildProductHead(meta: ProductShareMeta | null | undefined, id: 
 
   const price = meta.price != null ? `₦${meta.price.toLocaleString("en-US")}` : null;
   const where = meta.seller.city ? `${meta.seller.name}, ${meta.seller.city}` : meta.seller.name;
-  const ogTitle = truncate(
-    `${meta.name}${price ? ` — ${price}` : ""} | ${meta.seller.name}`,
-    90,
-  );
+  const ogTitle = truncate(`${meta.name}${price ? ` — ${price}` : ""} | ${meta.seller.name}`, 90);
   const blurb = truncate(meta.description, 110);
   const description = truncate(
     `${price ? `${price} · ` : ""}${where}. ${blurb ? `${blurb} ` : ""}Order on WhatsApp.`,

@@ -35,7 +35,9 @@ function SellersPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("sellers")
-        .select("id, slug, business_name, category, city, state, profile_photo_url, is_verified, rating")
+        .select(
+          "id, slug, business_name, category, city, state, profile_photo_url, is_verified, rating",
+        )
         .eq("is_blocked", false)
         .eq("verification_status", "approved")
         .order("is_verified", { ascending: false })

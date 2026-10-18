@@ -5,12 +5,15 @@
  */
 
 import { useEffect, useState, memo } from "react";
-import { Heart, ShieldOff, ShieldCheck } from "lucide-react";
+import { Heart, ShieldOff, ShieldCheck, Sparkles } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { toggleWishlist, useIsWishlisted } from "@/lib/wishlist";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { useSellerProfile } from "@/lib/sellerProfile";
+import { useAuth } from "@/lib/authContext";
+import { ProductCardStudioDialog } from "@/components/product-card-studio/ProductCardStudioDialog";
 
 export interface ProductCardProps {
   id: string;
@@ -31,6 +34,10 @@ export interface ProductCardProps {
 
 function ProductCardContent(p: ProductCardProps) {
   const nav = useNavigate();
+  const { seller } = useSellerProfile();
+  const { isAdmin: authIsAdmin } = useAuth();
+  const canGenerateCard = Boolean(seller || authIsAdmin || p.isAdmin);
+  const [studioOpen, setStudioOpen] = useState(false);
   const soldOut = p.stock_status === "sold_out";
   const low = p.stock_status === "low_stock";
   const isBlocked = p.status === "blocked";
@@ -129,6 +136,23 @@ function ProductCardContent(p: ProductCardProps) {
         >
           <Heart className={`h-4 w-4 ${saved ? "fill-primary" : ""}`} />
         </button>
+
+        {/* Vendor and Admin Product Card Studio Generator Button */}
+        {canGenerateCard && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setStudioOpen(true);
+            }}
+            title="Generate Product Marketing Card"
+            aria-label="Generate Product Marketing Card"
+            className="absolute left-2 bottom-2 z-10 flex h-9 w-9 min-h-[36px] min-w-[36px] items-center justify-center rounded-full bg-gradient-to-tr from-amber-600 to-amber-500 text-white shadow-md backdrop-blur-md transition-all duration-200 hover:scale-110 hover:shadow-amber-500/40 active:scale-95 border border-amber-300/40"
+          >
+            <Sparkles className="h-4 w-4 drop-shadow-sm" />
+          </button>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col px-1 pb-1 pt-3">
@@ -193,6 +217,35 @@ function ProductCardContent(p: ProductCardProps) {
           </button>
         )}
       </div>
+
+      {canGenerateCard && studioOpen && (
+        <ProductCardStudioDialog
+          open={studioOpen}
+          onOpenChange={setStudioOpen}
+          product={{
+            id: p.id,
+            name: p.name,
+            price: p.price,
+            image_url: p.image_url,
+            stock_status: p.stock_status,
+            seller_id: p.seller_id,
+            seller_name: p.seller_name,
+            seller_city: p.seller_city,
+            seller_slug: p.seller_slug,
+            whatsapp_number: p.whatsapp_number,
+            seller_is_verified: p.seller_is_verified,
+          }}
+          seller={{
+            id: p.seller_id,
+            business_name: p.seller_name || seller?.business_name || "Verified Store",
+            city: p.seller_city || seller?.city || "Nigeria",
+            whatsapp_number: p.whatsapp_number || seller?.whatsapp_number || "",
+            slug: p.seller_slug || seller?.slug,
+            is_verified: p.seller_is_verified ?? (seller ? seller.is_verified : true),
+            profile_photo_url: seller?.id === p.seller_id ? seller.profile_photo_url : null,
+          }}
+        />
+      )}
     </div>
   );
 }

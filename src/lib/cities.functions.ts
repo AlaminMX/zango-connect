@@ -51,7 +51,7 @@ export const listActiveCities = createServerFn({ method: "GET" }).handler(async 
 
 // Public: get city by slug
 export const getCityBySlug = createServerFn({ method: "GET" })
-  .inputValidator((d: unknown) => z.object({ slug: z.string().min(1).max(100) }).parse(d))
+  .validator((d: unknown) => z.object({ slug: z.string().min(1).max(100) }).parse(d))
   .handler(async ({ data }) => {
     const { data: city, error } = await publicSupabase
       .from("cities_of_business")
@@ -65,7 +65,7 @@ export const getCityBySlug = createServerFn({ method: "GET" })
 
 // Public: city marketplace data (sellers + featured products + categories)
 export const getCityMarketplace = createServerFn({ method: "GET" })
-  .inputValidator((d: unknown) => z.object({ slug: z.string().min(1).max(100) }).parse(d))
+  .validator((d: unknown) => z.object({ slug: z.string().min(1).max(100) }).parse(d))
   .handler(async ({ data }) => {
     const { data: city } = await publicSupabase
       .from("cities_of_business")
@@ -137,7 +137,7 @@ const upsertSchema = z.object({
 
 export const adminUpsertCity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => upsertSchema.parse(d))
+  .validator((d: unknown) => upsertSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     if (data.id) {
@@ -179,7 +179,7 @@ export const adminUpsertCity = createServerFn({ method: "POST" })
 
 export const adminDeleteCity = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { count } = await supabaseAdmin

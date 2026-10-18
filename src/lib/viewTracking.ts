@@ -60,4 +60,3 @@ export async function trackView(
     // best effort — a missed view log should never break the page
   }
 }
-  

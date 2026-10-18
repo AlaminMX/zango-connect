@@ -20,7 +20,10 @@ export function getVendorStoreDisplayUrl(slug: string): string {
 export async function shareVendorStore({
   businessName,
   slug,
-}: ShareStoreOptions): Promise<{ success: boolean; method: "web-share" | "clipboard" | "cancelled" }> {
+}: ShareStoreOptions): Promise<{
+  success: boolean;
+  method: "web-share" | "clipboard" | "cancelled";
+}> {
   const storeUrl = getVendorStoreUrl(slug);
   const shareData: ShareData = {
     title: `${businessName} on ZANGO`,
@@ -71,7 +74,10 @@ export async function shareVendorStore({
   }
 }
 
-export function openSocialShare(platform: "whatsapp" | "twitter" | "facebook", { businessName, slug }: ShareStoreOptions) {
+export function openSocialShare(
+  platform: "whatsapp" | "twitter" | "facebook",
+  { businessName, slug }: ShareStoreOptions,
+) {
   const storeUrl = getVendorStoreUrl(slug);
   const text = `Explore ${businessName}'s store on ZANGO: ${storeUrl}`;
 

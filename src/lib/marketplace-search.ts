@@ -113,14 +113,21 @@ export const NIGERIAN_STATES = [
 export function detectStateQuery(
   rawQuery: string,
   explicitState?: string,
-): { isState: boolean; matchedState?: string; isAbuja?: boolean; isZaria?: boolean; isKaduna?: boolean } {
+): {
+  isState: boolean;
+  matchedState?: string;
+  isAbuja?: boolean;
+  isZaria?: boolean;
+  isKaduna?: boolean;
+} {
   if (explicitState) {
     const isZaria = explicitState.toLowerCase().includes("zaria");
     const isKaduna = explicitState.toLowerCase().includes("kaduna") && !isZaria;
     return {
       isState: true,
       matchedState: isZaria ? "Zaria" : explicitState,
-      isAbuja: explicitState.toLowerCase().includes("abuja") || explicitState.toLowerCase() === "fct",
+      isAbuja:
+        explicitState.toLowerCase().includes("abuja") || explicitState.toLowerCase() === "fct",
       isZaria,
       isKaduna,
     };
@@ -132,17 +139,32 @@ export function detectStateQuery(
     return { isState: true, matchedState: "FCT", isAbuja: true };
   }
 
-  if (norm === "zaria" || norm.startsWith("zaria ") || norm.endsWith(" zaria") || norm === "zaria state") {
+  if (
+    norm === "zaria" ||
+    norm.startsWith("zaria ") ||
+    norm.endsWith(" zaria") ||
+    norm === "zaria state"
+  ) {
     return { isState: true, matchedState: "Zaria", isZaria: true };
   }
 
-  if (norm === "kaduna" || norm.startsWith("kaduna ") || norm.endsWith(" kaduna") || norm === "kaduna state") {
+  if (
+    norm === "kaduna" ||
+    norm.startsWith("kaduna ") ||
+    norm.endsWith(" kaduna") ||
+    norm === "kaduna state"
+  ) {
     return { isState: true, matchedState: "Kaduna", isKaduna: true };
   }
 
   const found = NIGERIAN_STATES.find((st) => {
     const stNorm = normalizeSearchText(st);
-    return norm === stNorm || norm.startsWith(`${stNorm} `) || norm.endsWith(` ${stNorm}`) || norm === `${stNorm} state`;
+    return (
+      norm === stNorm ||
+      norm.startsWith(`${stNorm} `) ||
+      norm.endsWith(` ${stNorm}`) ||
+      norm === `${stNorm} state`
+    );
   });
 
   if (found) {
@@ -343,13 +365,26 @@ export function scoreProduct(product: MarketplaceSearchProduct, query: string): 
   if (fields.name.startsWith(normalizedQuery) || compactName.startsWith(compactQuery)) score += 800;
 
   // State, City, or Seller Name matching (Crucial for state & local discovery)
-  if (fields.state && (fields.state === normalizedQuery || fields.state.includes(normalizedQuery) || normalizedQuery.includes(fields.state))) {
+  if (
+    fields.state &&
+    (fields.state === normalizedQuery ||
+      fields.state.includes(normalizedQuery) ||
+      normalizedQuery.includes(fields.state))
+  ) {
     score += 650;
   }
-  if (fields.city && (fields.city === normalizedQuery || fields.city.includes(normalizedQuery) || normalizedQuery.includes(fields.city))) {
+  if (
+    fields.city &&
+    (fields.city === normalizedQuery ||
+      fields.city.includes(normalizedQuery) ||
+      normalizedQuery.includes(fields.city))
+  ) {
     score += 550;
   }
-  if (fields.sellerName && (fields.sellerName === normalizedQuery || fields.sellerName.includes(normalizedQuery))) {
+  if (
+    fields.sellerName &&
+    (fields.sellerName === normalizedQuery || fields.sellerName.includes(normalizedQuery))
+  ) {
     score += 700;
   }
 
@@ -378,9 +413,15 @@ export function scoreProduct(product: MarketplaceSearchProduct, query: string): 
   for (const term of expanded) {
     if (
       term !== normalizedQuery &&
-      [fields.name, fields.description, fields.tags, fields.category, fields.brand, fields.state, fields.city].some((field) =>
-        field.includes(term),
-      )
+      [
+        fields.name,
+        fields.description,
+        fields.tags,
+        fields.category,
+        fields.brand,
+        fields.state,
+        fields.city,
+      ].some((field) => field.includes(term))
     )
       score += 80;
   }
@@ -450,7 +491,7 @@ export async function searchMarketplace({
   } else {
     sellers = await sellerPromise;
   }
-  
+
   const byId = new Map<string, any>();
   productData.forEach((product: any) => byId.set(product.id, product));
 
@@ -506,7 +547,11 @@ export async function searchMarketplace({
   let ranked = candidates
     .map((product) => ({ ...product, _searchScore: scoreProduct(product, query) }))
     .filter((product) => (isStateSearch ? true : product._searchScore > 0))
-    .sort((a, b) => (b._searchScore ?? 0) - (a._searchScore ?? 0) || String(a.name).localeCompare(String(b.name)));
+    .sort(
+      (a, b) =>
+        (b._searchScore ?? 0) - (a._searchScore ?? 0) ||
+        String(a.name).localeCompare(String(b.name)),
+    );
 
   // Strict separation for Zaria vs Kaduna
   if (stateMatch.isZaria || state?.toLowerCase() === "zaria") {
@@ -550,7 +595,9 @@ async function searchSellers({
   if (stateMatch.isZaria || state?.toLowerCase() === "zaria") {
     let qb = supabase
       .from("sellers")
-      .select("id, slug, business_name, category, city, state, state_id, profile_photo_url, is_verified, rating")
+      .select(
+        "id, slug, business_name, category, city, state, state_id, profile_photo_url, is_verified, rating",
+      )
       .eq("is_blocked", false)
       .eq("verification_status", "approved")
       .or("city.ilike.%zaria%,state.ilike.%zaria%,business_name.ilike.%zaria%");
@@ -571,7 +618,9 @@ async function searchSellers({
   if (stateMatch.isKaduna || state?.toLowerCase() === "kaduna") {
     let qb = supabase
       .from("sellers")
-      .select("id, slug, business_name, category, city, state, state_id, profile_photo_url, is_verified, rating")
+      .select(
+        "id, slug, business_name, category, city, state, state_id, profile_photo_url, is_verified, rating",
+      )
       .eq("is_blocked", false)
       .eq("verification_status", "approved")
       .or("city.ilike.%kaduna%,business_name.ilike.%kaduna%");
@@ -584,7 +633,8 @@ async function searchSellers({
       (s) =>
         !s.city?.toLowerCase().includes("zaria") &&
         s.state?.toLowerCase() !== "zaria" &&
-        (s.city?.toLowerCase().includes("kaduna") || s.business_name?.toLowerCase().includes("kaduna")),
+        (s.city?.toLowerCase().includes("kaduna") ||
+          s.business_name?.toLowerCase().includes("kaduna")),
     );
   }
 
@@ -608,7 +658,9 @@ async function searchSellers({
 
   let qb = supabase
     .from("sellers")
-    .select("id, slug, business_name, category, city, state, state_id, profile_photo_url, is_verified, rating")
+    .select(
+      "id, slug, business_name, category, city, state, state_id, profile_photo_url, is_verified, rating",
+    )
     .eq("is_blocked", false)
     .eq("verification_status", "approved");
 

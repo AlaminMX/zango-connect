@@ -52,7 +52,7 @@ const decisionSchema = z.object({
 
 export const setVerificationStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => decisionSchema.parse(d))
+  .validator((d: unknown) => decisionSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const updates: Record<string, unknown> = {
@@ -101,7 +101,7 @@ const bulkSchema = z.object({
 
 export const bulkSetVerification = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => bulkSchema.parse(d))
+  .validator((d: unknown) => bulkSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const now = new Date().toISOString();
@@ -146,7 +146,7 @@ export const bulkSetVerification = createServerFn({ method: "POST" })
 // Admin: list sellers by verification state (with extra fields for review)
 export const adminListSellersForReview = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         status: z.enum(["pending", "approved", "rejected", "suspended", "all"]).default("pending"),

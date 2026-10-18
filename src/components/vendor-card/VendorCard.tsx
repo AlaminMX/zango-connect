@@ -65,13 +65,7 @@ function getOfferings(
   return items.slice(0, 3).join(" • ");
 }
 
-function VendorLogoBadge({
-  vendor,
-  className,
-}: {
-  vendor: VendorCardVendor;
-  className?: string;
-}) {
+function VendorLogoBadge({ vendor, className }: { vendor: VendorCardVendor; className?: string }) {
   const [imgError, setImgError] = React.useState(false);
   const letter = (vendor.business_name || "Z").trim().charAt(0).toUpperCase();
   const nameParts = (vendor.business_name || "").trim().split(" ");
@@ -273,7 +267,9 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
               className="mt-6 inline-flex items-center gap-2.5 rounded-full bg-[#804723] px-6 py-2 text-[18px] font-black uppercase tracking-wider text-white shadow-md max-w-[340px] overflow-hidden shrink-0"
             >
               <ShoppingBag className="h-5 w-5 shrink-0" />
-              <span className="truncate block max-w-full">{vendor.category || resolvedTheme.badge}</span>
+              <span className="truncate block max-w-full">
+                {vendor.category || resolvedTheme.badge}
+              </span>
             </div>
 
             {/* Business Name - Responsive typography with natural word-wrap & 2-line clamp */}
@@ -385,7 +381,9 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
                   className="inline-flex items-center gap-2 rounded-lg bg-[#804723] px-4 py-1.5 text-[17px] font-black uppercase tracking-wider text-white shadow-sm max-w-[240px] overflow-hidden shrink-0"
                 >
                   <ShoppingBag className="h-4.5 w-4.5 shrink-0" />
-                  <span className="truncate block max-w-full">{vendor.category || resolvedTheme.badge}</span>
+                  <span className="truncate block max-w-full">
+                    {vendor.category || resolvedTheme.badge}
+                  </span>
                 </div>
                 {/* Business Name - Responsive typography with natural word-wrap & 2-line clamp */}
                 <h1
@@ -406,7 +404,9 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
               </div>
             </div>
 
-            <p className="mt-3.5 font-serif text-[24px] italic leading-snug text-[#784A33] font-semibold">{bioText}</p>
+            <p className="mt-3.5 font-serif text-[24px] italic leading-snug text-[#784A33] font-semibold">
+              {bioText}
+            </p>
 
             <div className="my-4 flex items-center gap-2">
               <div className="h-px flex-1 bg-[#D9C6B6]" />
@@ -419,19 +419,25 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
                 <div className="grid h-13 w-13 shrink-0 place-items-center rounded-full bg-[#4A2C1D] text-white shadow-sm">
                   <MapPin className="h-6.5 w-6.5 text-[#F5EFE6]" />
                 </div>
-                <span className="truncate block whitespace-nowrap">{formatLocation(vendor.city)}</span>
+                <span className="truncate block whitespace-nowrap">
+                  {formatLocation(vendor.city)}
+                </span>
               </div>
               <div className="flex items-center gap-4 border-b border-dashed border-[#D9C6B6] pb-2.5 min-w-0">
                 <div className="grid h-13 w-13 shrink-0 place-items-center rounded-full bg-[#4A2C1D] text-white shadow-sm">
                   <ShoppingBag className="h-6.5 w-6.5 text-[#F5EFE6]" />
                 </div>
-                <span className="truncate block whitespace-nowrap" title={offerings}>{offerings}</span>
+                <span className="truncate block whitespace-nowrap" title={offerings}>
+                  {offerings}
+                </span>
               </div>
               <div className="flex items-center gap-4 border-b border-dashed border-[#D9C6B6] pb-2.5 min-w-0">
                 <div className="grid h-13 w-13 shrink-0 place-items-center rounded-full bg-[#4A2C1D] text-white shadow-sm">
                   <Phone className="h-6.5 w-6.5 text-[#F5EFE6]" />
                 </div>
-                <span className="whitespace-nowrap font-sans font-bold tracking-wide">{formatPhoneNumber(vendor.whatsapp_number)}</span>
+                <span className="whitespace-nowrap font-sans font-bold tracking-wide">
+                  {formatPhoneNumber(vendor.whatsapp_number)}
+                </span>
               </div>
               <div className="flex items-center gap-4 min-w-0">
                 <div className="grid h-13 w-13 shrink-0 place-items-center rounded-full bg-[#4A2C1D] text-white shadow-sm">
@@ -483,7 +489,9 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
                 >
                   <span className="truncate block max-w-full">{storeDisplayUrl}</span>
                 </div>
-                <p className="mt-2 text-[22px] font-semibold text-[#6E5A4E]">Scan to explore my products.</p>
+                <p className="mt-2 text-[22px] font-semibold text-[#6E5A4E]">
+                  Scan to explore my products.
+                </p>
               </div>
             </div>
           </div>
@@ -578,14 +586,7 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
           />
 
           {/* Faint Zango brand watermark in background of cream panel */}
-          <image
-            href="/zango-logo.png"
-            x="240"
-            y="50"
-            width="420"
-            height="420"
-            opacity="0.04"
-          />
+          <image href="/zango-logo.png" x="240" y="50" width="420" height="420" opacity="0.04" />
         </svg>
 
         {/* Left Column Content - Adjusted to accommodate 110px bottom bar */}
@@ -620,7 +621,9 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
                   className="inline-flex items-center gap-2 rounded-lg bg-[#804723] px-4 py-1.5 text-[17px] font-extrabold uppercase tracking-wider text-white shadow-md max-w-[240px] overflow-hidden shrink-0"
                 >
                   <ShoppingBag className="h-4.5 w-4.5 shrink-0" />
-                  <span className="truncate block max-w-full">{vendor.category || resolvedTheme.badge}</span>
+                  <span className="truncate block max-w-full">
+                    {vendor.category || resolvedTheme.badge}
+                  </span>
                 </div>
 
                 {/* Business Name - Responsive typography with natural word-wrap & 2-line clamp */}
@@ -661,7 +664,9 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
                 <div className="grid h-13 w-13 shrink-0 place-items-center rounded-full bg-[#4A2C1D] text-white shadow-md">
                   <MapPin className="h-6.5 w-6.5 text-[#F5EFE6]" />
                 </div>
-                <span className="truncate block whitespace-nowrap">{formatLocation(vendor.city)}</span>
+                <span className="truncate block whitespace-nowrap">
+                  {formatLocation(vendor.city)}
+                </span>
               </div>
 
               {/* Offerings */}
@@ -669,7 +674,9 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
                 <div className="grid h-13 w-13 shrink-0 place-items-center rounded-full bg-[#4A2C1D] text-white shadow-md">
                   <ShoppingBag className="h-6.5 w-6.5 text-[#F5EFE6]" />
                 </div>
-                <span className="truncate block whitespace-nowrap" title={offerings}>{offerings}</span>
+                <span className="truncate block whitespace-nowrap" title={offerings}>
+                  {offerings}
+                </span>
               </div>
 
               {/* Contact */}
@@ -677,7 +684,9 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
                 <div className="grid h-13 w-13 shrink-0 place-items-center rounded-full bg-[#4A2C1D] text-white shadow-md">
                   <Phone className="h-6.5 w-6.5 text-[#F5EFE6]" />
                 </div>
-                <span className="whitespace-nowrap font-sans font-bold tracking-wide">{formatPhoneNumber(vendor.whatsapp_number)}</span>
+                <span className="whitespace-nowrap font-sans font-bold tracking-wide">
+                  {formatPhoneNumber(vendor.whatsapp_number)}
+                </span>
               </div>
 
               {/* Verification */}
@@ -702,13 +711,7 @@ export const VendorCard = React.forwardRef<HTMLDivElement, VendorCardProps>(
         <div className="absolute right-10 bottom-[128px] z-20 flex items-center gap-5 rounded-[28px] border-2 border-[#E5D7C8] bg-white p-5 pr-6 shadow-[0_24px_50px_rgba(36,21,14,0.3)] max-w-[620px]">
           {/* QR Code inside brown-bordered rounded container */}
           <div className="rounded-[18px] border-2 border-[#804723] bg-white p-3.5 shadow-md shrink-0">
-            <QRCodeSVG
-              value={storeUrl}
-              size={144}
-              bgColor="#FFFFFF"
-              fgColor="#24150E"
-              level="Q"
-            />
+            <QRCodeSVG value={storeUrl} size={144} bgColor="#FFFFFF" fgColor="#24150E" level="Q" />
           </div>
 
           {/* Store Info & CTA */}

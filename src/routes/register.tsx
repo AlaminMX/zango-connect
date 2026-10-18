@@ -541,7 +541,9 @@ function Register() {
                             Account already exists for {accountConflict.email}
                           </p>
                           <p className="text-xs text-amber-800 leading-relaxed">
-                            If your previous vendor profile was deleted or you already have an account, enter your account password below to link this email to your new store, or request a password reset.
+                            If your previous vendor profile was deleted or you already have an
+                            account, enter your account password below to link this email to your
+                            new store, or request a password reset.
                           </p>
                         </div>
                       </div>
@@ -550,9 +552,12 @@ function Register() {
                         <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3.5 text-xs text-emerald-900 flex items-start gap-2.5">
                           <Check className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" />
                           <div>
-                            <p className="font-medium text-emerald-950">Password reset link sent!</p>
+                            <p className="font-medium text-emerald-950">
+                              Password reset link sent!
+                            </p>
                             <p className="mt-0.5 text-emerald-800">
-                              Check your inbox at <strong>{accountConflict.email}</strong>. Once reset, return here and enter your new password to link your store.
+                              Check your inbox at <strong>{accountConflict.email}</strong>. Once
+                              reset, return here and enter your new password to link your store.
                             </p>
                           </div>
                         </div>
@@ -601,10 +606,7 @@ function Register() {
                               Send password reset link to this email
                             </button>
                             <span className="text-amber-400">•</span>
-                            <Link
-                              to="/auth"
-                              className="font-medium text-amber-900 hover:underline"
-                            >
+                            <Link to="/auth" className="font-medium text-amber-900 hover:underline">
                               Sign in to existing account
                             </Link>
                           </div>

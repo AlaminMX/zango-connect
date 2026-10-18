@@ -40,7 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getVendorAuthInfo } from "@/lib/admin.functions";
+import { getVendorAuthInfo, setVendorEmail } from "@/lib/admin.functions";
 import { normaliseNigerianPhone, buildWhatsAppUrl } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";

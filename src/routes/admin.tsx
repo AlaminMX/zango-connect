@@ -65,9 +65,13 @@ import {
   Phone,
   Copy,
   MessageCircle,
+  Mail,
+  Sparkles,
 } from "lucide-react";
 import { PageLoader } from "@/components/LoadingSpinner";
 import { normaliseNigerianPhone, buildWhatsAppUrl } from "@/lib/whatsapp";
+import { getAllVendorsAuthEmails } from "@/lib/admin.functions";
+import { ProductCardStudioDialog } from "@/components/product-card-studio/ProductCardStudioDialog";
 
 export const Route = createFileRoute("/admin")({ component: AdminPage });
 
@@ -103,6 +107,7 @@ function SectionSkeleton() {
 
 interface SellerRow {
   id: string;
+  user_id?: string;
   business_name: string;
   slug: string;
   category: string;
@@ -114,6 +119,7 @@ interface SellerRow {
   onboarding_status: string;
   profile_photo_url?: string | null;
   whatsapp_number?: string;
+  email?: string | null;
 }
 interface Category {
   id: string;
@@ -132,7 +138,17 @@ interface ProductRow {
   is_featured: boolean;
   featured_order: number;
   status: string;
-  sellers: { business_name: string; city: string } | null;
+  seller_id?: string;
+  stock_status?: string;
+  sellers: {
+    id?: string;
+    business_name: string;
+    city: string;
+    whatsapp_number?: string;
+    slug?: string;
+    is_verified?: boolean;
+    profile_photo_url?: string | null;
+  } | null;
 }
 interface Section {
   id: string;
@@ -250,6 +266,11 @@ function AdminPage() {
   const [statesState, setStatesState] = useState<LoadState>("loading");
   const [citiesState, setCitiesState] = useState<LoadState>("loading");
   const [statsState, setStatsState] = useState<LoadState>("loading");
+  const [vendorEmails, setVendorEmails] = useState<Record<string, string>>({});
+  const [studioProduct, setStudioProduct] = useState<{
+    product: { id: string; name: string; price: number; image_url: string | null; stock_status?: string };
+    seller: { id: string; business_name: string; city: string; whatsapp_number: string; slug?: string; is_verified?: boolean; profile_photo_url?: string | null };
+  } | null>(null);
 
   const [activeTab, setActiveTab] = useState<
     "sellers" | "categories" | "products" | "vouches" | "homepage" | "cities" | "cms"
@@ -388,34 +409,51 @@ function AdminPage() {
   //    no longer blocks the rest of the dashboard.
   const ABORT = () => AbortSignal.timeout(8000);
 
+  const loadVendorEmails = useCallback(async () => {
+    try {
+      const emails = await getAllVendorsAuthEmails();
+      if (emails && Object.keys(emails).length > 0) {
+        setVendorEmails(emails);
+      }
+    } catch (err) {
+      console.warn("[admin] loadVendorEmails failed:", err);
+    }
+  }, []);
+
   const loadSellers = useCallback(async () => {
     setSellersState("loading");
     try {
-      // NOTE: previously filtered with
-      //   .in("onboarding_status", ["step1_complete", "step2_complete"])
-      // That silently hid any seller whose onboarding_status fell outside
-      // those two values — including 'draft', which turned out to be the
-      // column's real (buggy) default. A seller could exist, be fully
-      // approved, and never appear anywhere in this dashboard. Sellers are
-      // already grouped below by verification_status (pending / approved /
-      // other), which is the field that actually matters for admin review,
-      // so no onboarding_status filter is applied here — every seller row
-      // is shown, in whichever bucket its verification_status puts it.
+      // Fetch every seller including user_id so vendor email can be displayed
       const { data, error } = await supabase
         .from("sellers")
         .select(
-          "id, business_name, slug, category, city, is_verified, is_blocked, verification_status, rejection_reason, onboarding_status, profile_photo_url, whatsapp_number",
+          "id, user_id, business_name, slug, category, city, is_verified, is_blocked, verification_status, rejection_reason, onboarding_status, profile_photo_url, whatsapp_number",
         )
         .order("created_at", { ascending: false })
         .abortSignal(ABORT());
       if (error) throw error;
       setSellers((data ?? []) as SellerRow[]);
       setSellersState("ok");
+      void loadVendorEmails();
     } catch (err) {
       console.warn("[admin] sellers failed:", err);
       setSellersState("error");
     }
-  }, []);
+  }, [loadVendorEmails]);
+
+  // Automatically link fetched emails to sellers list
+  useEffect(() => {
+    if (Object.keys(vendorEmails).length === 0) return;
+    setSellers((prev) =>
+      prev.map((seller) => {
+        const email = seller.user_id ? vendorEmails[seller.user_id] : null;
+        if (email && seller.email !== email) {
+          return { ...seller, email };
+        }
+        return seller;
+      }),
+    );
+  }, [vendorEmails]);
 
   const loadCategories = useCallback(async () => {
     setCategoriesState("loading");
@@ -440,7 +478,7 @@ function AdminPage() {
       const { data, error } = await supabase
         .from("products")
         .select(
-          "id, name, price, image_url, is_featured, featured_order, status, sellers(business_name, city)",
+          "id, name, price, image_url, is_featured, featured_order, status, seller_id, stock_status, sellers(id, business_name, city, whatsapp_number, slug, is_verified, profile_photo_url)",
         )
         .order("is_featured", { ascending: false })
         .order("featured_order")
@@ -639,6 +677,7 @@ function AdminPage() {
   const loadAll = useCallback(async () => {
     await Promise.allSettled([
       loadSellers(),
+      loadVendorEmails(),
       loadCategories(),
       loadProducts(),
       loadSections(),
@@ -650,6 +689,7 @@ function AdminPage() {
     ]);
   }, [
     loadSellers,
+    loadVendorEmails,
     loadCategories,
     loadProducts,
     loadSections,
@@ -821,16 +861,14 @@ function AdminPage() {
     } else {
       const newSlug = slugify(catName);
       const maxOrder = Math.max(0, ...categories.map((c) => c.sort_order));
-      const { error } = await supabase
-        .from("categories")
-        .insert({
-          name: catName.trim(),
-          slug: newSlug,
-          icon_emoji: "🛍️",
-          image_url: catImage,
-          custom_subtitle: catSubtitle.trim() || null,
-          sort_order: maxOrder + 1,
-        });
+      const { error } = await supabase.from("categories").insert({
+        name: catName.trim(),
+        slug: newSlug,
+        icon_emoji: "🛍️",
+        image_url: catImage,
+        custom_subtitle: catSubtitle.trim() || null,
+        sort_order: maxOrder + 1,
+      });
       if (error) {
         toast.error(error.message);
         setCatSaving(false);
@@ -942,7 +980,7 @@ function AdminPage() {
     const { data, error } = await supabase
       .from("products")
       .select(
-        "id, name, price, image_url, is_featured, featured_order, status, sellers(business_name, city)",
+        "id, name, price, image_url, is_featured, featured_order, status, seller_id, stock_status, sellers(id, business_name, city, whatsapp_number, slug, is_verified, profile_photo_url)",
       )
       .eq("status", "active")
       .ilike("name", `%${q}%`)
@@ -1145,16 +1183,14 @@ function AdminPage() {
         setCitySaving(false);
         return;
       }
-      const { error } = await (supabase as any)
-        .from("cities_of_business")
-        .insert({
-          name: cityName.trim(),
-          state: cityState.trim(),
-          slug,
-          is_active: cityIsActive,
-          sort_order: maxOrder + 1,
-          state_id: stateId,
-        });
+      const { error } = await (supabase as any).from("cities_of_business").insert({
+        name: cityName.trim(),
+        state: cityState.trim(),
+        slug,
+        is_active: cityIsActive,
+        sort_order: maxOrder + 1,
+        state_id: stateId,
+      });
       if (error) {
         toast.error(error.message);
         setCitySaving(false);
@@ -1242,14 +1278,12 @@ function AdminPage() {
           .from("states")
           .update({ name: stateName.trim(), slug, is_active: stateIsActive })
           .eq("id", editingState.id)
-      : supabase
-          .from("states")
-          .insert({
-            name: stateName.trim(),
-            slug,
-            is_active: stateIsActive,
-            sort_order: Math.max(0, ...states.map((st) => st.sort_order)) + 1,
-          });
+      : supabase.from("states").insert({
+          name: stateName.trim(),
+          slug,
+          is_active: stateIsActive,
+          sort_order: Math.max(0, ...states.map((st) => st.sort_order)) + 1,
+        });
     const { error } = await op;
     setStateSaving(false);
     if (error) {
@@ -1301,13 +1335,11 @@ function AdminPage() {
 
   const cmsAddTrendingSeller = async (sellerId: string) => {
     const maxOrder = Math.max(0, ...cmsSellers.map((s) => s.display_order));
-    const { error } = await supabase
-      .from("trending_sellers_admin")
-      .insert({
-        seller_id: sellerId,
-        display_order: maxOrder + 1,
-        added_by: (await supabase.auth.getUser()).data.user!.id,
-      });
+    const { error } = await supabase.from("trending_sellers_admin").insert({
+      seller_id: sellerId,
+      display_order: maxOrder + 1,
+      added_by: (await supabase.auth.getUser()).data.user!.id,
+    });
     if (error) {
       toast.error(error.message);
       return;
@@ -1383,9 +1415,7 @@ function AdminPage() {
   );
   const rejectedOrBlockedSellers = sellers.filter(
     (s) =>
-      s.is_blocked ||
-      s.verification_status === "rejected" ||
-      s.verification_status === "suspended",
+      s.is_blocked || s.verification_status === "rejected" || s.verification_status === "suspended",
   );
   // All sellers that are not approved (pending + draft + unapproved + rejected/blocked)
   const unapprovedSellers = sellers.filter(
@@ -2002,19 +2032,50 @@ function AdminPage() {
                               </p>
                             </div>
                           </div>
-                          {p.is_featured ? (
-                            <span className="shrink-0 text-xs font-medium text-muted-foreground">
-                              Already featured
-                            </span>
-                          ) : (
+                          <div className="flex items-center gap-1.5 shrink-0">
                             <Button
                               size="sm"
-                              onClick={() => addProductToFeatured(p)}
-                              className="shrink-0 rounded-full"
+                              variant="outline"
+                              onClick={() => {
+                                setStudioProduct({
+                                  product: {
+                                    id: p.id,
+                                    name: p.name,
+                                    price: p.price,
+                                    image_url: p.image_url,
+                                    stock_status: p.stock_status || "available",
+                                  },
+                                  seller: {
+                                    id: p.seller_id || (p.sellers as any)?.id || "admin-vendor",
+                                    business_name: (p.sellers as any)?.business_name || "Verified Store",
+                                    city: (p.sellers as any)?.city || "Kano",
+                                    whatsapp_number: (p.sellers as any)?.whatsapp_number || "",
+                                    slug: (p.sellers as any)?.slug || "",
+                                    is_verified: (p.sellers as any)?.is_verified ?? true,
+                                    profile_photo_url: (p.sellers as any)?.profile_photo_url || null,
+                                  },
+                                });
+                              }}
+                              className="h-8 rounded-full border-amber-500/40 text-amber-900 bg-amber-500/10 hover:bg-amber-500/20 text-xs px-2.5"
+                              title="Generate Product Marketing Card"
                             >
-                              <Plus className="h-3 w-3 mr-1" /> Feature
+                              <Sparkles className="h-3.5 w-3.5 text-amber-600 mr-1" />
+                              <span>Card</span>
                             </Button>
-                          )}
+                            {p.is_featured ? (
+                              <span className="shrink-0 text-xs font-medium text-muted-foreground">
+                                Already featured
+                              </span>
+                            ) : (
+                              <Button
+                                size="sm"
+                                onClick={() => addProductToFeatured(p)}
+                                className="shrink-0 rounded-full"
+                              >
+                                <Plus className="h-3 w-3 mr-1" /> Feature
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -2053,6 +2114,34 @@ function AdminPage() {
                             </p>
                           </div>
                           <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setStudioProduct({
+                                  product: {
+                                    id: p.id,
+                                    name: p.name,
+                                    price: p.price,
+                                    image_url: p.image_url,
+                                    stock_status: p.stock_status || "available",
+                                  },
+                                  seller: {
+                                    id: p.seller_id || (p.sellers as any)?.id || "admin-vendor",
+                                    business_name: (p.sellers as any)?.business_name || "Verified Store",
+                                    city: (p.sellers as any)?.city || "Kano",
+                                    whatsapp_number: (p.sellers as any)?.whatsapp_number || "",
+                                    slug: (p.sellers as any)?.slug || "",
+                                    is_verified: (p.sellers as any)?.is_verified ?? true,
+                                    profile_photo_url: (p.sellers as any)?.profile_photo_url || null,
+                                  },
+                                });
+                              }}
+                              className="flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-xs font-semibold text-amber-900 transition hover:bg-amber-500/20 mr-1"
+                              title="Generate Product Marketing Card"
+                            >
+                              <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                              <span className="hidden sm:inline">Card</span>
+                            </button>
                             <button
                               onClick={() => moveFeatured(p.id, "up")}
                               disabled={idx === 0}
@@ -2118,6 +2207,34 @@ function AdminPage() {
                         </p>
                       </div>
                       <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStudioProduct({
+                              product: {
+                                id: p.id,
+                                name: p.name,
+                                price: p.price,
+                                image_url: p.image_url,
+                                stock_status: p.stock_status || "available",
+                              },
+                              seller: {
+                                id: p.seller_id || (p.sellers as any)?.id || "admin-vendor",
+                                business_name: (p.sellers as any)?.business_name || "Verified Store",
+                                city: (p.sellers as any)?.city || "Kano",
+                                whatsapp_number: (p.sellers as any)?.whatsapp_number || "",
+                                slug: (p.sellers as any)?.slug || "",
+                                is_verified: (p.sellers as any)?.is_verified ?? true,
+                                profile_photo_url: (p.sellers as any)?.profile_photo_url || null,
+                              },
+                            });
+                          }}
+                          className="flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-xs font-semibold text-amber-900 transition hover:bg-amber-500/20 mr-1"
+                          title="Generate Product Marketing Card"
+                        >
+                          <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                          <span className="hidden sm:inline">Card</span>
+                        </button>
                         <button
                           onClick={() => toggleFeatured(p)}
                           className="rounded p-1 text-muted-foreground hover:text-primary"
@@ -2947,6 +3064,17 @@ function AdminPage() {
         </DialogContent>
       </Dialog>
 
+      {studioProduct && (
+        <ProductCardStudioDialog
+          open={!!studioProduct}
+          onOpenChange={(open) => {
+            if (!open) setStudioProduct(null);
+          }}
+          product={studioProduct.product as any}
+          seller={studioProduct.seller as any}
+        />
+      )}
+
       <BottomNav />
     </div>
   );
@@ -3032,6 +3160,35 @@ function SellerRow({
               </>
             ) : (
               <span className="text-xs italic text-rose-500">No phone on file</span>
+            )}
+          </div>
+
+          {/* Vendor email — always visible on admin dashboard */}
+          <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+            <Mail className="h-3 w-3 shrink-0 text-muted-foreground" />
+            {s.email ? (
+              <>
+                <a
+                  href={`mailto:${s.email}`}
+                  className="text-xs font-medium text-foreground hover:text-primary transition"
+                  title="Email vendor"
+                >
+                  {s.email}
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(s.email ?? "");
+                    toast.success("Vendor email copied");
+                  }}
+                  className="rounded-full p-0.5 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                  title="Copy email"
+                >
+                  <Copy className="h-3 w-3" />
+                </button>
+              </>
+            ) : (
+              <span className="text-xs italic text-muted-foreground">No email on file</span>
             )}
           </div>
 

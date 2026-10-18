@@ -30,14 +30,12 @@ export interface CityStatRow {
  * from Kaduna as a standalone state with its own vendors and products.
  */
 export async function getNormalizedStatesWithStats(): Promise<StateStatRow[]> {
-  const [
-    { data: statesData },
-    { data: sellersData },
-    { data: productsData },
-  ] = await Promise.all([
+  const [{ data: statesData }, { data: sellersData }, { data: productsData }] = await Promise.all([
     (supabase as any)
       .from("states_with_stats")
-      .select("id, name, slug, is_active, is_featured_home, sort_order, cities_count, sellers_count, products_count")
+      .select(
+        "id, name, slug, is_active, is_featured_home, sort_order, cities_count, sellers_count, products_count",
+      )
       .eq("is_active", true),
     supabase
       .from("sellers")
@@ -47,7 +45,9 @@ export async function getNormalizedStatesWithStats(): Promise<StateStatRow[]> {
       .eq("is_blocked", false),
     supabase
       .from("products")
-      .select("id, status, seller_id, sellers!inner(id, city, state, status, verification_status, is_blocked)")
+      .select(
+        "id, status, seller_id, sellers!inner(id, city, state, status, verification_status, is_blocked)",
+      )
       .eq("status", "active")
       .eq("sellers.status", "active")
       .eq("sellers.verification_status", "approved")
@@ -70,8 +70,12 @@ export async function getNormalizedStatesWithStats(): Promise<StateStatRow[]> {
   const zariaSellerIds = new Set(zariaSellers.map((s: any) => s.id));
   const kadunaSellerIds = new Set(kadunaSellers.map((s: any) => s.id));
 
-  const zariaProductsCount = activeProducts.filter((p: any) => zariaSellerIds.has(p.seller_id)).length;
-  const kadunaProductsCount = activeProducts.filter((p: any) => kadunaSellerIds.has(p.seller_id)).length;
+  const zariaProductsCount = activeProducts.filter((p: any) =>
+    zariaSellerIds.has(p.seller_id),
+  ).length;
+  const kadunaProductsCount = activeProducts.filter((p: any) =>
+    kadunaSellerIds.has(p.seller_id),
+  ).length;
 
   const rawStates: StateStatRow[] = (statesData ?? []).map((st: any) => {
     if (st.slug === "kaduna" || st.name.toLowerCase() === "kaduna") {
@@ -138,10 +142,7 @@ export async function getNormalizedStateWithCities(slug: string) {
   const normSlug = slug.toLowerCase().trim();
 
   if (normSlug === "zaria") {
-    const [
-      { data: zariaSellers },
-      { data: zariaProducts },
-    ] = await Promise.all([
+    const [{ data: zariaSellers }, { data: zariaProducts }] = await Promise.all([
       supabase
         .from("sellers")
         .select("id, city, state, status, verification_status, is_blocked")
@@ -151,7 +152,9 @@ export async function getNormalizedStateWithCities(slug: string) {
         .or("city.ilike.%zaria%,state.ilike.%zaria%"),
       supabase
         .from("products")
-        .select("id, status, seller_id, sellers!inner(id, city, state, status, verification_status, is_blocked)")
+        .select(
+          "id, status, seller_id, sellers!inner(id, city, state, status, verification_status, is_blocked)",
+        )
         .eq("status", "active")
         .eq("sellers.status", "active")
         .eq("sellers.verification_status", "approved")
@@ -186,10 +189,7 @@ export async function getNormalizedStateWithCities(slug: string) {
   }
 
   if (normSlug === "kaduna") {
-    const [
-      { data: kadunaSellers },
-      { data: kadunaProducts },
-    ] = await Promise.all([
+    const [{ data: kadunaSellers }, { data: kadunaProducts }] = await Promise.all([
       supabase
         .from("sellers")
         .select("id, city, state, status, verification_status, is_blocked")
@@ -199,7 +199,9 @@ export async function getNormalizedStateWithCities(slug: string) {
         .ilike("city", "%kaduna%"),
       supabase
         .from("products")
-        .select("id, status, seller_id, sellers!inner(id, city, state, status, verification_status, is_blocked)")
+        .select(
+          "id, status, seller_id, sellers!inner(id, city, state, status, verification_status, is_blocked)",
+        )
         .eq("status", "active")
         .eq("sellers.status", "active")
         .eq("sellers.verification_status", "approved")
@@ -207,8 +209,12 @@ export async function getNormalizedStateWithCities(slug: string) {
         .ilike("sellers.city", "%kaduna%"),
     ]);
 
-    const cleanSellers = (kadunaSellers ?? []).filter((s: any) => s.city?.toLowerCase() !== "zaria");
-    const cleanProducts = (kadunaProducts ?? []).filter((p: any) => p.sellers?.city?.toLowerCase() !== "zaria");
+    const cleanSellers = (kadunaSellers ?? []).filter(
+      (s: any) => s.city?.toLowerCase() !== "zaria",
+    );
+    const cleanProducts = (kadunaProducts ?? []).filter(
+      (p: any) => p.sellers?.city?.toLowerCase() !== "zaria",
+    );
 
     return {
       state: {

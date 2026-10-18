@@ -200,5 +200,4 @@ function CityPage() {
       <Footer />
     </div>
   );
-      }
-  
+}

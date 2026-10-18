@@ -90,7 +90,10 @@ function makeId(): string {
   } catch {
     // fall through
   }
-  const rand = () => Math.floor(Math.random() * 0x10000).toString(16).padStart(4, "0");
+  const rand = () =>
+    Math.floor(Math.random() * 0x10000)
+      .toString(16)
+      .padStart(4, "0");
   return `${rand()}${rand()}-${rand()}-${rand()}-${rand()}-${rand()}${rand()}${rand()}`;
 }
 

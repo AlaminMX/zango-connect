@@ -17,8 +17,11 @@ import { ProductShareDialog } from "@/components/product-share-card/ProductShare
 import { Button } from "@/components/ui/button";
 import { buildWhatsAppUrl, trackClick } from "@/lib/whatsapp";
 import { toggleWishlist, useIsWishlisted } from "@/lib/wishlist";
-import { Heart, MessageCircle, MapPin } from "lucide-react";
+import { Heart, MessageCircle, MapPin, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { useSellerProfile } from "@/lib/sellerProfile";
+import { useAuth } from "@/lib/authContext";
+import { ProductCardStudioDialog } from "@/components/product-card-studio/ProductCardStudioDialog";
 
 import { assertLaunchGate } from "@/lib/launchGate";
 import { storeUrl as getStoreUrl } from "@/lib/site";
@@ -37,6 +40,10 @@ export const Route = createFileRoute("/product/$id")({
 
 function ProductDetail() {
   const { id } = useParams({ from: "/product/$id" });
+  const { seller: loggedInVendor } = useSellerProfile();
+  const { isAdmin } = useAuth();
+  const canGenerateCard = Boolean(loggedInVendor || isAdmin);
+  const [studioOpen, setStudioOpen] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const touchStartX = useRef<number | null>(null);
@@ -182,6 +189,21 @@ function ProductDetail() {
                   No image
                 </div>
               )}
+              {/* Vendor and Admin Product Card Studio Button on Product Image */}
+              {canGenerateCard && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setStudioOpen(true);
+                  }}
+                  title="Generate Product Marketing Card"
+                  aria-label="Generate Product Marketing Card"
+                  className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-amber-600 to-amber-500 text-white shadow-lg backdrop-blur-md transition hover:scale-110 hover:shadow-amber-500/40 active:scale-95 border border-amber-300/40"
+                >
+                  <Sparkles className="h-4 w-4 drop-shadow-sm" />
+                </button>
+              )}
               {imgs.length > 1 && (
                 <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/40 px-2.5 py-1 text-xs font-medium text-white">
                   {activeImg + 1} / {imgs.length}
@@ -298,9 +320,51 @@ function ProductDetail() {
                   is_verified: seller.is_verified,
                 }}
               />
+              {canGenerateCard && (
+                <button
+                  type="button"
+                  onClick={() => setStudioOpen(true)}
+                  className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full border border-amber-500/40 bg-amber-500/10 px-5 text-sm font-semibold text-amber-950 transition hover:bg-amber-500/20"
+                >
+                  <Sparkles className="h-4 w-4 text-amber-600" />
+                  <span>Marketing Card</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
+
+        {canGenerateCard && studioOpen && (
+          <ProductCardStudioDialog
+            open={studioOpen}
+            onOpenChange={setStudioOpen}
+            product={{
+              id: p.id,
+              name: p.name,
+              price: p.price,
+              image_url: mainImg ?? null,
+              stock_status: p.stock_status,
+              category: (p as any).category || seller.category,
+              description: p.description,
+              seller_id: seller.id,
+              seller_name: seller.business_name,
+              seller_city: seller.city,
+              seller_slug: seller.slug,
+              whatsapp_number: seller.whatsapp_number,
+              seller_is_verified: seller.is_verified,
+            }}
+            seller={{
+              id: seller.id,
+              business_name: seller.business_name,
+              city: seller.city,
+              whatsapp_number: seller.whatsapp_number,
+              slug: seller.slug,
+              is_verified: seller.is_verified,
+              profile_photo_url: seller.profile_photo_url,
+              category: seller.category,
+            }}
+          />
+        )}
 
         <MediaViewer
           images={imgs}
@@ -361,5 +425,4 @@ function RelatedProducts({ sellerId, excludeId }: { sellerId: string; excludeId:
       </div>
     </section>
   );
-  }
-  
+}

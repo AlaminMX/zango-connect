@@ -157,5 +157,4 @@ function CitiesPage() {
       <BottomNav />
     </div>
   );
-      }
-        
+}

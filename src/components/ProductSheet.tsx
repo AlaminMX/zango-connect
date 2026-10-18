@@ -155,7 +155,9 @@ export function ProductSheet({
         .maybeSingle();
 
       if (!sRow || sRow.verification_status !== "approved") {
-        toast.error("Your store must be approved by an administrator before you can upload products.");
+        toast.error(
+          "Your store must be approved by an administrator before you can upload products.",
+        );
         return;
       }
 

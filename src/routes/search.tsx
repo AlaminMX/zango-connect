@@ -205,7 +205,8 @@ function SearchPage() {
               <div className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-primary">
                 <MapPin className="h-3.5 w-3.5 text-primary" />
                 <span>
-                  Showing verified vendors in {searchResults.matchedState} State and every product they have listed
+                  Showing verified vendors in {searchResults.matchedState} State and every product
+                  they have listed
                 </span>
               </div>
             )}

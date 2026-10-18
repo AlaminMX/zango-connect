@@ -70,7 +70,7 @@ export const listActiveStates = createServerFn({ method: "GET" }).handler(async 
 });
 
 export const listCitiesForState = createServerFn({ method: "GET" })
-  .inputValidator((d: unknown) => z.object({ slug: z.string().min(1).max(100) }).parse(d))
+  .validator((d: unknown) => z.object({ slug: z.string().min(1).max(100) }).parse(d))
   .handler(async ({ data }) => {
     return (await getNormalizedStateWithCities(data.slug)) as any;
   });
@@ -93,7 +93,7 @@ export const adminListStatesWithStats = createServerFn({ method: "GET" })
 
 export const adminListCitiesForStateWithStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ stateId: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ stateId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { data: rows, error } = await (supabaseAdmin as any)
@@ -111,7 +111,7 @@ const toggleSchema = z.object({ id: z.string().uuid(), value: z.boolean() });
 
 export const adminSetStateActive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => toggleSchema.parse(d))
+  .validator((d: unknown) => toggleSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { error } = await (supabaseAdmin as any)
@@ -125,7 +125,7 @@ export const adminSetStateActive = createServerFn({ method: "POST" })
 
 export const adminSetStateFeatured = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => toggleSchema.parse(d))
+  .validator((d: unknown) => toggleSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     if (data.value) {
@@ -148,7 +148,7 @@ export const adminSetStateFeatured = createServerFn({ method: "POST" })
 
 export const adminSetCityActive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => toggleSchema.parse(d))
+  .validator((d: unknown) => toggleSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { error } = await (supabaseAdmin as any)

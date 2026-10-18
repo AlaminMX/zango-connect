@@ -42,7 +42,7 @@ const sellerStatusSchema = z.object({
 
 export const setSellerStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => sellerStatusSchema.parse(d))
+  .validator((d: unknown) => sellerStatusSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const updates: Record<string, unknown> = { status: data.status };
@@ -58,9 +58,16 @@ export const setSellerStatus = createServerFn({ method: "POST" })
       .update(updates as never)
       .eq("id", data.sellerId);
     if (error) throw new Error(error.message);
-    await audit(context.supabase, context.userId, `seller.${data.status}`, "seller", data.sellerId, {
-      reason: data.reason,
-    });
+    await audit(
+      context.supabase,
+      context.userId,
+      `seller.${data.status}`,
+      "seller",
+      data.sellerId,
+      {
+        reason: data.reason,
+      },
+    );
     return { ok: true };
   });
 
@@ -71,7 +78,7 @@ const setExpirySchema = z.object({
 
 export const setSubscriptionExpiry = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => setExpirySchema.parse(d))
+  .validator((d: unknown) => setExpirySchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { error } = await context.supabase
@@ -89,7 +96,7 @@ const deleteSellerSchema = z.object({ sellerId: z.string().uuid() });
 
 export const deleteSeller = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => deleteSellerSchema.parse(d))
+  .validator((d: unknown) => deleteSellerSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const db = context.supabase;
@@ -162,7 +169,7 @@ const productStatusSchema = z.object({
 
 export const setProductStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => productStatusSchema.parse(d))
+  .validator((d: unknown) => productStatusSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const updates: Record<string, unknown> = { status: data.status };
@@ -178,9 +185,16 @@ export const setProductStatus = createServerFn({ method: "POST" })
       .update(updates as never)
       .eq("id", data.productId);
     if (error) throw new Error(error.message);
-    await audit(context.supabase, context.userId, `product.${data.status}`, "product", data.productId, {
-      reason: data.reason,
-    });
+    await audit(
+      context.supabase,
+      context.userId,
+      `product.${data.status}`,
+      "product",
+      data.productId,
+      {
+        reason: data.reason,
+      },
+    );
     return { ok: true };
   });
 
@@ -188,7 +202,7 @@ const deleteProductSchema = z.object({ productId: z.string().uuid() });
 
 export const deleteProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => deleteProductSchema.parse(d))
+  .validator((d: unknown) => deleteProductSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { error } = await context.supabase.from("products").delete().eq("id", data.productId);
@@ -201,34 +215,162 @@ const vendorAuthInfoSchema = z.object({ sellerId: z.string().uuid() });
 
 export const getVendorAuthInfo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => vendorAuthInfoSchema.parse(d))
+  .validator((d: unknown) => vendorAuthInfoSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { data: seller, error: sellerError } = await context.supabase
       .from("sellers")
-      .select("user_id")
+      .select("id, user_id, business_name")
       .eq("id", data.sellerId)
       .maybeSingle();
     if (sellerError) throw new Error(sellerError.message);
     if (!seller) throw new Error("Seller not found");
 
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      return { email: null, lastSignInAt: null };
+    // 1. First check admin_settings registry
+    try {
+      const { data: settingRow } = await context.supabase
+        .from("admin_settings")
+        .select("value")
+        .eq("key", "vendor_emails")
+        .maybeSingle();
+
+      if (settingRow?.value) {
+        const parsed = JSON.parse(settingRow.value) as Record<string, string>;
+        const found =
+          parsed[seller.id] ||
+          (seller.user_id ? parsed[seller.user_id] : null) ||
+          parsed[seller.business_name?.toLowerCase()];
+        if (found) {
+          return { email: found, lastSignInAt: null };
+        }
+      }
+    } catch (e) {
+      console.warn("[getVendorAuthInfo] setting read warning:", e);
     }
 
+    // 2. Try auth admin if service role key is available
+    if (process.env.SUPABASE_SERVICE_ROLE_KEY && seller.user_id) {
+      try {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(seller.user_id);
+        if (authUser?.user?.email) {
+          return {
+            email: authUser.user.email,
+            lastSignInAt: authUser.user.last_sign_in_at ?? null,
+          };
+        }
+      } catch (err) {
+        console.warn("[getVendorAuthInfo] auth admin fetch failed:", err);
+      }
+    }
+
+    return { email: null, lastSignInAt: null };
+  });
+
+const setVendorEmailSchema = z.object({
+  sellerId: z.string().uuid(),
+  email: z.string().email(),
+});
+
+export const setVendorEmail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((d: unknown) => setVendorEmailSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+
+    const { data: seller, error: sellerError } = await context.supabase
+      .from("sellers")
+      .select("id, user_id, business_name")
+      .eq("id", data.sellerId)
+      .maybeSingle();
+    if (sellerError) throw new Error(sellerError.message);
+    if (!seller) throw new Error("Seller not found");
+
+    // Fetch existing map
+    let map: Record<string, string> = {};
+    const { data: settingRow } = await context.supabase
+      .from("admin_settings")
+      .select("value")
+      .eq("key", "vendor_emails")
+      .maybeSingle();
+
+    if (settingRow?.value) {
+      try {
+        map = JSON.parse(settingRow.value);
+      } catch {
+        map = {};
+      }
+    }
+
+    // Store by seller id, user id, and lowercase business name for maximum resilience
+    map[seller.id] = data.email.trim();
+    if (seller.user_id) {
+      map[seller.user_id] = data.email.trim();
+    }
+    if (seller.business_name) {
+      map[seller.business_name.toLowerCase()] = data.email.trim();
+    }
+
+    const { error: upsertErr } = await context.supabase.from("admin_settings").upsert(
+      {
+        key: "vendor_emails",
+        value: JSON.stringify(map),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "key" },
+    );
+
+    if (upsertErr) throw new Error(upsertErr.message);
+
+    await audit(context.supabase, context.userId, "seller.email_update", "seller", seller.id, {
+      email: data.email.trim(),
+    });
+
+    return { ok: true, email: data.email.trim() };
+  });
+
+const syncVendorEmailSchema = z.object({
+  sellerId: z.string().uuid().optional(),
+  userId: z.string().uuid().optional(),
+  email: z.string().email(),
+});
+
+export const syncVendorEmail = createServerFn({ method: "POST" })
+  .validator((d: unknown) => syncVendorEmailSchema.parse(d))
+  .handler(async ({ data }) => {
     try {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(
-        seller.user_id,
-      );
-      if (authError) throw new Error(authError.message);
+      let map: Record<string, string> = {};
+      const { data: settingRow } = await supabaseAdmin
+        .from("admin_settings")
+        .select("value")
+        .eq("key", "vendor_emails")
+        .maybeSingle();
 
-      return {
-        email: authUser.user?.email ?? null,
-        lastSignInAt: authUser.user?.last_sign_in_at ?? null,
-      };
+      if (settingRow?.value) {
+        try {
+          map = JSON.parse(settingRow.value);
+        } catch {
+          map = {};
+        }
+      }
+
+      if (data.sellerId) map[data.sellerId] = data.email.trim();
+      if (data.userId) map[data.userId] = data.email.trim();
+
+      await supabaseAdmin.from("admin_settings").upsert(
+        {
+          key: "vendor_emails",
+          value: JSON.stringify(map),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "key" },
+      );
+
+      return { ok: true };
     } catch (err) {
-      return { email: null, lastSignInAt: null };
+      console.warn("[syncVendorEmail] non-blocking sync error:", err);
+      return { ok: false };
     }
   });
 
@@ -241,7 +383,7 @@ const noticeSchema = z.object({
 
 export const sendNotice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => noticeSchema.parse(d))
+  .validator((d: unknown) => noticeSchema.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { data: row, error } = await context.supabase
@@ -256,6 +398,52 @@ export const sendNotice = createServerFn({ method: "POST" })
       .select()
       .single();
     if (error) throw new Error(error.message);
-    await audit(context.supabase, context.userId, "notice.send", "notice", row.id, { severity: data.severity });
+    await audit(context.supabase, context.userId, "notice.send", "notice", row.id, {
+      severity: data.severity,
+    });
     return { ok: true, id: row.id };
   });
+
+export const getAllVendorsAuthEmails = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.supabase, context.userId);
+
+    const map: Record<string, string> = {};
+
+    // 1. Read vendor_emails from admin_settings
+    try {
+      const { data: settingRow } = await context.supabase
+        .from("admin_settings")
+        .select("value")
+        .eq("key", "vendor_emails")
+        .maybeSingle();
+
+      if (settingRow?.value) {
+        const stored = JSON.parse(settingRow.value) as Record<string, string>;
+        Object.assign(map, stored);
+      }
+    } catch (err) {
+      console.warn("[getAllVendorsAuthEmails] reading admin_settings failed:", err);
+    }
+
+    // 2. Read from Supabase auth admin if service role key is present
+    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        if (!error && data?.users) {
+          for (const u of data.users) {
+            if (u.id && u.email) {
+              map[u.id] = u.email;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("[getAllVendorsAuthEmails] auth.admin listUsers error:", err);
+      }
+    }
+
+    return map;
+  });
+

@@ -14,7 +14,6 @@ import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductSkeleton } from "@/components/LoadingSpinner";
 import { SellerCard } from "@/components/SellerCard";
-import { WelcomeModal } from "@/components/WelcomeModal";
 import { ExploreStates } from "@/components/ExploreStates";
 import { useCity } from "@/lib/cityContext";
 import { useAuth } from "@/lib/authContext";
@@ -207,7 +206,6 @@ function Index() {
 
   return (
     <div className="min-h-screen bg-background">
-      <WelcomeModal />
       <TopBar />
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
@@ -252,7 +250,7 @@ function Index() {
           <p className="mt-5 max-w-xl text-base leading-relaxed text-white/70 sm:text-lg">
             {isSeller
               ? "Manage your store, track your products, and connect with buyers."
-              : "Discover handcrafted fashion, food, beauty and more from trusted sellers."}
+              : "Find products from local sellers and message them directly on WhatsApp."}
           </p>
 
           {/* search bar (buyers only) or dashboard link (sellers) */}
@@ -299,7 +297,7 @@ function Index() {
 
               <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:gap-4">
                 <Link
-                  to="/explore"
+                  to="/products"
                   className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-white/15 bg-white/12 px-5 py-2.5 text-sm font-semibold text-white shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/18 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1A0B08] active:scale-95"
                 >
                   Browse all products <ArrowRight className="h-3.5 w-3.5" />
@@ -498,7 +496,7 @@ function Index() {
         {hasProducts && (
           <div className="mt-9 text-center sm:mt-10">
             <Link
-              to="/explore"
+              to="/products"
               className="inline-flex min-h-[48px] items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-7 py-3.5 text-sm font-bold text-primary shadow-warm transition hover:-translate-y-0.5 hover:border-primary/45 hover:bg-primary hover:text-primary-foreground hover:shadow-warm-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:scale-95 sm:px-8"
             >
               Browse all products <ArrowRight className="h-4 w-4" />

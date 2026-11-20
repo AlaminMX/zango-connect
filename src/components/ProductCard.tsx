@@ -6,7 +6,7 @@
 
 import { useEffect, useState, memo } from "react";
 import { Heart, ShieldOff, ShieldCheck, Sparkles } from "lucide-react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { toggleWishlist, useIsWishlisted } from "@/lib/wishlist";
@@ -33,7 +33,6 @@ export interface ProductCardProps {
 }
 
 function ProductCardContent(p: ProductCardProps) {
-  const nav = useNavigate();
   const { seller } = useSellerProfile();
   const { isAdmin: authIsAdmin } = useAuth();
   const canGenerateCard = Boolean(seller || authIsAdmin || p.isAdmin);
@@ -86,20 +85,18 @@ function ProductCardContent(p: ProductCardProps) {
     p.onBlockToggle?.(p.id, newStatus);
   };
 
-  const goToProduct = () => nav({ to: "/product/$id", params: { id: p.id } });
-
   return (
     <div
-      role="link"
-      tabIndex={0}
-      onClick={goToProduct}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") goToProduct();
-      }}
-      className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-3xl border border-border-warm bg-card p-3 transition hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-warm-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${isBlocked ? "opacity-50" : ""}`}
+      className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-3xl border border-border-warm bg-card p-3 transition hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-warm-lg focus-within:ring-2 focus-within:ring-primary ${isBlocked ? "opacity-50" : ""}`}
     >
+      <Link
+        to="/product/$id"
+        params={{ id: p.id }}
+        aria-label={p.name}
+        className="absolute inset-0 z-10 rounded-3xl focus-visible:outline-none"
+      />
       {p.isAdmin && localStatus === "blocked" && (
-        <div className="absolute inset-x-3 top-3 z-20 rounded-full bg-destructive/90 py-1 text-center text-[10px] font-bold uppercase tracking-wider text-white">
+        <div className="pointer-events-none absolute inset-x-3 top-3 z-20 rounded-full bg-destructive/90 py-1 text-center text-[10px] font-bold uppercase tracking-wider text-white">
           Blocked
         </div>
       )}
@@ -132,7 +129,7 @@ function ProductCardContent(p: ProductCardProps) {
           type="button"
           onClick={handleSave}
           aria-label={saved ? "Remove from wishlist" : "Save to wishlist"}
-          className={`absolute right-2 top-2 flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur transition hover:scale-110 active:scale-95 ${saved ? "text-primary" : "text-espresso/60 hover:text-primary"}`}
+          className={`absolute right-2 top-2 z-20 flex h-10 w-10 min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/90 shadow-sm backdrop-blur transition hover:scale-110 active:scale-95 ${saved ? "text-primary" : "text-espresso/60 hover:text-primary"}`}
         >
           <Heart className={`h-4 w-4 ${saved ? "fill-primary" : ""}`} />
         </button>
@@ -148,7 +145,7 @@ function ProductCardContent(p: ProductCardProps) {
             }}
             title="Generate Product Marketing Card"
             aria-label="Generate Product Marketing Card"
-            className="absolute left-2 bottom-2 z-10 flex h-9 w-9 min-h-[36px] min-w-[36px] items-center justify-center rounded-full bg-gradient-to-tr from-amber-600 to-amber-500 text-white shadow-md backdrop-blur-md transition-all duration-200 hover:scale-110 hover:shadow-amber-500/40 active:scale-95 border border-amber-300/40"
+            className="absolute left-2 bottom-2 z-20 flex h-9 w-9 min-h-[36px] min-w-[36px] items-center justify-center rounded-full bg-gradient-to-tr from-amber-600 to-amber-500 text-white shadow-md backdrop-blur-md transition-all duration-200 hover:scale-110 hover:shadow-amber-500/40 active:scale-95 border border-amber-300/40"
           >
             <Sparkles className="h-4 w-4 drop-shadow-sm" />
           </button>
@@ -166,7 +163,7 @@ function ProductCardContent(p: ProductCardProps) {
                 to="/store/$slug"
                 params={{ slug: p.seller_slug }}
                 onClick={(e) => e.stopPropagation()}
-                className="truncate hover:text-primary hover:underline"
+                className="relative z-20 truncate hover:text-primary hover:underline"
               >
                 {p.seller_name}
               </Link>
@@ -199,7 +196,7 @@ function ProductCardContent(p: ProductCardProps) {
             type="button"
             onClick={handleBlock}
             disabled={blocking}
-            className={`mt-3 flex w-full min-h-[44px] items-center justify-center gap-1.5 rounded-full py-1.5 text-xs font-medium transition ${
+            className={`relative z-20 mt-3 flex w-full min-h-[44px] items-center justify-center gap-1.5 rounded-full py-1.5 text-xs font-medium transition ${
               localStatus === "blocked"
                 ? "bg-green-100 text-green-700 hover:bg-green-200"
                 : "bg-destructive/10 text-destructive hover:bg-destructive/20"

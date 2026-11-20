@@ -1388,7 +1388,7 @@ function AdminPage() {
   if (!allowed) return <PageLoader label="Checking access…" />;
 
   const tabCls = (t: typeof activeTab) =>
-    `rounded-full px-4 py-1.5 text-sm font-medium transition ${activeTab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`;
+    `min-h-11 rounded-xl px-4 py-2 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${activeTab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`;
 
   const featuredProducts = products
     .filter((p) => p.is_featured)
@@ -1509,9 +1509,9 @@ function AdminPage() {
             onClick={openWaDetail}
             className="rounded-2xl border bg-card p-3 text-left shadow-warm transition sm:p-4 hover:-translate-y-0.5 hover:border-primary/40 cursor-pointer"
           >
-            <p className="text-xs text-muted-foreground">WA Clicks</p>
+            <p className="text-xs text-muted-foreground">WhatsApp clicks</p>
             <p className="mt-1 font-serif text-2xl text-primary sm:text-3xl">{stats.clicks}</p>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">Buyer inquiries</p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">Contact button taps</p>
           </button>
         </div>
 
@@ -1538,28 +1538,32 @@ function AdminPage() {
           </div>
         )}
 
-        {/* Tab nav */}
-        <div className="-mx-5 mt-8 flex gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
+        <nav
+          aria-label="Admin sections"
+          className="mt-8 flex flex-wrap gap-1 rounded-2xl border bg-card p-2"
+        >
           {(
-            ["sellers", "categories", "products", "vouches", "homepage", "cities", "cms"] as const
-          ).map((t) => (
-            <button key={t} onClick={() => setActiveTab(t)} className={`shrink-0 ${tabCls(t)}`}>
-              {t === "sellers"
-                ? `Sellers (${sellers.length}${unapprovedSellers.length > 0 ? ` · ${unapprovedSellers.length} unapproved` : ""})`
-                : t === "categories"
-                  ? "Categories"
-                  : t === "products"
-                    ? "Products"
-                    : t === "vouches"
-                      ? "Vouches"
-                      : t === "homepage"
-                        ? "Homepage"
-                        : t === "cities"
-                          ? "Cities"
-                          : "CMS ✦"}
+            [
+              ["sellers", "Sellers"],
+              ["products", "Products"],
+              ["categories", "Categories"],
+              ["vouches", "Vouches"],
+              ["cities", "Cities"],
+              ["homepage", "Homepage"],
+              ["cms", "Content"],
+            ] as const
+          ).map(([tab, label]) => (
+            <button
+              key={tab}
+              type="button"
+              aria-pressed={activeTab === tab}
+              onClick={() => setActiveTab(tab)}
+              className={tabCls(tab)}
+            >
+              {label}
             </button>
           ))}
-        </div>
+        </nav>
 
         {/* ── Sellers tab ── */}
         {activeTab === "sellers" && (

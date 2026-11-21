@@ -123,10 +123,10 @@ function Index() {
           slug: s.slug,
           business_name: s.business_name,
           category: s.category,
-          city: "",
+          city: s.city,
           profile_photo_url: s.profile_photo_url,
-          is_verified: false,
-          rating: null,
+          is_verified: s.is_verified,
+          rating: s.rating,
         }));
       }
       // Fallback: live query ordered by rating

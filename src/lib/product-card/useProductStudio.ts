@@ -18,7 +18,6 @@ export interface UseProductStudioOptions {
   initialShowVerified?: boolean;
   initialShowStock?: boolean;
   initialShowQRCode?: boolean;
-  initialShowQRCode?: boolean;
   initialTagline?: string;
   initialFramingMode?: "hero-75" | "full-bleed";
 }

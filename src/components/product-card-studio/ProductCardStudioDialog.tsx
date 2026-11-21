@@ -426,7 +426,7 @@ export function ProductCardStudioDialog({
                 </button>
               </div>
 
-              {/* Image Framing Selector: 75% Hero Frame vs Full-Bleed Frosted Glass */}
+              {/* Photo framing */}
               <div className="flex items-center justify-center gap-2 p-1 rounded-xl bg-amber-500/10 border border-amber-500/20 mb-3 w-full max-w-md">
                 <button
                   type="button"
@@ -438,7 +438,7 @@ export function ProductCardStudioDialog({
                   }`}
                 >
                   <Crop className="h-3.5 w-3.5" />
-                  <span>75% Prominent Hero</span>
+                  <span>Framed photo</span>
                 </button>
                 <button
                   type="button"
@@ -450,7 +450,7 @@ export function ProductCardStudioDialog({
                   }`}
                 >
                   <Maximize2 className="h-3.5 w-3.5" />
-                  <span>Full-Bleed Frosted Glass</span>
+                  <span>Full-bleed photo</span>
                 </button>
               </div>
 

@@ -12,7 +12,10 @@ export interface HomepageTrendingSeller {
   id: string;
   seller_id: string;
   business_name: string;
-  category: string;
+  category: string | null;
+  city: string | null;
+  is_verified: boolean | null;
+  rating: number | null;
   profile_photo_url: string | null;
   slug: string;
   display_order: number;
@@ -29,6 +32,9 @@ export async function getTrendingSellers(limit: number = 3): Promise<HomepageTre
       sellers:seller_id (
         business_name,
         category,
+        city,
+        is_verified,
+        rating,
         profile_photo_url,
         slug,
         status,
@@ -56,6 +62,9 @@ export async function getTrendingSellers(limit: number = 3): Promise<HomepageTre
       display_order: row.display_order,
       business_name: row.sellers.business_name,
       category: row.sellers.category,
+      city: row.sellers.city,
+      is_verified: row.sellers.is_verified,
+      rating: row.sellers.rating,
       profile_photo_url: row.sellers.profile_photo_url,
       slug: row.sellers.slug,
     }));

@@ -13,6 +13,7 @@ import { PackageSearch, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { TopBar } from "@/components/TopBar";
 import { Footer } from "@/components/Footer";
+import { SellerCard } from "@/components/SellerCard";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductSkeleton } from "@/components/LoadingSpinner";
 import { BackButton } from "@/components/BackButton";
@@ -113,7 +114,7 @@ function Explore() {
       if (cms.length > 0) return cms;
       const { data } = await supabase
         .from("sellers")
-        .select("id, slug, business_name, category, profile_photo_url")
+        .select("id, slug, business_name, category, profile_photo_url, city, is_verified, rating")
         .eq("verification_status", "approved")
         .eq("status", "active")
         .eq("is_blocked", false)
@@ -126,6 +127,9 @@ function Explore() {
         display_order: 0,
         business_name: s.business_name,
         category: s.category,
+        city: s.city,
+        is_verified: s.is_verified,
+        rating: s.rating,
         profile_photo_url: s.profile_photo_url,
         slug: s.slug,
       }));
@@ -259,33 +263,9 @@ function Explore() {
                 See all
               </Link>
             </div>
-            <div className="grid grid-cols-3 gap-4 md:gap-6">
-              {trending.map((s: any) => (
-                <Link
-                  key={s.seller_id ?? s.id}
-                  to="/store/$slug"
-                  params={{ slug: s.slug }}
-                  className="group flex flex-col items-center text-center"
-                >
-                  <div className="h-20 w-20 overflow-hidden rounded-full bg-surface-warm ring-2 ring-border-warm transition group-hover:ring-primary">
-                    {s.profile_photo_url ? (
-                      <img
-                        src={s.profile_photo_url}
-                        alt={s.business_name}
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center font-display text-2xl text-primary">
-                        {s.business_name?.charAt(0)}
-                      </div>
-                    )}
-                  </div>
-                  <p className="mt-2 line-clamp-2 text-xs font-semibold text-espresso">
-                    {s.business_name}
-                  </p>
-                  <p className="line-clamp-1 text-[10px] text-muted-foreground">{s.category}</p>
-                </Link>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {trending.map((seller) => (
+                <SellerCard key={seller.seller_id ?? seller.id} {...seller} />
               ))}
             </div>
           </section>

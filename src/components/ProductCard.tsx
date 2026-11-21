@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useState, memo } from "react";
-import { Heart, ShieldOff, ShieldCheck, Sparkles } from "lucide-react";
+import { Heart, ShieldOff, ShieldCheck, Sparkles, MapPin, ShoppingBag } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ import { toggleWishlist, useIsWishlisted } from "@/lib/wishlist";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { useSellerProfile } from "@/lib/sellerProfile";
 import { useAuth } from "@/lib/authContext";
+import { formatMarketingPrice } from "@/components/marketing-card/MarketingCard";
 import { ProductCardStudioDialog } from "@/components/product-card-studio/ProductCardStudioDialog";
 
 export interface ProductCardProps {
@@ -35,6 +36,7 @@ export interface ProductCardProps {
 function ProductCardContent(p: ProductCardProps) {
   const { seller } = useSellerProfile();
   const { isAdmin: authIsAdmin } = useAuth();
+  const listingSeller = seller?.id === p.seller_id ? seller : undefined;
   const canGenerateCard = Boolean(seller || authIsAdmin || p.isAdmin);
   const [studioOpen, setStudioOpen] = useState(false);
   const soldOut = p.stock_status === "sold_out";
@@ -87,13 +89,13 @@ function ProductCardContent(p: ProductCardProps) {
 
   return (
     <div
-      className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-3xl border border-border-warm bg-card p-3 transition hover:-translate-y-0.5 hover:border-primary/60 hover:shadow-warm-lg focus-within:ring-2 focus-within:ring-primary ${isBlocked ? "opacity-50" : ""}`}
+      className={`group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-border-warm bg-card transition hover:border-primary/60 hover:shadow-warm focus-within:ring-2 focus-within:ring-primary ${isBlocked ? "opacity-50" : ""}`}
     >
       <Link
         to="/product/$id"
         params={{ id: p.id }}
         aria-label={p.name}
-        className="absolute inset-0 z-10 rounded-3xl focus-visible:outline-none"
+        className="absolute inset-0 z-10 rounded-2xl focus-visible:outline-none"
       />
       {p.isAdmin && localStatus === "blocked" && (
         <div className="pointer-events-none absolute inset-x-3 top-3 z-20 rounded-full bg-destructive/90 py-1 text-center text-[10px] font-bold uppercase tracking-wider text-white">
@@ -101,18 +103,18 @@ function ProductCardContent(p: ProductCardProps) {
         </div>
       )}
 
-      <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-surface-warm">
+      <div className="relative aspect-square w-full overflow-hidden border-b border-border-warm bg-surface-warm">
         {p.image_url ? (
           <img
             src={p.image_url}
-            alt={p.name}
+            alt=""
             loading="lazy"
             decoding="async"
             className={`h-full w-full object-cover transition duration-500 group-hover:scale-105 ${soldOut ? "opacity-50 grayscale" : ""}`}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-xs italic text-muted-foreground">
-            No image
+          <div className="grid h-full w-full place-items-center text-primary/60">
+            <ShoppingBag aria-hidden className="size-9" strokeWidth={1.25} />
           </div>
         )}
         {soldOut && (
@@ -121,8 +123,8 @@ function ProductCardContent(p: ProductCardProps) {
           </span>
         )}
         {low && !soldOut && (
-          <span className="absolute left-2 top-2 rounded-full bg-sage px-2 py-0.5 text-[10px] font-medium text-white">
-            Selling fast
+          <span className="absolute left-2 top-2 rounded-full bg-card px-2 py-0.5 text-xs font-semibold text-foreground">
+            Low stock
           </span>
         )}
         <button
@@ -145,15 +147,17 @@ function ProductCardContent(p: ProductCardProps) {
             }}
             title="Generate Product Marketing Card"
             aria-label="Generate Product Marketing Card"
-            className="absolute left-2 bottom-2 z-20 flex h-9 w-9 min-h-[36px] min-w-[36px] items-center justify-center rounded-full bg-gradient-to-tr from-amber-600 to-amber-500 text-white shadow-md backdrop-blur-md transition-all duration-200 hover:scale-110 hover:shadow-amber-500/40 active:scale-95 border border-amber-300/40"
+            className="absolute left-2 bottom-2 z-20 flex h-9 w-9 min-h-[36px] min-w-[36px] items-center justify-center rounded-full bg-card text-primary shadow-sm transition hover:bg-surface-warm active:scale-95"
           >
             <Sparkles className="h-4 w-4 drop-shadow-sm" />
           </button>
         )}
       </div>
 
-      <div className="flex flex-1 flex-col px-1 pb-1 pt-3">
-        <h4 className="line-clamp-1 font-medium text-espresso">{p.name}</h4>
+      <div className="flex flex-1 flex-col p-3 sm:p-4">
+        <h4 className="line-clamp-2 break-words font-display text-base leading-tight text-foreground sm:text-lg">
+          {p.name}
+        </h4>
 
         {/* Vendor name independent on its own line with verification badge */}
         {p.seller_name && (
@@ -176,19 +180,14 @@ function ProductCardContent(p: ProductCardProps) {
 
         {/* State/City independent on its own line */}
         {p.seller_city && (
-          <div className="mt-1">
-            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
-              📍 {p.seller_city}
-            </span>
-          </div>
+          <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <MapPin aria-hidden className="size-3.5 shrink-0" />
+            <span className="truncate">{p.seller_city}</span>
+          </p>
         )}
 
-        <p className="mt-2 font-display text-lg text-sage-deep">
-          {p.price != null && Number(p.price) > 0 ? (
-            `₦${Number(p.price).toLocaleString()}`
-          ) : (
-            <span className="text-sm italic text-muted-foreground">Price on request</span>
-          )}
+        <p className="mt-auto pt-3 text-sm font-bold text-primary sm:text-base">
+          {formatMarketingPrice(p.price)}
         </p>
 
         {p.isAdmin && (
@@ -234,12 +233,12 @@ function ProductCardContent(p: ProductCardProps) {
           }}
           seller={{
             id: p.seller_id,
-            business_name: p.seller_name || seller?.business_name || "Verified Store",
-            city: p.seller_city || seller?.city || "Nigeria",
-            whatsapp_number: p.whatsapp_number || seller?.whatsapp_number || "",
-            slug: p.seller_slug || seller?.slug,
-            is_verified: p.seller_is_verified ?? (seller ? seller.is_verified : true),
-            profile_photo_url: seller?.id === p.seller_id ? seller.profile_photo_url : null,
+            business_name: p.seller_name || listingSeller?.business_name || "",
+            city: p.seller_city || listingSeller?.city,
+            whatsapp_number: p.whatsapp_number || listingSeller?.whatsapp_number || "",
+            slug: p.seller_slug || listingSeller?.slug,
+            is_verified: p.seller_is_verified ?? listingSeller?.is_verified,
+            profile_photo_url: listingSeller?.profile_photo_url,
           }}
         />
       )}

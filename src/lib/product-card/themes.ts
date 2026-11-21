@@ -1,9 +1,6 @@
 import type { ProductCardFormat, ProductCardTheme, ProductCardThemeName } from "./types";
 
-export const ZANGO_STORE_ORIGIN =
-  typeof window !== "undefined" && window.location.origin
-    ? window.location.origin
-    : "https://zango-connect.vercel.app";
+import { SITE_ORIGIN, productUrl, storeUrl } from "@/lib/site";
 
 export const productCardFormats: Record<
   ProductCardFormat,
@@ -263,17 +260,12 @@ export function resolveProductCardTheme(
 }
 
 export function getProductStoreUrl(slug?: string | null, productId?: string): string {
-  if (productId) {
-    return `${ZANGO_STORE_ORIGIN}/product/${productId}`;
-  }
-  if (slug) {
-    return `${ZANGO_STORE_ORIGIN}/store/${slug}`;
-  }
-  return ZANGO_STORE_ORIGIN;
+  if (productId) return productUrl(productId);
+  return slug ? storeUrl(slug) : SITE_ORIGIN;
 }
 
-export function formatCardPhoneNumber(num?: string | null): string {
-  if (!num) return "+234 800 000 0000";
+export function formatCardPhoneNumber(num?: string | null): string | undefined {
+  if (!num?.trim()) return undefined;
   const clean = num.replace(/[^\d+]/g, "");
   if (clean.startsWith("+234") && clean.length === 14) {
     return `+234 ${clean.slice(4, 7)} ${clean.slice(7, 10)} ${clean.slice(10)}`;
